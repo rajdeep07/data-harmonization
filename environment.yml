@@ -18,5 +18,6 @@ dependencies:
   - configparser
   - whereever
   - settings
+  - dataclasses
   - pip:
     - sphinx-autodoc-annotation
