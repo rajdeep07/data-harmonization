@@ -14,5 +14,7 @@ dependencies:
   - pyarrow
   - scipy
   - statsmodels
+  - python-dotenv
+  - configparser
   - pip:
     - sphinx-autodoc-annotation
