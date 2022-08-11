@@ -2,12 +2,9 @@ from dataclasses import dataclass
 from typing import Optional
 
 @dataclass(unsafe_hash=True)
-class RawProfile:
-    id: str
-    name: Optional[str]
-    city: Optional[str]
+class PostalAddress:
     address: Optional[str]
+    city: Optional[str]
     state: Optional[str]
-    zipcode: Optional[str]
-    source: Optional[str]
-
+    country: Optional[str]
+    zipCode: Optional[str]
