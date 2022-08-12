@@ -16,7 +16,6 @@ dependencies:
   - statsmodels
   - python-dotenv
   - configparser
-  - whereever
-  - settings
+  - dataclasses
   - pip:
     - sphinx-autodoc-annotation
