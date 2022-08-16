@@ -19,6 +19,6 @@ dependencies:
   - dataclasses
   - python-levenshtein
   - metaphone
-  -
+  - clean-text
   - pip:
     - sphinx-autodoc-annotation
