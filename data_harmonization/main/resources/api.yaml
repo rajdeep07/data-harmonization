@@ -1,0 +1,54 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: Data Class Generator
+  license:
+    name: Tiger Analytics
+servers:
+  - url: http://dataharmonization.swagger.io/v1
+components:
+  schemas:
+    RawEntity:
+      required:
+        - id
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        city:
+          type: string
+        address:
+          type: string
+        state:
+          type: string
+        zipcode:
+          type: string
+        source:
+          type: string
+    CleansedRawEntity:
+      required:
+        - id
+        - name
+        - city
+        - address
+        - state
+        - zipcode
+        - source
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        city:
+          type: string
+        address:
+          type: string
+        state:
+          type: string
+        zipcode:
+          type: string
+        source:
+          type: string
