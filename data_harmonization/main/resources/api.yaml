@@ -8,6 +8,20 @@ servers:
   - url: http://dataharmonization.swagger.io/v1
 components:
   schemas:
+    Name:
+      properties:
+        name:
+          type: str
+    Address:
+      properties:
+        city:
+          type: str
+        state:
+          type: str
+        zipcode:
+          type: str
+        address:
+          type: str
     RawEntity:
       required:
         - id
@@ -17,38 +31,17 @@ components:
           format: int64
         name:
           type: string
-        city:
-          type: string
+          items:
+            $ref: "#/components/schemas/Name"
         address:
-          type: string
-        state:
-          type: string
-        zipcode:
-          type: string
+          type: array
+          items:
+            $ref: "#/components/schemas/Address"
         source:
           type: string
     CleansedRawEntity:
-      required:
-        - id
-        - name
-        - city
-        - address
-        - state
-        - zipcode
-        - source
       properties:
-        id:
-          type: integer
-          format: int64
-        name:
-          type: string
-        city:
-          type: string
-        address:
-          type: string
-        state:
-          type: string
-        zipcode:
-          type: string
-        source:
-          type: string
+        entity:
+          type: array
+          items:
+            $ref: "#/components/schemas/RawEntity"
