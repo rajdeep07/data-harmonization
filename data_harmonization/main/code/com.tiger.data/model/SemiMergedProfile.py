@@ -7,4 +7,4 @@ class SemiMergedProfile:
     rightId: Optional[str]
     label: Optional[float]
     indexedLabel: Optional[float]
-    prediction: Optional[float]
+    confidence: Optional[float]
