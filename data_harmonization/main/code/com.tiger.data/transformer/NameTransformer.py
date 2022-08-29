@@ -1,9 +1,10 @@
 from data_harmonization.main.code.com.tiger.data.transformer.utils import StringSupport
-from data_harmonization.main.code.com.tiger.data.model import RawProfile
+from data_harmonization.main.code.com.tiger.data.model.datamodel import *
 from typing import Optional
 
 
 class NameTransformer(StringSupport):
+    # Config driven for advanced profile synthesis
     def __init__(self):
         super().__init__(self)
 

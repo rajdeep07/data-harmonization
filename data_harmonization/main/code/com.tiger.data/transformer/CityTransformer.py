@@ -1,5 +1,5 @@
 from data_harmonization.main.code.com.tiger.data.transformer.utils import StringSupport
-from data_harmonization.main.code.com.tiger.data.model import RawProfile
+from data_harmonization.main.code.com.tiger.data.model.datamodel import *
 from typing import Optional
 
 
