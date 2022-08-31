@@ -20,7 +20,7 @@ class CSVreader(object):
                 for row in self.reader:
                     row_data = {key: value for key, value in zip(headers, row)}
                     _name = Name(name=row_data['name'])
-                    _address = Address(city=row_data['city], state=row_data['state'], zipcode=row_data['zipcode'], address=row_data['address'])
+                    _address = Address(city=row_data['city'], state=row_data['state'], zipcode=row_data['zipcode'], address=row_data['address'])
                     _raw_entity = RawEntity(id=row_data['id'], name=List[_name], address=List[_address],source=row_data['source'])
                     entities.append(_raw_entity)
             return entities
