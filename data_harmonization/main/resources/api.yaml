@@ -8,6 +8,10 @@ servers:
   - url: http://dataharmonization.swagger.io/v1
 components:
   schemas:
+    Gender:
+      properties:
+        gender_field:
+          type: str
     Name:
       properties:
         name:
@@ -16,12 +20,52 @@ components:
       properties:
         city:
           type: str
-        state:
-          type: str
         zipcode:
           type: str
         address:
           type: str
+    Entity1:
+      required:
+        - id
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        address:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        zipcode:
+          type: string
+        source:
+          type: string
+        gender:
+          type: string
+    Entity2:
+      required:
+        - id
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        address:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        zipcode:
+          type: string
+        source:
+          type: string
+        gender:
+          type: string
     RawEntity:
       required:
         - id
@@ -31,17 +75,12 @@ components:
           format: int64
         name:
           type: string
-          items:
-            $ref: "#/components/schemas/Name"
+          $ref: "#/components/schemas/Name"
         address:
-          type: array
-          items:
-            $ref: "#/components/schemas/Address"
+          type: string
+          $ref: "#/components/schemas/Address"
+        gender:
+          type: string
+          $ref: "#/components/schemas/Gender"
         source:
           type: string
-    CleansedRawEntity:
-      properties:
-        entity:
-          type: array
-          items:
-            $ref: "#/components/schemas/RawEntity"
