@@ -24,6 +24,16 @@ components:
           type: str
         address:
           type: str
+    Email:
+      properties:
+        email:
+          type: str
+    Contact:
+      properties:
+        country_code:
+          type: str
+        contact_no:
+          type: str
     Entity1:
       required:
         - id
