@@ -1,10 +1,9 @@
-from data_harmonization.main.code.tiger.transformer.utils import StringSupport
-from data_harmonization.main.code.tiger.transformer import CityTransformer, NameTransformer, \
+from data_harmonization.main.code.com.tiger.data.transformer.utils import StringSupport
+from data_harmonization.main.code.com.tiger.data.transformer import CityTransformer, NameTransformer, \
     PostalAddressTransformer, StateTransformer, ZipTransformer, IntegerTypeTransformer, StringTypeTransformer
-from data_harmonization.main.code.tiger.model import GeocodedAddress, PostalAddress
-#from data_harmonization.main.code.tiger.model.dataclass import RawEntity, CleansedRawEntity
-from data_harmonization.main.code.tiger.model.datamodel import Name, Address, \
-    Entity1, Entity2, RawEntity, Gender, Contact, Email
+from data_harmonization.main.code.com.tiger.data.model import GeocodedAddress, PostalAddress
+from data_harmonization.main.code.com.tiger.data.model.dataclass import RawEntity, CleansedRawEntity
+from data_harmonization.main.code.com.tiger.data.model.datamodel import *
 
 
 class Sanitizer():
@@ -15,46 +14,47 @@ class Sanitizer():
             [print(f"attribute: {k}  value: {v}") for k, v in items]
         return items
 
-    def _get_attributes(self, cls, should_print=False):
-        items = cls.__dict__.items()
-        if should_print:
-            [print(f"attribute: {k}  value: {v}") for k, v in items]
-        return items
+    def toRawEntity(self, cls):
 
-    def _apply_transformer(self, attr):
+        raw_attribute_lists = self._get_attr_list(RawEntity)
+        cls_map = {key:globals[value.replace("Optional[", "").replace("]","")] for key , value in raw_attribute_lists} #{id:"int", "name":"Name"}
+
+        raw_kw = {}
+        for raw_attribute, type in raw_attribute_lists.items():
+            kw = {}
+            if not isinstance(int, cls_map[raw_attribute]) and not isinstance(str, cls_map[raw_attribute]):
+                for attr in self._get_attributes(cls_map[raw_attribute]):
+                    if hasattr(cls, attr):
+                        kw[attr] = cls.__getattribute__(attr)
+                raw_kw[raw_attribute] = cls_map[raw_attribute](**kw)
+            else:
+                if hasattr(cls, raw_attribute):
+                    raw_kw[raw_attribute] = cls.__getattribute__(raw_attribute)
+
+        raw_entity_object = RawEntity(**raw_kw)
+        return raw_entity_object
+    
+    def _apply_transformer(self):
         transformed_ = {}
-        if not isinstance(self._get_attributes(attr), int) and not isinstance(self._get_attributes(attr), str):
-            transformed_attr = {}
-            cls_map = {}
-            for inner_attr in self._get_attributes(attr):
-                if isinstance(inner_attr[1], Name):
-                    transformed_attr[inner_attr[0]] = standardizeName(inner_attr[1])
-                elif isinstance(inner_attr[1], Address) or isinstance(inner_attr[1], PostalAddress):
-                    transformed_attr[inner_attr[0]] = standardizePostalAddress(inner_attr[1])
-                elif isinstance(inner_attr[1], Gender):
-                    transformed_attr[inner_attr[0]] = standardizeGender(inner_attr[1])
-                elif isinstance(inner_attr[1], Email):
-                    transformed_attr[inner_attr[0]] = standardizeEmail(inner_attr[1])
-                elif isinstance(inner_attr[1], Contact):
-                    transformed_attr[inner_attr[0]] = standardizeContact(inner_attr[1])
-                elif isinstance(inner_attr[1], int):
-                    transformed_attr[inner_attr[0]] = standardizeIntegerType(inner_attr[1])
-                elif isinstance(inner_attr[1], str):
-                    transformed_attr[inner_attr[0]] = standardizeStringType(inner_attr[1])
-                elif inner_attr[1] is None:
-                    transformed_attr[inner_attr[0]] = standardizeStringType(inner_attr[1])
-                elif isinstance(inner_attr, list):
-                    transformed_attr[inner_attr[0]] = inner_attr
-                else:
-                    transformed_[inner_attr[0]] = self._apply_transformer(inner_attr)
-                cls_map[inner_attr[0]] = type(inner_attr[1])
-            transformed_[attr[0]] = cls_map[attr[0]](**transformed_attr)
-        elif isinstance(self._get_attributes(attr), int):
-            transformed_[attr[0]] = standardizeIntegerType(_get_attributes(attr)[1])
-        elif isinstance(self._get_attributes(attr), str):
-            transformed_[attr[0]] = standardizeStringType(_get_attributes(attr)[1])
-        elif attr[1] is None:
-            transformed_[attr[0]] = attr[1]
+        for value in _get_attr_list():
+            if isinstance(value[1], list):
+                # TODO: add more general type standardization like Gender, email etc.
+                if isinstance(value[1][0], Name):
+                    transformed_[value[0]] = standardizeName(value[1][0])
+                elif isinstance(value[1][0], Address):
+                    transformed_[value[0]] = standardizePostalAddress(value[1][0])
+                elif isinstance(value[1], int):
+                    transformed_[value[0]] = standardizeIntegerType(value[1][0])
+                elif isinstance(value[1], str):
+                    transformed_[value[0]] = standardizeStringType(value[1][0])
+                elif value[1] is None:
+                    transformed_[value[0]] = standardizeStringType(value[1][0])
+            elif isinstance(value[1], int):
+                transformed_[value[0]] = standardizeIntegerType(value[1][0])
+            elif isinstance(value[1], str):
+                transformed_[value[0]] = standardizeStringType(value[1][0])
+            elif value[1] is None:
+                transformed_[value[0]] = standardizeStringType(value[1][0])
 
         return transformed_
 
