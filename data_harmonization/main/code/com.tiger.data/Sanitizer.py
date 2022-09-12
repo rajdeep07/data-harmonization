@@ -6,7 +6,7 @@ from data_harmonization.main.code.com.tiger.data.model.dataclass import RawEntit
 from data_harmonization.main.code.com.tiger.data.model.datamodel import *
 
 
-class Sanitizer(RawEntity, CleansedRawEntity, Name, Address):
+class Sanitizer():
 
     def _get_attr_list(self, should_print=False):
         items = RawEntity.__dict__.items()
@@ -14,6 +14,26 @@ class Sanitizer(RawEntity, CleansedRawEntity, Name, Address):
             [print(f"attribute: {k}  value: {v}") for k, v in items]
         return items
 
+    def toRawEntity(self, cls):
+
+        raw_attribute_lists = self._get_attr_list(RawEntity)
+        cls_map = {key:globals[value.replace("Optional[", "").replace("]","")] for key , value in raw_attribute_lists} #{id:"int", "name":"Name"}
+
+        raw_kw = {}
+        for raw_attribute, type in raw_attribute_lists.items():
+            kw = {}
+            if not isinstance(int, cls_map[raw_attribute]) and not isinstance(str, cls_map[raw_attribute]):
+                for attr in self._get_attributes(cls_map[raw_attribute]):
+                    if hasattr(cls, attr):
+                        kw[attr] = cls.__getattribute__(attr)
+                raw_kw[raw_attribute] = cls_map[raw_attribute](**kw)
+            else:
+                if hasattr(cls, raw_attribute):
+                    raw_kw[raw_attribute] = cls.__getattribute__(raw_attribute)
+
+        raw_entity_object = RawEntity(**raw_kw)
+        return raw_entity_object
+    
     def _apply_transformer(self):
         transformed_ = {}
         for value in _get_attr_list():
