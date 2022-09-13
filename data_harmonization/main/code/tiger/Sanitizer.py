@@ -2,37 +2,45 @@
 # from data_harmonization.main.code.tiger.transformer import CityTransformer, NameTransformer, \
 #     PostalAddressTransformer, StateTransformer, ZipTransformer, IntegerTypeTransformer, StringTypeTransformer
 # from data_harmonization.main.code.tiger.model import GeocodedAddress, PostalAddress
-from data_harmonization.main.code.tiger.model.datamodel import RawEntity, CleansedRawEntity
+# from data_harmonization.main.code.tiger.model.datamodel import RawEntity, CleansedRawEntity
 from dataclasses import dataclass
 from data_harmonization.main.code.tiger.model.datamodel import *
+from typing import Any
 
 
 class Sanitizer():
 
-    def _get_attr_list(self, should_print=False):
-        items = RawEntity.__dict__.items()
+    def _get_attr_list(self, obj, should_print=False):
+        items = obj.__dict__.items()
         if should_print:
             [print(f"attribute: {k}  value: {v}") for k, v in items if k in ("__annotations__")]
         return(value for item, value in items if item in ("__annotations__"))
 
-    def toRawEntity(self, cls):
-
-        raw_attribute_lists = list(self._get_attr_list())[0]
-        print(raw_attribute_lists, globals())
-        cls_map = {key:globals().get([value.replace("Optional[", "").replace("]", "")]) for key , value in raw_attribute_lists.items()}
+    def get_kwargs(self, cls, attr_lists):
+        cls_map={}
+        for attr, dtype in attr_lists.items():
+            dtype = dtype.replace("Optional[","").replace("]","")
+            cls_map[attr] = globals().get(dtype, dtype)
+        
 
         raw_kw = {}
-        for raw_attribute, type in raw_attribute_lists.items():
-            kw = {}
-            if not isinstance(int, cls_map[raw_attribute]) and not isinstance(str, cls_map[raw_attribute]):
-                for attr in self._get_attributes(cls_map[raw_attribute]):
-                    if hasattr(cls, attr):
-                        kw[attr] = cls.__getattribute__(attr)
-                raw_kw[raw_attribute] = cls_map[raw_attribute](**kw)
+        for attr, tpe in cls_map.items():
+            kw={}
+            if tpe not in ('int', 'str', 'float'):
+                sub_attr_list = list(self._get_attr_list(cls_map[attr]))[0]
+                for sub_attr in sub_attr_list.keys():
+                    if hasattr(cls, sub_attr):
+                        kw[sub_attr] = getattr(cls, sub_attr)   
+                raw_kw[attr] = cls_map[attr](**kw)
             else:
-                if hasattr(cls, raw_attribute):
-                    raw_kw[raw_attribute] = cls.__getattribute__(raw_attribute)
+                if hasattr(cls, attr):
+                    raw_kw[attr] = getattr(cls, attr)
+        return raw_kw
 
+    def toRawEntity(self, cls):
+
+        raw_attribute_lists = list(self._get_attr_list(RawEntity))[0]
+        raw_kw = self.get_kwargs(cls, raw_attribute_lists)
         raw_entity_object = RawEntity(**raw_kw)
         print(raw_entity_object)
         return raw_entity_object
@@ -61,12 +69,12 @@ class Sanitizer():
 
         return transformed_
 
-    @classmethod
-    def __getattribute__(cls, attr):
-        try:
-            return {k: cls._apply_transformer(v) for k, v in cls.__dict__[attr].items()}
-        except AttributeError:
-            raise AttributeError(attr)
+    # @classmethod
+    # def __getattribute__(cls, attr):
+    #     try:
+    #         return {k: cls._apply_transformer(v) for k, v in cls.__dict__[attr].items()}
+    #     except AttributeError:
+    #         raise AttributeError(attr)
 
     def _get_sanitized_entity(self):
         for attr, val in self.__getattribute__().items():
@@ -80,6 +88,8 @@ if __name__ == "__main__":
         city = "new_city"
         zipcode = 123456
         address = "123, A st, new_city"
+        gender_field= "M"
+        source="XYZ"
     snt = Sanitizer()
     snt.toRawEntity(TestClass)
 
