@@ -109,7 +109,7 @@ class Sanitizer():
 
 if __name__ == "__main__":
     addr = Address(
-        city="Kolkata",
+        city="Kolkata!22##*!?@34",
         zipcode=700000,
         address="Saltlake"
     )

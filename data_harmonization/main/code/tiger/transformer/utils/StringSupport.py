@@ -21,9 +21,14 @@ class StringSupport:
         return self.normalizeString(self.trimAndLowerCase(value))
 
     def normalizeTrimAndLowerCaseStringAndRemoveSpecialCharacters(self, value: str) -> str:
-        return self.normalizeTrimAndLowerCaseString(value)\
-            .replace("[$&+_~`,:;=.,!?@#|'<>.^*()\\[\\]%!\\-/{}ƜɯƟɵƢƣƻƼƽƾǀǁǂǃǄǅǆǇǈǉǊǋǌǰǱǲǳ]", "")\
-            .replace(" +", " ")
+        a = self.normalizeTrimAndLowerCaseString(value)\
+        #    .replace("[$&+_~`,:;=.,!?@#|'<>.^*()\\[\\]%!\\-/{}ƜɯƟɵƢƣƻƼƽƾǀǁǂǃǄǅǆǇǈǉǊǋǌǰǱǲǳ]", "")\
+        #    .replace(" +", " ")
+
+        if a in "[$&+_~`,:;=.,!?@#|'<>.^*()\\[\\]%!\\-/{}ƜɯƟɵƢƣƻƼƽƾǀǁǂǃǄǅǆǇǈǉǊǋǌǰǱǲǳ+ ]":
+            return ""
+        else:
+            return a
 
     def normalizeTrimAndLowerCaseStringAndRemoveNumbers(self, value: str) -> str:
         return self.normalizeTrimAndLowerCaseString(value).replace("[0123456789]", "")

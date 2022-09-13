@@ -8,4 +8,4 @@ class IntegerTypeTransformer(StringSupport):
 
     @staticmethod
     def standardizeIntegerType(value: str):
-        return int(StringSupport().normalizeTrimAndLowerCaseStringAndRemoveSpecialCharacters(value))
+        return (StringSupport().normalizeTrimAndLowerCaseStringAndRemoveSpecialCharacters(value))

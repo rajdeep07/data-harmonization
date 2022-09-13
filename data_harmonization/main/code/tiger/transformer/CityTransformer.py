@@ -1,4 +1,4 @@
-from data_harmonization.main.code.tiger.transformer.utils.StringSupport import *
+from data_harmonization.main.code.tiger.transformer.utils.StringSupport import StringSupport
 from data_harmonization.main.code.tiger.model.datamodel import *
 from typing import Optional
 
@@ -9,8 +9,10 @@ class CityTransformer(StringSupport):
 
     @staticmethod
     def standardizeCity(value: str):
-        return StringSupport().normalizeTrimAndLowerCaseStringAndRemoveSpecialCharacters(value)
-        # value.map(lambda x: x.normalizeTrimAndLowerCaseStringAndRemoveSpecialCharacters)
+        return "".join(list(map(
+            lambda x: StringSupport().normalizeTrimAndLowerCaseStringAndRemoveSpecialCharacters(x),
+            list(value))))
+        #return value.map(lambda x: x.normalizeTrimAndLowerCaseStringAndRemoveSpecialCharacters)
 
 
 
