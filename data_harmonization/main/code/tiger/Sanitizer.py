@@ -2,7 +2,7 @@
 # from data_harmonization.main.code.tiger.transformer import CityTransformer, NameTransformer, \
 #     PostalAddressTransformer, StateTransformer, ZipTransformer, IntegerTypeTransformer, StringTypeTransformer
 # from data_harmonization.main.code.tiger.model import GeocodedAddress, PostalAddress
-# from data_harmonization.main.code.tiger.model.dataclass import RawEntity, CleansedRawEntity
+from data_harmonization.main.code.tiger.model.datamodel import RawEntity, CleansedRawEntity
 from dataclasses import dataclass
 from data_harmonization.main.code.tiger.model.datamodel import *
 
