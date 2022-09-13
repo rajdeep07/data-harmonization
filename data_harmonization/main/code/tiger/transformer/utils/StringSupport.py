@@ -1,5 +1,5 @@
 from typing import Optional
-from cleantext import clean
+#from cleantext import clean
 
 
 class StringSupport:
@@ -10,21 +10,23 @@ class StringSupport:
             return None
 
     def trimAndLowerCase(self, value: str) -> str:
-        value.strip().lower()
+        print(value)
+        return value.strip().lower()
 
     def normalizeString(self, value: str) -> str:
-        clean(value, normalize_whitespace=True)
+        #clean(value, normalize_whitespace=True)
+        return value
 
     def normalizeTrimAndLowerCaseString(self, value: str) -> str:
-        normalizeString(trimAndLowerCase(value))
+        return self.normalizeString(self.trimAndLowerCase(value))
 
     def normalizeTrimAndLowerCaseStringAndRemoveSpecialCharacters(self, value: str) -> str:
-        normalizeTrimAndLowerCaseString(value)\
+        return self.normalizeTrimAndLowerCaseString(value)\
             .replace("[$&+_~`,:;=.,!?@#|'<>.^*()\\[\\]%!\\-/{}ƜɯƟɵƢƣƻƼƽƾǀǁǂǃǄǅǆǇǈǉǊǋǌǰǱǲǳ]", "")\
             .replace(" +", " ")
 
     def normalizeTrimAndLowerCaseStringAndRemoveNumbers(self, value: str) -> str:
-        normalizeTrimAndLowerCaseString(value).replace("[0123456789]", "")
+        return self.normalizeTrimAndLowerCaseString(value).replace("[0123456789]", "")
 
-    def consolidateWhiteSpacesAndNewLines(self, value:str) -> str:
-        value.strip().replace("[ \\r\\n]+", " ")
+    def consolidateWhiteSpacesAndNewLines(self, value: str) -> str:
+        return value.strip().replace("[ \\r\\n]+", " ")

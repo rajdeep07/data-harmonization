@@ -35,7 +35,7 @@ class Contact(BaseModel):
 class Entity1(BaseModel):
     id: int
     name: Optional[str] = None
-    address: Optional[str] = None
+    addr: Optional[str] = None
     city: Optional[str] = None
     state: Optional[str] = None
     zipcode: Optional[str] = None
@@ -57,6 +57,6 @@ class Entity2(BaseModel):
 class RawEntity(BaseModel):
     id: int
     name: Optional[Name] = None
-    address: Optional[Address] = None
+    addres: Optional[Address] = None
     gender: Optional[Gender] = None
     source: Optional[str] = None

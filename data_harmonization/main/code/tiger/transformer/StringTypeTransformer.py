@@ -1,11 +1,13 @@
 from typing import Optional
-from data_harmonization.main.code.com.tiger.data.transformer.utils import StringSupport
-from data_harmonization.main.code.com.tiger.data.model.datamodel import *
+from data_harmonization.main.code.tiger.transformer.utils.StringSupport import *
+from data_harmonization.main.code.tiger.model.datamodel import *
 
 
 class StringTypeTransformer(StringSupport):
     def __init__(self):
         super().__init__(self)
 
-    def standardizeStringType(self, value: str):
-        value.map(lambda x: x.normalizeTrimAndLowerCaseStringAndRemoveSpecialCharacters)
+    @staticmethod
+    def standardizeStringType(value: str):
+        #value.map(lambda x: x.normalizeTrimAndLowerCaseStringAndRemoveSpecialCharacters)
+        return StringSupport().normalizeTrimAndLowerCaseStringAndRemoveSpecialCharacters(value)

@@ -1,5 +1,5 @@
-from data_harmonization.main.code.com.tiger.data.transformer.utils import StringSupport
-from data_harmonization.main.code.com.tiger.data.model.datamodel import *
+from data_harmonization.main.code.tiger.transformer.utils.StringSupport import *
+from data_harmonization.main.code.tiger.model.datamodel import *
 from typing import Optional
 
 
@@ -9,7 +9,7 @@ class NameTransformer(StringSupport):
         super().__init__(self)
 
     def standardizeName(self, value: Optional[str]):
-        value.map(lambda x: x.normalizeString())\
+        return value.map(lambda x: x.normalizeString())\
             .map(lambda x: x.normalizeTrimAndLowerCaseStringAndRemoveNumbers)\
             .map(lambda x: x.normalizeTrimAndLowerCaseStringAndRemoveSpecialCharacters)\
             .filter(lambda x: x.nonEmpty)

@@ -1,5 +1,5 @@
 from typing import Optional
-from data_harmonization.main.code.com.tiger.data.model import PostalAddress
+from data_harmonization.main.code.tiger.model import PostalAddress
 
 class GeocodedAddress:
     def __init__(self, address, city, state, country, zipCode,
