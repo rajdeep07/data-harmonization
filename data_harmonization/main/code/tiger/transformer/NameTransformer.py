@@ -8,7 +8,8 @@ class NameTransformer(StringSupport):
     def __init__(self):
         super().__init__(self)
 
-    def standardizeName(self, value: Optional[str]):
+    @staticmethod
+    def standardizeName(value: Optional[str]):
         return value.map(lambda x: x.normalizeString())\
             .map(lambda x: x.normalizeTrimAndLowerCaseStringAndRemoveNumbers)\
             .map(lambda x: x.normalizeTrimAndLowerCaseStringAndRemoveSpecialCharacters)\

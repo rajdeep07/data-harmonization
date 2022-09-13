@@ -7,8 +7,7 @@ from data_harmonization.main.code.tiger.transformer.IntegerTypeTransformer impor
 from data_harmonization.main.code.tiger.transformer.StringTypeTransformer import *
 from data_harmonization.main.code.tiger.model import GeocodedAddress, PostalAddress
 #from data_harmonization.main.code.tiger.model.dataclass import RawEntity, CleansedRawEntity
-from data_harmonization.main.code.tiger.model.datamodel import Name, Address, \
-    Entity1, Entity2, RawEntity, Gender, Contact, Email
+from data_harmonization.main.code.tiger.model.datamodel import *
 from dataclasses import dataclass
 from data_harmonization.main.code.tiger.model.datamodel import *
 from typing import Any
@@ -27,18 +26,18 @@ class Sanitizer():
         for attr, dtype in attr_lists.items():
             dtype = dtype.replace("Optional[","").replace("]","")
             self.cls_map[attr] = globals().get(dtype, dtype)
-        #print("cls map  ", self.cls_map)
         raw_kw = {}
         for attr, tpe in self.cls_map.items():
             kw = {}
             if tpe not in ('int', 'str', 'float'):
                 sub_attr_list = list(self._get_attr_list(self.cls_map[attr]))[0]
-                print("sub_attr_list = ", sub_attr_list)
-                for sub_attr in sub_attr_list.keys():
-                    if hasattr(cls, sub_attr):
-                        print("sub attr", sub_attr)
-                        kw[sub_attr] = self.getattribute(cls, sub_attr)
-                raw_kw[attr] = self.cls_map[attr](**kw)
+                if tpe is Address:
+                    raw_kw[attr] = self.getattribute(cls, attr)
+                else:
+                    for sub_attr in sub_attr_list.keys():
+                        if hasattr(cls, sub_attr):
+                            kw[sub_attr] = self.getattribute(cls, sub_attr)
+                    raw_kw[attr] = self.cls_map[attr](**kw)
             else:
                 if hasattr(cls, attr):
                     raw_kw[attr] = self.getattribute(cls, attr)
@@ -82,10 +81,8 @@ class Sanitizer():
             else:
                 kw = {}
                 sub_attr_list = list(self._get_attr_list(self.cls_map[attr]))[0]
-                print("attr_value = ", attr_value)
                 for sub_attr in sub_attr_list.keys():
                     a = self._apply_transformer(attr_value, sub_attr)
-                    #print("a = ", a)
                     kw[sub_attr] = a
                 transformed_ = self.cls_map[attr](**kw)
         elif isinstance(attr_value, int):

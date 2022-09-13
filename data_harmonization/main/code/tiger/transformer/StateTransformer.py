@@ -7,7 +7,8 @@ class StateTransformer(StringSupport):
     def __init__(self):
         super().__init__(self)
 
-    def standardizeState(self, value: str):
+    @staticmethod
+    def standardizeState(value: str):
         value.map(lambda x: x.normalizeTrimAndLowerCaseStringAndRemoveSpecialCharacters)
 
 

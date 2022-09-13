@@ -7,8 +7,10 @@ class CityTransformer(StringSupport):
     def __init__(self):
         super().__init__(self)
 
-    def standardizeCity(self, value: str):
-        value.map(lambda x: x.normalizeTrimAndLowerCaseStringAndRemoveSpecialCharacters)
+    @staticmethod
+    def standardizeCity(value: str):
+        return StringSupport().normalizeTrimAndLowerCaseStringAndRemoveSpecialCharacters(value)
+        # value.map(lambda x: x.normalizeTrimAndLowerCaseStringAndRemoveSpecialCharacters)
 
 
 

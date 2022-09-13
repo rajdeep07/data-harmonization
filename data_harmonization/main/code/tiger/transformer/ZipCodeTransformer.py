@@ -7,9 +7,10 @@ class ZipCodeTransformer(StringSupport):
     def __init__(self):
         super().__init__(self)
 
-
-    def standardizeZipCode(self, value: str):
-        value.map(lambda x: x.normalizeTrimAndLowerCaseStringAndRemoveSpecialCharacters)
+    @staticmethod
+    def standardizeZipCode(value: str):
+        return StringSupport().normalizeTrimAndLowerCaseStringAndRemoveSpecialCharacters(value)
+        # value.map(lambda x: x.normalizeTrimAndLowerCaseStringAndRemoveSpecialCharacters)
 
 
 
