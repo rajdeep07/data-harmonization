@@ -2,10 +2,12 @@ from data_harmonization.main.code.tiger.transformer.utils.StringSupport import S
 from data_harmonization.main.code.tiger.model.datamodel import *
 from data_harmonization.main.code.tiger.model.datamodel import Address
 from data_harmonization.main.code.tiger.transformer.CityTransformer import CityTransformer
-from data_harmonization.main.code.tiger.transformer.StateTransformer import *
+from data_harmonization.main.code.tiger.transformer.StateTransformer import StateTransformer
 from data_harmonization.main.code.tiger.transformer.ZipCodeTransformer import ZipCodeTransformer
-from data_harmonization.main.code.tiger.transformer.IntegerTypeTransformer import IntegerTypeTransformer
-from data_harmonization.main.code.tiger.transformer.StringTypeTransformer import StringTypeTransformer
+from data_harmonization.main.code.tiger.transformer.IntegerTypeTransformer \
+    import IntegerTypeTransformer
+from data_harmonization.main.code.tiger.transformer.StringTypeTransformer \
+    import StringTypeTransformer
 from typing import Optional
 
 
@@ -30,7 +32,7 @@ class PostalAddressTransformer(StringSupport):
                 if isinstance(getattr(value, sub_attr), str):
                     setattr(value, sub_attr, ZipCodeTransformer.standardizeZipCode(
                         getattr(value, sub_attr)))
-                if isinstance(getattr(value, sub_attr), int):
+                elif isinstance(getattr(value, sub_attr), int):
                     setattr(value, sub_attr, int(ZipCodeTransformer.standardizeZipCode(
                         str(getattr(value, sub_attr)))))
             elif stringSupportObj.trimAndLowerCase(sub_attr) == "city":

@@ -1,15 +1,13 @@
-from data_harmonization.main.code.tiger.transformer.CityTransformer import *
-from data_harmonization.main.code.tiger.transformer.NameTransformer import *
-from data_harmonization.main.code.tiger.transformer.PostalAddressTransformer import *
-from data_harmonization.main.code.tiger.transformer.StateTransformer import *
-from data_harmonization.main.code.tiger.transformer.ZipCodeTransformer import *
-from data_harmonization.main.code.tiger.transformer.IntegerTypeTransformer import *
-from data_harmonization.main.code.tiger.transformer.StringTypeTransformer import *
-from data_harmonization.main.code.tiger.model import GeocodedAddress, PostalAddress
+from data_harmonization.main.code.tiger.transformer.NameTransformer import NameTransformer
+from data_harmonization.main.code.tiger.transformer.PostalAddressTransformer \
+    import PostalAddressTransformer
+from data_harmonization.main.code.tiger.transformer.IntegerTypeTransformer \
+    import IntegerTypeTransformer
+from data_harmonization.main.code.tiger.transformer.StringTypeTransformer \
+    import StringTypeTransformer
 #from data_harmonization.main.code.tiger.model.dataclass import RawEntity, CleansedRawEntity
 from data_harmonization.main.code.tiger.model.datamodel import *
 from dataclasses import dataclass
-from data_harmonization.main.code.tiger.model.datamodel import *
 from typing import Any
 
 
@@ -24,7 +22,7 @@ class Sanitizer():
     def get_kwargs(self, cls, attr_lists):
         self.cls_map = {}
         for attr, dtype in attr_lists.items():
-            dtype = dtype.replace("Optional[","").replace("]","")
+            dtype = dtype.replace("Optional[", "").replace("]", "")
             self.cls_map[attr] = globals().get(dtype, dtype)
         raw_kw = {}
         for attr, tpe in self.cls_map.items():
@@ -111,7 +109,7 @@ if __name__ == "__main__":
     addr = Address(
         city="Kolkata!22##*!?@34",
         zipcode=700000,
-        address="Saltlake"
+        address="Saltlake + Sdfg"
     )
     entity1 = Entity1(
         id=12,
@@ -129,8 +127,8 @@ if __name__ == "__main__":
         id=1
         city = "new_city"
         zipcode = 123456
-        addres = addr
+        address = addr
         gender_field= "M"
-        source="XYZ"
+        source="X    YZ      "
     snt = Sanitizer()
     print("final output", snt.toRawEntity(TestClass))

@@ -57,6 +57,6 @@ class Entity2(BaseModel):
 class RawEntity(BaseModel):
     id: int
     name: Optional[Name] = None
-    addres: Optional[Address] = None
+    address: Optional[Address] = None
     gender: Optional[Gender] = None
     source: Optional[str] = None

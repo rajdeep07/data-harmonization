@@ -19,8 +19,8 @@ dependencies:
   - dataclasses
   - python-levenshtein
   - metaphone
-#  - clean-text
   - pip:
     - sphinx-autodoc-annotation
     - datamodel-code-generator
     - pydantic
+    - clean-text[gpl]
