@@ -9,10 +9,10 @@ class CityTransformer(StringSupport):
 
     @staticmethod
     def standardizeCity(value: str):
-        return "".join(list(map(
-            lambda x: StringSupport().normalizeTrimAndLowerCaseStringAndRemoveSpecialCharacters(x),
-            list(value))))
-        #return value.map(lambda x: x.normalizeTrimAndLowerCaseStringAndRemoveSpecialCharacters)
+        return StringSupport().normalizeTrimAndLowerCaseStringAndRemoveSpecialCharacters(value)
+        # return "".join(list(map(
+        #    lambda x: StringSupport().normalizeTrimAndLowerCaseStringAndRemoveSpecialCharacters(x),
+        #    list(value))))
 
 
 
