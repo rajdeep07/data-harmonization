@@ -11,10 +11,10 @@ from data_harmonization.main.code.tiger.model.datamodel import *
 from dataclasses import dataclass
 from data_harmonization.main.code.tiger.model.datamodel import *
 from typing import Any
+import pandas as pd
 
 
 class Sanitizer():
-
     def _get_attr_list(self, obj, should_print=False):
         items = obj.__dict__.items()
         if should_print:
@@ -31,16 +31,11 @@ class Sanitizer():
             kw = {}
             if tpe not in ('int', 'str', 'float'):
                 sub_attr_list = list(self._get_attr_list(self.cls_map[attr]))[0]
-                if tpe is Address:
-                    raw_kw[attr] = self.getattribute(cls, attr)
-                else:
-                    for sub_attr in sub_attr_list.keys():
-                        if hasattr(cls, sub_attr):
-                            kw[sub_attr] = self.getattribute(cls, sub_attr)
-                    raw_kw[attr] = self.cls_map[attr](**kw)
+                for sub_attr in sub_attr_list.keys():
+                    kw[sub_attr] = cls.get(sub_attr)
+                raw_kw[attr] = self.getattribute(tpe(**kw))
             else:
-                if hasattr(cls, attr):
-                    raw_kw[attr] = self.getattribute(cls, attr)
+                raw_kw[attr] = self.getattribute(attr)
         return raw_kw
 
     def toRawEntity(self, cls):
@@ -123,14 +118,13 @@ if __name__ == "__main__":
         source="src",
         gender='F'
     )
-    @dataclass
-    class TestClass:
-        name="Tiger Analytics"
-        id=1
-        city = "new_city"
-        zipcode = 123456
-        addres = addr
-        gender_field= "M"
-        source="XYZ"
+    test = pd.Series(
+        dict(Name="tiger Analytics",
+        cluster_id=1,
+        City = "new_city",
+        Zip = 123456,
+        Address = "231, asdf, asdfgh",
+        gender_field= "M",
+        source="XYZ"))
     snt = Sanitizer()
-    print("final output", snt.toRawEntity(TestClass))
+    print("final output", snt.toRawEntity(test))

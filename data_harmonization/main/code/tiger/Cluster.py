@@ -20,7 +20,7 @@ class Cluster(datamodel, SemiMergedProfile):
     print(rawProfiles.head())
     # Flatten rawProfiles to fields which are only string / int
 
-    rawProfilesWithTokens = rawProfiles.apply(lambda r: Sanitizer().toRawEntity(r))  #.filter(lambda p: p.id.isNotEmpty)
+    rawProfilesWithTokens = rawProfiles.apply(lambda r: Sanitizer().toRawEntity(r), axis=1)  #.filter(lambda p: p.id.isNotEmpty)
 
     # Flatten rawProfiles to fields which are only string / int
 

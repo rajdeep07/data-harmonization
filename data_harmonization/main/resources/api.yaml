@@ -14,15 +14,15 @@ components:
           type: str
     Name:
       properties:
-        name:
+        Name:
           type: str
     Address:
       properties:
-        city:
+        City:
           type: str
-        zipcode:
+        Zip:
           type: str
-        address:
+        Address:
           type: str
     Email:
       properties:
@@ -78,9 +78,9 @@ components:
           type: string
     RawEntity:
       required:
-        - id
+        - cluster_id
       properties:
-        id:
+        cluster_id:
           type: integer
           format: int64
         name:
