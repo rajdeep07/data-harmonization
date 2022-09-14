@@ -60,3 +60,4 @@ class RawEntity(BaseModel):
     address: Optional[Address] = None
     gender: Optional[Gender] = None
     source: Optional[str] = None
+    age: Optional[int] = 0

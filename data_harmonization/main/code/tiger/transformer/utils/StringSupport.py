@@ -23,7 +23,7 @@ class StringSupport:
         return re.sub(
             "[\+]", "",
             re.sub("( \+ )|( \+)", " ",
-                    re.sub("[^a-zA-A0-9 \+]", "", self.normalizeTrimAndLowerCaseString(value))))
+                    re.sub("[ \+]", "", self.normalizeTrimAndLowerCaseString(value))))
 
     def normalizeTrimAndLowerCaseStringAndRemoveNumbers(self, value: str) -> str:
         return self.normalizeTrimAndLowerCaseString(value).replace("[0123456789]", "")

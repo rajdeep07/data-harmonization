@@ -31,9 +31,9 @@ class Sanitizer():
                 sub_attr_list = list(self._get_attr_list(self.cls_map[attr]))[0]
                 for sub_attr in sub_attr_list.keys():
                     kw[sub_attr] = cls.get(sub_attr)
-                raw_kw[attr] = self.getattribute(tpe(**kw))
+                raw_kw[attr] = self._apply_transformer(kw, tpe)
             else:
-                raw_kw[attr] = self.getattribute(attr)
+                raw_kw[attr] = self._apply_transformer(cls.get(attr)) # cls.get(attr)
         return raw_kw
 
     def toRawEntity(self, cls):
@@ -43,10 +43,10 @@ class Sanitizer():
         raw_entity_object = RawEntity(**raw_kw)
         return raw_entity_object
 
-    def _apply_transformer(self, cls, attr):
+    def _apply_transformer(self, attr, cls=None):
         transformed_ = {}
-        attr_value = getattr(cls, attr)
-        if not isinstance(attr_value, int) and not isinstance(attr_value, str):
+        if not isinstance(attr, int) and not isinstance(attr, str) and not isinstance(attr, list):
+            attr_value = cls(**attr)
             if isinstance(attr_value, Name):
                 transformed_ = NameTransformer.standardizeName(attr_value)
             elif isinstance(attr_value, Address):
@@ -73,21 +73,30 @@ class Sanitizer():
                 transformed_ = transformed_list
             else:
                 kw = {}
-                sub_attr_list = list(self._get_attr_list(self.cls_map[attr]))[0]
-                for sub_attr in sub_attr_list.keys():
-                    a = self._apply_transformer(attr_value, sub_attr)
-                    kw[sub_attr] = a
-                transformed_ = self.cls_map[attr](**kw)
-        elif isinstance(attr_value, int):
-            transformed_ = IntegerTypeTransformer.standardizeIntegerType(str(attr_value))
-        elif isinstance(attr_value, str):
-            transformed_ = StringTypeTransformer.standardizeStringType(attr_value)
-        elif attr_value is None:
-            transformed_ = attr_value
+                items = attr_value.__dict__.items()
+                for item, value in items:
+                    if isinstance(value, int):
+                        kw[item] = IntegerTypeTransformer.standardizeIntegerType(str(value))
+                    if isinstance(value, str):
+                        kw[item] = StringTypeTransformer.standardizeStringType(value)
+                    else:
+                        kw[item] = self._apply_transformer(item, attr_value)
+                transformed_ = cls(**kw)
+        elif isinstance(attr, int):
+            transformed_ = IntegerTypeTransformer.standardizeIntegerType(str(attr))
+        elif isinstance(attr, str):
+            transformed_ = StringTypeTransformer.standardizeStringType(attr)
+        elif isinstance(attr, list):
+                transformed_list = []
+                for item in attr:
+                    if isinstance(item, int):
+                        transformed_list.append(IntegerTypeTransformer.standardizeIntegerType(item))
+                    elif isinstance(item, str):
+                        transformed_list.append(StringTypeTransformer.standardizeStringType(item))
+                transformed_ = transformed_list
+        elif attr is None:
+            transformed_ = attr
         return transformed_
-
-    def getattribute(self, cls, attr):
-        return self._apply_transformer(cls, attr)
 
     """@classmethod
     def __getattribute__(cls, attr):
@@ -123,6 +132,7 @@ if __name__ == "__main__":
         Zip = 123456,
         Address = "231, asdf, asdfgh",
         gender_field= "M",
-        source="XYZ"))
+        source="XYZ",
+        age=25))
     snt = Sanitizer()
     print("final output", snt.toRawEntity(test))

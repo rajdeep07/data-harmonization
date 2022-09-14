@@ -33,8 +33,8 @@ class PostalAddressTransformer(StringSupport):
                     setattr(value, sub_attr, ZipCodeTransformer.standardizeZipCode(
                         getattr(value, sub_attr)))
                 elif isinstance(getattr(value, sub_attr), int):
-                    setattr(value, sub_attr, int(ZipCodeTransformer.standardizeZipCode(
-                        str(getattr(value, sub_attr)))))
+                    setattr(value, sub_attr, ZipCodeTransformer.standardizeZipCode(
+                        str(getattr(value, sub_attr))))
             elif stringSupportObj.trimAndLowerCase(sub_attr) == "city":
                 setattr(value, sub_attr, CityTransformer.standardizeCity(
                     getattr(value, sub_attr)))
