@@ -1,21 +1,34 @@
-from data_harmonization.main.code.com.tiger.data.transformer.utils import StringSupport
-from data_harmonization.main.code.com.tiger.data.transformer import CityTransformer, NameTransformer, PostalAddressTransformer, StateTransformer, ZipTransformer
-from data_harmonization.main.code.com.tiger.data.model import GeocodedAddress, PostalAddress, RawProfile, Profile
+from data_harmonization.main.code.tiger.transformer.utils import StringSupport
+from data_harmonization.main.code.tiger.transformer import CityTransformer, NameTransformer, \
+    PostalAddressTransformer, StateTransformer
+from data_harmonization.main.code.tiger.model import GeocodedAddress, PostalAddress, datamodel, SemiMergedProfile
+from data_harmonization.main.code.tiger.Sanitizer import Sanitizer
 import pandas as pd
 import numpy as np
+from os import listdir
+import os
 
+class Cluster(datamodel, SemiMergedProfile):
 
-class Cluster(Profile, RawProfile):
+    filenames = listdir(os.getcwd() + "/data_harmonization/main/data/")
+    csv_filenames = [filename for filename in filenames if filename.endswith(".csv")]
+    print(csv_filenames)
+    rawProfiles = pd.DataFrame() # correct data structure here ?
+    for csv_file in csv_filenames:
+        rawProfiles = rawProfiles.append(pd.read_csv(os.getcwd() + f"/data_harmonization/main/data/{csv_file}"))
 
-    rawProfiles = pd.read_csv("~/data_harmonization/main/data/sample.csv")
+    print(rawProfiles.head())
+    # Flatten rawProfiles to fields which are only string / int
 
-    rawProfilesWithTokens = rawProfiles.map(lambda r: {Profile(r.id, standardizeName(RawProfile.name), standardizeCity(RawProfile.city),
-                                                              standardizePostalAddress(RawProfile.address), standardizeState(RawProfile.state),
-                                                              standardizeZipCode(RawProfile.zipcode))}).filter(lambda p: p.id.isNotEmpty)
+    rawProfilesWithTokens = rawProfiles.apply(lambda r: Sanitizer().toRawEntity(r))  #.filter(lambda p: p.id.isNotEmpty)
+
+    # Flatten rawProfiles to fields which are only string / int
+
+    print(rawProfilesWithTokens)
 
     def createShingles(self, input: Optional[str]) -> Optional[Seq[str]]:
         def shingles(x:str) -> Seq[str]:
-            i = x.lower # TODO: remove extra unnecessary charachters when creating shingles
+            i = x.lower # TODO: remove extra unnecessary characters when creating shingles
             if i.length > 5:
                 Range(0, i.length - 5 + 1).map(lambda j: i[j:j+5])
             else:
