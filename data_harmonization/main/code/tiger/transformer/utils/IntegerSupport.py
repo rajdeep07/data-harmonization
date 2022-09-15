@@ -1,5 +1,5 @@
 from typing import Optional
-#from cleantext import clean
+import re
 
 
 class IntegerSupport:
@@ -10,8 +10,7 @@ class IntegerSupport:
             return None
 
     def trim(self, value: str) -> int:
-        return value.strip().toInt()
+        return int(value.strip())
 
     def normalizeTrimAndRemoveString(self, value: str) -> int:
-        return self.trim(value).replace("[a-zA-Z]", "").toInt()
-
+        return int(re.sub("[^0-9]", "", str(self.trim(value))))

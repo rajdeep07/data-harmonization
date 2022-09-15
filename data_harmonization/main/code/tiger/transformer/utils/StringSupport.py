@@ -1,5 +1,6 @@
 from typing import Optional
-#from cleantext import clean
+from cleantext import clean
+import re
 
 
 class StringSupport:
@@ -10,25 +11,19 @@ class StringSupport:
             return None
 
     def trimAndLowerCase(self, value: str) -> str:
-        print(value)
         return value.strip().lower()
 
     def normalizeString(self, value: str) -> str:
-        #clean(value, normalize_whitespace=True)
-        return value
+        return clean(value, normalize_whitespace=True)
 
     def normalizeTrimAndLowerCaseString(self, value: str) -> str:
         return self.normalizeString(self.trimAndLowerCase(value))
 
     def normalizeTrimAndLowerCaseStringAndRemoveSpecialCharacters(self, value: str) -> str:
-        a = self.normalizeTrimAndLowerCaseString(value)\
-        #    .replace("[$&+_~`,:;=.,!?@#|'<>.^*()\\[\\]%!\\-/{}ƜɯƟɵƢƣƻƼƽƾǀǁǂǃǄǅǆǇǈǉǊǋǌǰǱǲǳ]", "")\
-        #    .replace(" +", " ")
-
-        if a in "[$&+_~`,:;=.,!?@#|'<>.^*()\\[\\]%!\\-/{}ƜɯƟɵƢƣƻƼƽƾǀǁǂǃǄǅǆǇǈǉǊǋǌǰǱǲǳ+ ]":
-            return ""
-        else:
-            return a
+        return re.sub(
+            "[\+]", "",
+            re.sub("( \+ )|( \+)", " ",
+                    re.sub("[ \+]", "", self.normalizeTrimAndLowerCaseString(value))))
 
     def normalizeTrimAndLowerCaseStringAndRemoveNumbers(self, value: str) -> str:
         return self.normalizeTrimAndLowerCaseString(value).replace("[0123456789]", "")
