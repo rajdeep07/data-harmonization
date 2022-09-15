@@ -32,6 +32,7 @@ class Cluster():
 
     def createflattenRawprofile(self) -> dict:
         flattenRawprofile = {}
+        id = 0
         for raw_ent in self.rawProfilesWithTokens:
             semiflattenRawprofile = {}
             # raw_ent.__dict__.items()
@@ -44,7 +45,8 @@ class Cluster():
                 else:
                     semiflattenRawprofile[k] = v
             # flattenRawprofile[raw_ent["cluster_id"]] = {k1:v1 for k, v in semiflattenRawprofile.items() if not isinstance(v, (int, str, float) and v) for k1, v1 in v.__dict__.items()}
-            flattenRawprofile[raw_dict.get("cluster_id", "")] = semiflattenRawprofile
+            flattenRawprofile[str(id)] = semiflattenRawprofile
+            id = id+1
         return flattenRawprofile
 
     def filter_flat_map(self, f, arg:str):
@@ -58,7 +60,7 @@ class Cluster():
                 return list(map(lambda j: i[j:j+5], range(0, len(i) - 5 + 1)))
             else:
                 return list(i)
-            
+
 
         # mapped_str = list(map(lambda i: i.split("[-\\s,]"), input))
         # flattend_str = "".join(filter(lambda s: s != "", mapped_str))
@@ -109,12 +111,13 @@ class Cluster():
                     hash_bands[i][band_hashes[i]].append(docMember)
             docNum += 1
 
-        similar_docs = set()
+        similar_docs = []
         for i in hash_bands:
             for hash_num in hash_bands[i]:
                 if len(hash_bands[i][hash_num]) > 1:
                     for pair in itertools.combinations(hash_bands[i][hash_num], r=2):
-                        similar_docs.add(pair)
+                        # print(pair)
+                        similar_docs.append(pair)
 
         return similar_docs
 
@@ -127,7 +130,7 @@ if __name__ == '__main__':
     max_doc_length = 40
     n_similar_docs = 10
     random.seed(42)
-    
+
     # docs = generate_random_docs(n_docs, max_doc_length, n_similar_docs)
     clus = Cluster()
     docs = clus.createflattenRawprofile()
@@ -140,7 +143,7 @@ if __name__ == '__main__':
     print("similarity: %f" % similarity)
     print("# Similar Pairs: %d" % len(similar_docs))
 
-    if len(similar_docs) == n_similar_docs: 
+    if len(similar_docs) == n_similar_docs:
         print("Test Passed: All similar pairs found.")
     else:
         print("Test Failed.")
