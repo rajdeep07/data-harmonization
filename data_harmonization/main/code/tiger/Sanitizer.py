@@ -45,7 +45,21 @@ class Sanitizer():
 
     def _apply_transformer(self, attr, cls=None):
         transformed_ = {}
-        if not isinstance(attr, int) and not isinstance(attr, str) and not isinstance(attr, list):
+        if isinstance(attr, int):
+            transformed_ = IntegerTypeTransformer.standardizeIntegerType(str(attr))
+        elif isinstance(attr, str):
+            transformed_ = StringTypeTransformer.standardizeStringType(attr)
+        elif isinstance(attr, list):
+                transformed_list = []
+                for item in attr:
+                    if isinstance(item, int):
+                        transformed_list.append(IntegerTypeTransformer.standardizeIntegerType(item))
+                    elif isinstance(item, str):
+                        transformed_list.append(StringTypeTransformer.standardizeStringType(item))
+                transformed_ = transformed_list
+        elif attr is None:
+            transformed_ = attr
+        else:
             attr_value = cls(**attr)
             if isinstance(attr_value, Name):
                 transformed_ = NameTransformer.standardizeName(attr_value)
@@ -82,20 +96,6 @@ class Sanitizer():
                     else:
                         kw[item] = self._apply_transformer(item, attr_value)
                 transformed_ = cls(**kw)
-        elif isinstance(attr, int):
-            transformed_ = IntegerTypeTransformer.standardizeIntegerType(str(attr))
-        elif isinstance(attr, str):
-            transformed_ = StringTypeTransformer.standardizeStringType(attr)
-        elif isinstance(attr, list):
-                transformed_list = []
-                for item in attr:
-                    if isinstance(item, int):
-                        transformed_list.append(IntegerTypeTransformer.standardizeIntegerType(item))
-                    elif isinstance(item, str):
-                        transformed_list.append(StringTypeTransformer.standardizeStringType(item))
-                transformed_ = transformed_list
-        elif attr is None:
-            transformed_ = attr
         return transformed_
 
     """@classmethod
@@ -109,7 +109,7 @@ class Sanitizer():
         for attr, val in __getattribute__().items():
             setattr(self, CleansedRawEntity, attr, val)"""
 
-if __name__ == "__main__":
+"""if __name__ == "__main__":
     addr = Address(
         city="Kolkata!22##*!?@34",
         zipcode=700000,
@@ -135,4 +135,4 @@ if __name__ == "__main__":
         source="XYZ",
         age=25))
     snt = Sanitizer()
-    print("final output", snt.toRawEntity(test))
+    print("final output", snt.toRawEntity(test))"""
