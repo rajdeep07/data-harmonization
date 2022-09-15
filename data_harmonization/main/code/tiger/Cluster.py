@@ -136,6 +136,27 @@ if __name__ == '__main__':
     docs = clus.createflattenRawprofile()
     similar_docs = Cluster().get_similar_docs(docs, n_hashes, band_size, shingle_size, collectIndexes=False)
     print(similar_docs)
+    df_dict = {}
+    pair1 = []
+    pair2 = []
+    for pair1, pair2 in similar_docs:
+        for k, v in pair1.items():
+            key_var = f"{k}"+"_pair1"
+            if not df_dict.get(key_var, None):
+                df_dict[key_var] = []
+                df_dict[key_var].append(v) 
+            else:
+                df_dict[key_var].append(v) 
+
+        for k, v in pair2.items():
+            key_var = f"{k}"+"_pair2"
+            if not df_dict.get(key_var, None):
+                df_dict[key_var] = [] 
+                df_dict[key_var].append(v) 
+            else:
+                df_dict[key_var].append(v)
+    df = pd.DataFrame(df_dict)
+    df.to_csv(os.getcwd()+"/similiar.csv")
 
     r = float(n_hashes/band_size)
     similarity = (1/r)**(1/float(band_size))
