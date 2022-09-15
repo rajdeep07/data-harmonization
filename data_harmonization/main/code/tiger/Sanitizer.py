@@ -109,7 +109,7 @@ class Sanitizer():
         for attr, val in __getattribute__().items():
             setattr(self, CleansedRawEntity, attr, val)"""
 
-"""if __name__ == "__main__":
+if __name__ == "__main__":
     addr = Address(
         city="Kolkata!22##*!?@34",
         zipcode=700000,
@@ -135,4 +135,4 @@ class Sanitizer():
         source="XYZ",
         age=25))
     snt = Sanitizer()
-    print("final output", snt.toRawEntity(test))"""
+    print("final output", snt.toRawEntity(test))
