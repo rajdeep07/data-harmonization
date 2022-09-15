@@ -1,8 +1,15 @@
-from tkinter.messagebox import NO
+from optparse import Option
+import re
+from socket import create_server
+from sre_constants import RANGE
+from typing import Any, Optional, Sequence
 from data_harmonization.main.code.tiger.transformer.utils import StringSupport
 from data_harmonization.main.code.tiger.transformer import CityTransformer, NameTransformer, \
     PostalAddressTransformer, StateTransformer
-from data_harmonization.main.code.tiger.model import GeocodedAddress, PostalAddress, datamodel, SemiMergedProfile, RawProfile
+from data_harmonization.main.code.tiger.model.GeocodedAddress import GeocodedAddress
+from data_harmonization.main.code.tiger.model.PostalAddress import PostalAddress
+from data_harmonization.main.code.tiger.model.SemiMergedProfile import SemiMergedProfile
+from data_harmonization.main.code.tiger.model.datamodel import *
 from data_harmonization.main.code.tiger.Sanitizer import Sanitizer
 import pandas as pd
 import numpy as np
@@ -52,23 +59,53 @@ class Cluster():
         flatten_str = "".join(filter(lambda s:s!="", arg))
         return f(flatten_str)
 
+    def flatten_list(self, l):
+        return [item for sublist in l for item in sublist]
+
     # Step 1 : Create shingles
-    def createShingles(self, input: Optional[str]) -> Optional[list[str]]:
+    """def createShingles(self, input: Optional[str]) -> Optional[list[str]]:
         def shingles(x:str) -> list[str]:
             i = x.lower() # TODO: remove extra unnecessary characters when creating shingles
             if len(i) > 5:
-                return list(map(lambda j: i[j:j+5], range(0, len(i) - 5 + 1)))
+                a = list(map(lambda j: i[j:j+5], range(0, len(i) - 5 + 1)))
+                # return list(map(lambda j: i[j:j+5], range(0, len(i) - 5 + 1)))
+                return a
             else:
                 return list(i)
 
 
         # mapped_str = list(map(lambda i: i.split("[-\\s,]"), input))
         # flattend_str = "".join(filter(lambda s: s != "", mapped_str))
-        return self.filter_flat_map(shingles, input)
+        return self.filter_flat_map(shingles, input)"""
+
+    def createShingles(self, input: Optional[str], shingle_size) -> Optional[list[str]]:
+        def createShinglelist(x:str) -> list[str]:
+            shingle_list = []
+            i = x.lower() # TODO: remove extra unnecessary characters when creating shingles
+            if len(i) > shingle_size:
+                for j in range(0, len(i) - shingle_size + 1):
+                    shingle_list.append(i[j:j+shingle_size])
+            else:
+                shingle_list.append(i)
+            return shingle_list
+        shingles = self.flatten_list(
+            list(map(createShinglelist, list(filter(
+                self.isNotEmpty, re.split("[-\s\\\\,]s*", input))))))
+        return shingles
+
+    def isNotEmpty(self, input: Optional[Any]=None) -> bool:
+        if input is None:
+            return False
+        elif isinstance(input, str):
+            return bool(input.strip())
 
     # Step 2: Tokenization
     def createTokens(self, profile: dict, shingle_size: int) -> str:
-        output = self.createShingles(profile.get('Name', "")) + self.createShingles(profile.get('City'," ")) + self.createShingles(profile.get('Address', " ")) #+ self.createShingles(profile.get('source'," "))
+        # output = self.createShingles(profile.get('Name', "")) + self.createShingles(profile.get('City'," ")) + self.createShingles(profile.get('Address', " ")) #+ self.createShingles(profile.get('source'," "))
+        output = []
+        for v in profile.values():
+            if isinstance(v, str):
+                output.extend(self.createShingles(v, shingle_size))
         # return output.flatten.filter(lambda x: (x is not None) and x.isNotEmpty)
         return output
 
@@ -148,15 +185,15 @@ if __name__ == '__main__':
             key_var = f"{k}"+"_pair1"
             if not df_dict.get(key_var, None):
                 df_dict[key_var] = []
-                df_dict[key_var].append(v) 
+                df_dict[key_var].append(v)
             else:
-                df_dict[key_var].append(v) 
+                df_dict[key_var].append(v)
 
         for k, v in pair2.items():
             key_var = f"{k}"+"_pair2"
             if not df_dict.get(key_var, None):
-                df_dict[key_var] = [] 
-                df_dict[key_var].append(v) 
+                df_dict[key_var] = []
+                df_dict[key_var].append(v)
             else:
                 df_dict[key_var].append(v)
     df = pd.DataFrame(df_dict)

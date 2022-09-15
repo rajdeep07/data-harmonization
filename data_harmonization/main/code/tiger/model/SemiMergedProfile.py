@@ -5,6 +5,6 @@ from typing import Optional
 class SemiMergedProfile:
     leftId: Optional[str]
     rightId: Optional[str]
-    label: Optional[float]
-    indexedLabel: Optional[float]
-    confidence: Optional[float]
+    label: Optional[float] #merged or not
+    indexedLabel: Optional[float] #same
+    confidence: Optional[float] # Probability of same value
