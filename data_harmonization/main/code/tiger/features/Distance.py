@@ -1,3 +1,4 @@
+import math
 from metaphone import doublemetaphone
 import Levenshtein
 import jaro
@@ -6,16 +7,16 @@ import jaro
 class Distance:
 
     def isEmpty(self, x: str):
-        return x == Null or x.isEmpty()
+        return x == None or len(x) == 0
 
-    def getLevenshteinDistance(self, value1: str, value2: str) -> Double:
-        if isEmpty(value1) or isEmpty(value2):
+    def getLevenshteinDistance(self, value1: str, value2: str) -> float:
+        if self.isEmpty(value1) or self.isEmpty(value2):
             return 1.0
         else:
             return Levenshtein.distance(value1, value2)
 
-    def getJaroWinklerDistance(self, value1: str, value2: str) -> Double:
-        if isEmpty(value1) or isEmpty(value2):
+    def getJaroWinklerDistance(self, value1: str, value2: str) -> float:
+        if self.isEmpty(value1) or self.isEmpty(value2):
             return 1.0
         else:
             return jaro.jaro_winkler_distance(value1, value2)
