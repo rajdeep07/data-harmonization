@@ -33,7 +33,7 @@ class Cluster():
     # Flatten rawProfiles to fields which are only string / int
 
     # Cleansing of the data set
-    rawProfilesWithTokens = rawProfiles.iloc[:200,:].apply(lambda r: Sanitizer().toRawEntity(r), axis=1)  #.filter(lambda p: p.id.isNotEmpty)
+    rawProfilesWithTokens = rawProfiles.apply(lambda r: Sanitizer().toRawEntity(r), axis=1)  #.filter(lambda p: p.id.isNotEmpty)
 
     # Flatten rawProfiles to fields which are only string / int
     def createflattenRawprofile(self) -> dict:

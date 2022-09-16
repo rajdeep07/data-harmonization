@@ -19,7 +19,7 @@ class Distance:
         if self.isEmpty(value1) or self.isEmpty(value2):
             return 1.0
         else:
-            return jaro.jaro_winkler_distance(value1, value2)
+            return jaro.jaro_winkler_metric(value1, value2)
 
     def getHammingDistance(self, value1: str, value2: str):
         return sum(c1 != c2 for c1, c2 in zip(value1, value2))
@@ -36,3 +36,9 @@ class Distance:
             return 0.0
         else:
             return float(numerator) / denominator
+
+        # if not denominator:
+        #     return 0.0
+        # else:
+        #     return float(numerator) / denominator
+        return 1
