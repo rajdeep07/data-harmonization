@@ -55,12 +55,19 @@ class Cluster():
             id = id+1
         return flattenRawprofile
 
-    def filter_flat_map(self, f, arg:str):
+    """def filter_flat_map(self, f, arg:str):
         flatten_str = "".join(filter(lambda s:s!="", arg))
-        return f(flatten_str)
+        return f(flatten_str)"""
 
-    def flatten_list(self, l):
-        return [item for sublist in l for item in sublist]
+    def flatten_list(self, l:list) -> list:
+        return [item if isinstance(sublist, list) else sublist for sublist in l for item in sublist]
+        # return [item for sublist in l if isinstance(sublist, list) for item in sublist else sublist]
+    
+    def isNotEmpty(self, input: Optional[Any]=None) -> bool:
+        if input is None:
+            return False
+        elif isinstance(input, str):
+            return bool(input.strip())
 
     # Step 1 : Create shingles
     """def createShingles(self, input: Optional[str]) -> Optional[list[str]]:
@@ -79,25 +86,16 @@ class Cluster():
         return self.filter_flat_map(shingles, input)"""
 
     def createShingles(self, input: Optional[str], shingle_size) -> Optional[list[str]]:
-        def createShinglelist(x:str) -> list[str]:
-            shingle_list = []
+        def shingles(x:str) -> list[str]:
             i = x.lower() # TODO: remove extra unnecessary characters when creating shingles
             if len(i) > shingle_size:
-                for j in range(0, len(i) - shingle_size + 1):
-                    shingle_list.append(i[j:j+shingle_size])
+                return list(map(lambda j: i[j:j+shingle_size], range(0, len(i) - shingle_size + 1)))
             else:
-                shingle_list.append(i)
-            return shingle_list
-        shingles = self.flatten_list(
-            list(map(createShinglelist, list(filter(
-                self.isNotEmpty, re.split("[-\s\\\\,]s*", input))))))
-        return shingles
+                return i
 
-    def isNotEmpty(self, input: Optional[Any]=None) -> bool:
-        if input is None:
-            return False
-        elif isinstance(input, str):
-            return bool(input.strip())
+        return self.flatten_list(
+            list(map(shingles, list(filter(
+                self.isNotEmpty, re.split("[-\s\\\\,]s*", input))))))
 
     # Step 2: Tokenization
     def createTokens(self, profile: dict, shingle_size: int) -> str:
@@ -110,7 +108,7 @@ class Cluster():
         return output
 
     # Step 3: Hash
-    def get_minhash(self, tot_shingle, n_hashes, random_strings):
+    def get_minhash(self, tot_shingle, n_hashes, random_strings) -> list:
         minhash_row = []
         for i in range(n_hashes):
             minhash = sys.maxsize
@@ -160,6 +158,8 @@ class Cluster():
                         # print(pair)
                         similar_docs.append(pair)
 
+                        
+
         return similar_docs
 
 if __name__ == '__main__':
@@ -176,7 +176,7 @@ if __name__ == '__main__':
     clus = Cluster()
     docs = clus.createflattenRawprofile()
     similar_docs = Cluster().get_similar_docs(docs, n_hashes, band_size, shingle_size, collectIndexes=False)
-    print(similar_docs)
+    # print(similar_docs)
     df_dict = {}
     pair1 = []
     pair2 = []
@@ -197,6 +197,7 @@ if __name__ == '__main__':
             else:
                 df_dict[key_var].append(v)
     df = pd.DataFrame(df_dict)
+    df.drop_duplicates(inplace=True)
     df.to_csv(os.getcwd()+"/similiar.csv")
 
     r = float(n_hashes/band_size)
