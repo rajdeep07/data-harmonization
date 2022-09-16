@@ -89,12 +89,15 @@ class Sanitizer():
                 kw = {}
                 items = attr_value.__dict__.items()
                 for item, value in items:
-                    if isinstance(value, int):
-                        kw[item] = IntegerTypeTransformer.standardizeIntegerType(str(value))
-                    if isinstance(value, str):
-                        kw[item] = StringTypeTransformer.standardizeStringType(value)
+                    if value:
+                        if isinstance(value, int):
+                            kw[item] = IntegerTypeTransformer.standardizeIntegerType(str(value))
+                        if isinstance(value, str):
+                            kw[item] = StringTypeTransformer.standardizeStringType(value)
+                        else:
+                            kw[item] = self._apply_transformer(item, attr_value)
                     else:
-                        kw[item] = self._apply_transformer(item, attr_value)
+                        kw[item] = value
                 transformed_ = cls(**kw)
         return transformed_
 

@@ -1,33 +1,55 @@
+import re
+from typing import Tuple
 from data_harmonization.main.code.tiger.features.Distance import Distance
 import numpy as np
 
-class Features(RawEntity):
+from data_harmonization.main.code.tiger.model.datamodel import RawEntity
+
+class Features():
 
     def isEmpty(self, x: str):
-        if (x == Null) or (len(x) == 0):
+        if (x == None) or (len(x) == 0):
             return True
         else:
             return False
 
     def removeWhiteSpaces(self, x:str):
-        cleansed_list =  x.split("[-\\s]").filter(lambda s : not s.isEmpty())
+        cleansed_list =  filter(lambda s : not self.isEmpty(s), re.split("[-\\s]", x))
         return "".join(cleansed_list)
 
-    def engineerFeatures(self, name1: str, name2: str):
-        if name1.isEmpty() or name2.isEmpty():
+    def cleanEntity(self, name:str):
+        pass
+
+    def engineerFeatures(self, entity1: str, entity2: str):
+        if self.isEmpty(entity1) or self.isEmpty(entity2):
             return [1] * 4
         else:
-            list(Distance.getLevenshteinDistance(removeWhiteSpaces(name1), removeWhiteSpaces(name2)),
-            Distance.getCosineDistance(removeWhiteSpaces(name1), removeWhiteSpaces(name2)),
-            Distance.getHammingDistance(removeWhiteSpaces(name1), removeWhiteSpaces(name2)),
-            Distance.getJaroWinklerDistance(removeWhiteSpaces(name1), removeWhiteSpaces(name2)))
+            distance_obj = Distance()
+            return [distance_obj.getLevenshteinDistance(self.removeWhiteSpaces(entity1), self.removeWhiteSpaces(entity2)),
+            distance_obj.getCosineDistance(self.removeWhiteSpaces(entity1), self.removeWhiteSpaces(entity2)),
+            distance_obj.getHammingDistance(self.removeWhiteSpaces(entity1), self.removeWhiteSpaces(entity2)),
+            distance_obj.getJaroWinklerDistance(self.removeWhiteSpaces(entity1), self.removeWhiteSpaces(entity2))]
 
     # TODO: add capability to trim + lower case before applying these transformations
 
-    def get(self, pairs: (RawEntity, RawEntity)) -> np.array:
+    def get(self, pairs: Tuple[dict, dict]) -> np.array:
 
         # TODO: name Features
-        nFeatures = engineerFeatures(pairs[0].name, pairs[1].name) + engineerFeatures(pairs[0].address, pairs[1].address)
-        + engineerFeatures(pairs[0].gender, pairs[1].gender)
+        n_Features = np.array([])
+        for pair_dict in pairs:
+            for key, value in pair_dict.items():
+                if isinstance(value, str):
+                    n_Features = np.append(n_Features, np.array(self.engineerFeatures(pairs[0][key], pairs[1][key])), axis=0)
 
-        return nFeatures
+        return n_Features
+
+
+if __name__ == "__main__":
+    pairs = ({
+        'cluster_id': 38364, 'Name': 'presco', 'City': 'riverview', 'Zip': '335796903',
+        'Address': '12502balmriverviewrd', 'gender_field': None, 'source': 'flna', 'age': None}, 
+        {'cluster_id': 38369, 'Name': 'riverview sunoco (ib', 'City': 'riverview', 'Zip': '335796702', 
+        'Address': '12302balmriverviewrd', 'gender_field': None, 'source': 'flna', 'age': None
+        }) 
+    ft = Features().get(pairs=pairs)
+    print(ft)
