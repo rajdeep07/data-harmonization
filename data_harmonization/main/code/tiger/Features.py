@@ -5,7 +5,7 @@ import numpy as np
 
 from data_harmonization.main.code.tiger.model.datamodel import RawEntity
 
-class Features(RawEntity):
+class Features():
 
     def isEmpty(self, x: str):
         if (x == None) or (len(x) == 0):
