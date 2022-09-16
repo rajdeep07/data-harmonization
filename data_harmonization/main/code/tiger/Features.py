@@ -20,15 +20,15 @@ class Features():
     def cleanEntity(self, name:str):
         pass
 
-    def engineerFeatures(self, name1: str, name2: str):
-        if self.isEmpty(name1) or self.isEmpty(name2):
+    def engineerFeatures(self, entity1: str, entity2: str):
+        if self.isEmpty(entity1) or self.isEmpty(entity2):
             return [1] * 4
         else:
             distance_obj = Distance()
-            return list(distance_obj.getLevenshteinDistance(self.removeWhiteSpaces(name1), self.removeWhiteSpaces(name2)),
-            distance_obj.getCosineDistance(self.removeWhiteSpaces(name1), self.removeWhiteSpaces(name2)),
-            distance_obj.getHammingDistance(self.removeWhiteSpaces(name1), self.removeWhiteSpaces(name2)),
-            distance_obj.getJaroWinklerDistance(self.removeWhiteSpaces(name1), self.removeWhiteSpaces(name2)))
+            return [distance_obj.getLevenshteinDistance(self.removeWhiteSpaces(entity1), self.removeWhiteSpaces(entity2)),
+            distance_obj.getCosineDistance(self.removeWhiteSpaces(entity1), self.removeWhiteSpaces(entity2)),
+            distance_obj.getHammingDistance(self.removeWhiteSpaces(entity1), self.removeWhiteSpaces(entity2)),
+            distance_obj.getJaroWinklerDistance(self.removeWhiteSpaces(entity1), self.removeWhiteSpaces(entity2))]
 
     # TODO: add capability to trim + lower case before applying these transformations
 
