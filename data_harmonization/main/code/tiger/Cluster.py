@@ -178,8 +178,6 @@ if __name__ == '__main__':
     similar_docs = Cluster().get_similar_docs(docs, n_hashes, band_size, shingle_size, collectIndexes=False)
     # print(similar_docs)
     df_dict = {}
-    pair1 = []
-    pair2 = []
     for pair1, pair2 in similar_docs:
         for k, v in pair1.items():
             key_var = f"{k}"+"_pair1"
