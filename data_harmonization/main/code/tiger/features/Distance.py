@@ -5,29 +5,25 @@ import jaro
 
 class Distance:
 
-    def __init__(self, value1, value2):
-        self.value1 = value1
-        self.value2 = value2
-
     def isEmpty(self, x: str):
         return x == Null or x.isEmpty()
 
-    def getLevenshteinDistance(self) -> Double:
+    def getLevenshteinDistance(self, value1: str, value2: str) -> Double:
         if isEmpty(value1) or isEmpty(value2):
             return 1.0
         else:
             return Levenshtein.distance(value1, value2)
 
-    def getJaroWinklerDistance(self) -> Double:
+    def getJaroWinklerDistance(self, value1: str, value2: str) -> Double:
         if isEmpty(value1) or isEmpty(value2):
             return 1.0
         else:
             return jaro.jaro_winkler_distance(value1, value2)
 
-    def getHammingDistance(self):
+    def getHammingDistance(self, value1: str, value2: str):
         return sum(c1 != c2 for c1, c2 in zip(value1, value2))
 
-    def getCosineDistance(self):
+    def getCosineDistance(self, value1: str, value2: str):
         intersection = set(value1.keys()) & set(value2.keys())
         numerator = sum([value1[x] * value2[x] for x in intersection])
 

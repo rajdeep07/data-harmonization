@@ -15,6 +15,7 @@ import itertools
 
 class Cluster():
 
+    # TODO: create wrapper for reading datasets
     filenames = listdir(os.getcwd() + "/data_harmonization/main/data/")
     csv_filenames = [filename for filename in filenames if filename.endswith(".csv")]
     rawProfiles = pd.DataFrame() # correct data structure here ?
@@ -24,12 +25,10 @@ class Cluster():
     # print(rawProfiles.head())
     # Flatten rawProfiles to fields which are only string / int
 
+    # Cleansing of the data set
     rawProfilesWithTokens = rawProfiles.iloc[:200,:].apply(lambda r: Sanitizer().toRawEntity(r), axis=1)  #.filter(lambda p: p.id.isNotEmpty)
 
     # Flatten rawProfiles to fields which are only string / int
-
-    # print(rawProfilesWithTokens.head(), rawProfilesWithTokens.iloc[:])
-
     def createflattenRawprofile(self) -> dict:
         flattenRawprofile = {}
         id = 0
@@ -53,6 +52,7 @@ class Cluster():
         flatten_str = "".join(filter(lambda s:s!="", arg))
         return f(flatten_str)
 
+    # Step 1 : Create shingles
     def createShingles(self, input: Optional[str]) -> Optional[list[str]]:
         def shingles(x:str) -> list[str]:
             i = x.lower() # TODO: remove extra unnecessary characters when creating shingles
@@ -66,11 +66,13 @@ class Cluster():
         # flattend_str = "".join(filter(lambda s: s != "", mapped_str))
         return self.filter_flat_map(shingles, input)
 
+    # Step 2: Tokenization
     def createTokens(self, profile: dict, shingle_size: int) -> str:
-        output = self.createShingles(profile.get('Name', "")) #+ self.createShingles(profile.get('Address'," ")) + self.createShingles(profile.get('City', " ")) + self.createShingles(profile.get('source'," "))
+        output = self.createShingles(profile.get('Name', "")) + self.createShingles(profile.get('City'," ")) + self.createShingles(profile.get('Address', " ")) #+ self.createShingles(profile.get('source'," "))
         # return output.flatten.filter(lambda x: (x is not None) and x.isNotEmpty)
         return output
 
+    # Step 3: Hash
     def get_minhash(self, tot_shingle, n_hashes, random_strings):
         minhash_row = []
         for i in range(n_hashes):
@@ -82,6 +84,7 @@ class Cluster():
             minhash_row.append(minhash)
         return minhash_row
 
+    # LSH ==> MinLSH [More reading]
     def get_band_hashes(self, minhash_row, band_size) -> list:
         band_hashes = []
         for i in range(len(minhash_row)):
@@ -92,7 +95,8 @@ class Cluster():
             band_hash += hash(minhash_row[i])
         return band_hashes
 
-    def get_similar_docs(self, docs : dict, n_hashes : int =400, band_size : int = 7, shingle_size : int = 3, collectIndexes : bool =True):
+    # Similar documents : LSH
+    def get_similar_docs(self, docs : dict, n_hashes : int =4000, band_size : int = 5, shingle_size : int = 5, collectIndexes : bool =True):
         hash_bands = {}
         random_strings = [str(random.random()) for _ in range(n_hashes)]
         docNum = 0
@@ -124,10 +128,10 @@ class Cluster():
 if __name__ == '__main__':
 
     n_hashes = 200
-    band_size = 7
-    shingle_size = 3
+    band_size = 5
+    shingle_size = 5
     n_docs = 1000
-    max_doc_length = 40
+    max_doc_length = 400
     n_similar_docs = 10
     random.seed(42)
 
