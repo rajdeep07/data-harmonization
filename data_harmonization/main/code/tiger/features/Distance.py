@@ -4,7 +4,12 @@ import Levenshtein
 import jaro
 import re
 from collections import Counter
-class Distance:
+
+
+class Distance():
+
+    def __init__(self):
+        pass
 
     def isEmpty(self, x: str):
         return x == None or len(x) == 0
@@ -44,6 +49,7 @@ class Distance:
         return 1
 
     def getCosineDistance(self, text1:str, text2:str):
+        # TODO: use lowercase variables
         WORD = re.compile(r"\w+")
         word1 = Counter(WORD.findall(text1))
         word2 = Counter(WORD.findall(text2))
