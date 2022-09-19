@@ -35,10 +35,10 @@ class Cluster():
     rawProfilesWithTokens = rawProfiles.apply(lambda r: Sanitizer().toRawEntity(r), axis=1)  #.filter(lambda p: p.id.isNotEmpty)
 
     # Flatten rawProfiles to fields which are only string / int
-    def createflattenRawprofile(self) -> dict:
+    def createflattenRawprofile(self, n_docs) -> dict:
         flattenRawprofile = {}
         id = 0
-        for raw_ent in self.rawProfilesWithTokens:
+        for raw_ent in self.rawProfilesWithTokens.sample(n_docs):
             semiflattenRawprofile = {}
             # raw_ent.__dict__.items()
             raw_dict = raw_ent.__dict__
@@ -90,7 +90,7 @@ class Cluster():
             if len(i) > shingle_size:
                 return list(map(lambda j: i[j:j+shingle_size], range(0, len(i) - shingle_size + 1)))
             else:
-                return i
+                return [i]
 
         return self.flatten_list(
             list(map(shingles, list(filter(
@@ -130,7 +130,8 @@ class Cluster():
         return band_hashes
 
     # Similar documents : LSH
-    def get_similar_docs(self, docs : dict, n_hashes : int =4000, band_size : int = 5, shingle_size : int = 5, collectIndexes : bool =True):
+    def get_similar_docs(self, docs : dict, n_hashes : int = 4000, band_size : int = 5,\
+        shingle_size : int = 5, collectIndexes : bool =True):
         hash_bands = {}
         random_strings = [str(random.random()) for _ in range(n_hashes)]
         docNum = 0
@@ -166,15 +167,15 @@ if __name__ == '__main__':
     n_hashes = 200
     band_size = 5
     shingle_size = 5
-    n_docs = 1000
+    n_docs = 3000
     max_doc_length = 400
     n_similar_docs = 10
     random.seed(42)
 
     # docs = generate_random_docs(n_docs, max_doc_length, n_similar_docs)
     clus = Cluster()
-    docs = clus.createflattenRawprofile()
-    similar_docs = Cluster().get_similar_docs(docs, n_hashes, band_size, shingle_size, collectIndexes=False)
+    docs = clus.createflattenRawprofile(n_docs)
+    similar_docs = clus.get_similar_docs(docs, n_hashes, band_size, shingle_size, collectIndexes=False)
     # print(similar_docs)
     df_dict = {}
     for pair1, pair2 in similar_docs:
@@ -194,7 +195,7 @@ if __name__ == '__main__':
             else:
                 df_dict[key_var].append(v)
     df = pd.DataFrame(df_dict)
-    df.drop_duplicates(inplace=True)
+    # df.drop_duplicates(inplace=True)
     df.to_csv(os.getcwd()+"/similiar.csv")
 
     r = float(n_hashes/band_size)
