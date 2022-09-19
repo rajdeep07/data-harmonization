@@ -1,4 +1,3 @@
-from optparse import Option
 import re
 from socket import create_server
 from sre_constants import RANGE
