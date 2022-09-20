@@ -176,7 +176,7 @@ if __name__ == '__main__':
     clus = Cluster()
     docs = clus.createflattenRawprofile(n_docs)
     similar_docs = clus.get_similar_docs(docs, n_hashes, band_size, shingle_size, collectIndexes=False)
-    # print(similar_docs)
+    print(similar_docs[0])
     df_dict = {}
     for pair1, pair2 in similar_docs:
         for k, v in pair1.items():
