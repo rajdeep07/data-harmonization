@@ -18,7 +18,7 @@ class Train():
         cluster = Cluster()
         flatten_rawprofile = cluster.createflattenRawprofile(n_docs)
         self.cluster_pairs = cluster.get_similar_docs(docs=flatten_rawprofile, n_hashes=n_hashes, \
-            band_size = band_size, shingle_size= shingle_size)
+            band_size = band_size, shingle_size= shingle_size, collectIndexes=False)
         return self
 
     # TODO: Create negative examples [Sligtly Tricky]
