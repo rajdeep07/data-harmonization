@@ -14,7 +14,8 @@ class Features():
             return False
 
     def removeWhiteSpaces(self, x:str):
-        cleansed_list =  filter(lambda s : not self.isEmpty(s), re.split("[-\\s]", x))
+        cleansed_list =  list(map(lambda val:val.strip(), 
+            filter(lambda s : not self.isEmpty(s), re.split("[-\\s]", x))))
         return "".join(cleansed_list)
 
     def cleanEntity(self, name:str):
@@ -32,24 +33,26 @@ class Features():
 
     # TODO: add capability to trim + lower case before applying these transformations
 
-    def get(self, pairs: Tuple[dict, dict]) -> np.array:
+    def get(self, pairs: Tuple[dict, dict]) -> dict:
 
         # TODO: name Features
-        n_Features = np.array([])
-        for pair_dict in pairs:
-            for key, value in pair_dict.items():
-                if isinstance(value, str):
-                    n_Features = np.append(n_Features, np.array(self.engineerFeatures(pairs[0][key], pairs[1][key])), axis=0)
-
+        n_Features = dict()
+        for key, value in pairs[0].items():
+            if isinstance(value, str):
+                n_Features[key] = np.array(self.engineerFeatures(pairs[0][key], pairs[1][key]))
+            else:
+                n_Features[key] = None if not pairs[0][key] or not pairs[1][key] else [pairs[0][key], pairs[1][key]]
         return n_Features
 
 
 if __name__ == "__main__":
     pairs = ({
-        'cluster_id': 38364, 'Name': 'presco', 'City': 'riverview', 'Zip': '335796903',
-        'Address': '12502balmriverviewrd', 'gender_field': None, 'source': 'flna', 'age': None}, 
-        {'cluster_id': 38369, 'Name': 'riverview sunoco (ib', 'City': 'riverview', 'Zip': '335796702', 
-        'Address': '12302balmriverviewrd', 'gender_field': None, 'source': 'flna', 'age': None
+        'cluster_id': 38364, 'Name': '       presco', 'City': 'riverview', 'Zip': '335796903',
+        'Address': '12502balmri        verviewrd', 'gender_field': None, 'source': 'flna', 'age': None}, 
+
+
+        {'cluster_id': 38369, 'Name': 'riverview         sunoco (ib', 'City': 'riverview', 'Zip': '335796702', 
+        'Address': '12302     balmriverviewrd', 'gender_field': None, 'source': 'flna', 'age': None
         }) 
     ft = Features().get(pairs=pairs)
     print(ft)

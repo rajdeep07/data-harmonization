@@ -1,7 +1,5 @@
 import re
-from socket import create_server
-from sre_constants import RANGE
-from typing import Any, Optional, Sequence
+from typing import Any, Optional
 from data_harmonization.main.code.tiger.transformer.utils import StringSupport
 from data_harmonization.main.code.tiger.transformer import CityTransformer, NameTransformer, \
     PostalAddressTransformer, StateTransformer
@@ -15,12 +13,11 @@ import numpy as np
 from os import listdir
 import os
 import sys
-from typing import Optional
 import random
 import itertools
 
 class Cluster():
-
+    """create cluster pairs using minLSH alogorithm"""
     # TODO: create wrapper for reading datasets
     filenames = listdir(os.getcwd() + "/data_harmonization/main/data/")
     csv_filenames = [filename for filename in filenames if filename.endswith(".csv")]
@@ -35,7 +32,7 @@ class Cluster():
     rawProfilesWithTokens = rawProfiles.apply(lambda r: Sanitizer().toRawEntity(r), axis=1)  #.filter(lambda p: p.id.isNotEmpty)
 
     # Flatten rawProfiles to fields which are only string / int
-    def createflattenRawprofile(self, n_docs) -> dict:
+    def createflattenRawprofile(self, n_docs: Optional[int]) -> dict:
         flattenRawprofile = {}
         id = 0
         for raw_ent in self.rawProfilesWithTokens.sample(n_docs):
@@ -157,9 +154,6 @@ class Cluster():
                     for pair in itertools.combinations(hash_bands[i][hash_num], r=2):
                         # print(pair)
                         similar_docs.append(pair)
-
-                        
-
         return similar_docs
 
 if __name__ == '__main__':
