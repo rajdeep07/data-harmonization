@@ -145,7 +145,7 @@ if __name__ == "__main__":
     df_y = one_hot_data[['target_0', 'target_1']]
 
     # Convert both data_frames into np arrays of float32
-    ar_X, ar_y = np.asarray(df_X.values, dtype='float32'), np.asarray(df_y.values, dtype='float32')
+    ar_X, ar_y = np.asarray(df_X['feature'].values, dtype='float32'), np.asarray(df_y['feature'].values, dtype='float32')
 
     # Allocate first 80% of data into training data and remaining 20% into testing data
     train_size = int(0.8 * len(ar_X))
