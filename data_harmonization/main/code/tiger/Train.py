@@ -1,4 +1,5 @@
 import re
+from shutil import ignore_patterns
 from typing import Tuple
 from data_harmonization.main.code.tiger.features.Distance import Distance
 import numpy as np
@@ -6,6 +7,7 @@ from Cluster import Cluster
 from data_harmonization.main.code.tiger.Features import Features
 from data_harmonization.main.code.tiger.model.datamodel import RawEntity
 import tensorflow as tf
+import pandas as pd
 import time
 
 
@@ -23,21 +25,18 @@ class Train():
         print("Current Flatten raw profiles", flatten_rawprofile)
         self.cluster_pairs = cluster.get_similar_docs(docs=flatten_rawprofile, n_hashes=n_hashes, \
             band_size = band_size, shingle_size= shingle_size, collectIndexes=False)
-        print("Intial clusters",self.cluster_pairs[0])
+        print("Intial clusters",self.cluster_pairs)
         return self
 
-    def _getPositiveExamples(self, cluster_pairs):
+    def _getPositiveExamples(self):
         _positive_df = pd.DataFrame()
 
-        # TODO: get this from raw entity attributes
-        feature_list = ["Name", "City", "Zip", "Address"]
 
-        for pair1, pair2 in cluster_pairs:
-            _positive = np.darray()
-            for feature in feature_list:
-                _positive += Features.engineerFeatures(pair1["".format(feature)], pair2["".format(feature)])
-            _positive_df["target"] = 1
-            _positive_df["features"] = _positive.flatten()
+        for pairs in self.cluster_pairs:
+            _positive = Features().get(pairs)
+            _positive["target"] = 1
+            for key, value in _positive.items():
+                _positive_df[key] = value
 
         return _positive_df
 
@@ -106,7 +105,8 @@ if __name__ == "__main__":
     train = Train().createClusterPairs()
     print("Training dataset",train.cluster_pairs)
 
-    _positive_df = train._getPositiveExamples(train.cluster_pairs)
+    _positive_df = train._getPositiveExamples()
+    print(_positive_df)
     _negative_df = train._getNegativeExamples(train.cluster_pairs)
     data = train.concat_examples(_positive_df, _negative_df)
 
