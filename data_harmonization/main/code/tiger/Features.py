@@ -1,5 +1,6 @@
+from curses.ascii import isdigit
 import re
-from typing import Tuple
+from typing import Any, Tuple
 from data_harmonization.main.code.tiger.features.Distance import Distance
 import numpy as np
 
@@ -7,41 +8,37 @@ from data_harmonization.main.code.tiger.model.datamodel import RawEntity
 
 class Features():
 
-    def isEmpty(self, x: str):
-        if (x == None) or (len(x) == 0):
+    def isEmpty(self, x: Any) -> bool:
+        if (x == None) or (x == ""):
             return True
         else:
             return False
 
     def removeWhiteSpaces(self, x:str):
-        cleansed_list =  list(map(lambda val:val.strip(), 
+        cleansed_list =  list(map(lambda val:val.strip().lower(), 
             filter(lambda s : not self.isEmpty(s), re.split("[-\\s]", x))))
         return "".join(cleansed_list)
-
-    def cleanEntity(self, name:str):
-        pass
 
     def engineerFeatures(self, entity1: str, entity2: str):
         if self.isEmpty(entity1) or self.isEmpty(entity2):
             return [1] * 4
-        else:
+        elif isinstance(entity1, str) and isinstance(entity2, str):
             distance_obj = Distance()
             return [distance_obj.getLevenshteinDistance(self.removeWhiteSpaces(entity1), self.removeWhiteSpaces(entity2)),
             distance_obj.getCosineDistance(self.removeWhiteSpaces(entity1), self.removeWhiteSpaces(entity2)),
             distance_obj.getHammingDistance(self.removeWhiteSpaces(entity1), self.removeWhiteSpaces(entity2)),
             distance_obj.getJaroWinklerDistance(self.removeWhiteSpaces(entity1), self.removeWhiteSpaces(entity2))]
-
+        elif isinstance(entity1, int) or isinstance(entity1, int):
+            return np.array([1]*4)
     # TODO: add capability to trim + lower case before applying these transformations
 
-    def get(self, pairs: Tuple[dict, dict]) -> dict:
+    def get(self, pairs: Tuple[dict, dict]) -> np.array:
 
         # TODO: name Features
-        n_Features = dict()
+        n_Features = np.array([])
         for key, value in pairs[0].items():
-            if isinstance(value, str):
-                n_Features[key] = np.array(self.engineerFeatures(pairs[0][key], pairs[1][key]))
-            else:
-                n_Features[key] = None if not pairs[0][key] or not pairs[1][key] else [pairs[0][key], pairs[1][key]]
+            n_Features = np.append(n_Features, np.array(self.engineerFeatures(pairs[0][key], pairs[1][key])))
+
         return n_Features
 
 
