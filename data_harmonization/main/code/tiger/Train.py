@@ -10,6 +10,7 @@ from data_harmonization.main.code.tiger.model.datamodel import RawEntity
 import tensorflow as tf
 import pandas as pd
 import time
+from sklearn.model_selection import StratifiedShuffleSplit
 
 tf.compat.v1.disable_v2_behavior()
 
@@ -24,7 +25,7 @@ class Train():
         n_hashes = 200
         band_size = 5
         shingle_size = 5
-        n_docs = 400
+        n_docs = 2000
         cluster = Cluster()
         self.flatten_rawprofile = cluster.createflattenRawprofile(n_docs)
         # print("Current Flatten raw profiles", self.flatten_rawprofile)
@@ -45,7 +46,7 @@ class Train():
     def _getNegativeExamples(self):
         total_length = len(self.flatten_rawprofile)
         negativePair_set = set()
-        negativeDfSize = 5*(self._positive_df.shape[0])
+        negativeDfSize = 1*(self._positive_df.shape[0])
         prev_size = -1
         while len(negativePair_set) < negativeDfSize:
             pair1_row = random.randint(0, total_length-1)
@@ -127,6 +128,7 @@ class Train():
     def calculate_accuracy(self, actual, predicted):
         actual = np.argmax(actual, 1)
         predicted = np.argmax(predicted, 1)
+        print(actual, predicted)
         return (100 * np.sum(np.equal(predicted, actual)) / predicted.shape[0])
     # TODO: predict on all pair within that cluster
 
@@ -156,13 +158,21 @@ if __name__ == "__main__":
     # print(np.asarray(df_X["feature"].values))
 
     # Convert both data_frames into np arrays of float32
-    ar_y = np.stack(df_y.values).astype(dtype='float32')
+    ar_y = np.asarray(df_y.values, dtype='float32')
     ar_X = np.stack(df_X["feature"].values).astype(dtype='float32')
     # ar_X = np.asarray(df_X['feature']).astype('float32')
     # Allocate first 80% of data into training data and remaining 20% into testing data
-    train_size = int(0.8 * len(ar_X))
-    (raw_X_train, raw_y_train) = (ar_X[:train_size], ar_y[:train_size])
-    (raw_X_test, raw_y_test) = (ar_X[train_size:], ar_y[train_size:])
+
+    # ----------------------------------------------------------------------
+    # train_size = int(0.8 * len(ar_X))
+    # (raw_X_train, raw_y_train) = (ar_X[:train_size], ar_y[:train_size])
+    # (raw_X_test, raw_y_test) = (ar_X[train_size:], ar_y[train_size:])
+    # ----------------------------------------------------------------------
+    split = StratifiedShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
+    for train_index, validation_index in split.split(ar_X, ar_y):
+        raw_X_train, raw_X_test = ar_X[train_index], ar_X[validation_index]
+        raw_y_train, raw_y_test = ar_y[train_index], ar_y[validation_index]
+    # ------------------------------------------------------------------------
 
     # Gets a percent of match vs no match (6% of data are match?)
     count_match, count_no_match = np.unique(data['target'], return_counts=True)[1]
