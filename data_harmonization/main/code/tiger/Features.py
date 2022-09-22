@@ -1,5 +1,6 @@
 from curses.ascii import isdigit
 import re
+from turtle import shape
 from typing import Any, Tuple
 from data_harmonization.main.code.tiger.features.Distance import Distance
 import numpy as np
@@ -35,10 +36,10 @@ class Features():
     def get(self, pairs: Tuple[dict, dict]) -> np.array:
 
         # TODO: name Features
-        n_Features = np.array([])
+        n_Features = []
         for key, value in pairs[0].items():
-            n_Features = np.append(n_Features, np.array(self.engineerFeatures(pairs[0][key], pairs[1][key])))
-
+            n_Features.extend(self.engineerFeatures(pairs[0][key], pairs[1][key]))
+        # print(n_Features.shape)
         return n_Features
 
 
