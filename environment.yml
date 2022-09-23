@@ -25,3 +25,9 @@ dependencies:
     - pydantic
     - clean-text[gpl]
     - jaro-winkler
+# For deep blocking
+    - fasttext
+    - pathlib
+    - sklearn
+    - torch
+    - torchtext
