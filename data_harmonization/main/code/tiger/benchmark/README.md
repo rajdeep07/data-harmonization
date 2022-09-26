@@ -6,7 +6,7 @@ Commands to generate results from python package:
 For Inferencing:
 ```
 cd benchmark
-conda create --name data-harmonization-benchmark --file environment-b.yml
+conda env create --name data-harmonization-benchmark --file environment-b.yml
 conda activate data-harmonization-benchmark
 python deduplication.py
 ```
@@ -16,7 +16,7 @@ For Training:
 cd benchmark
 rm dedupe_dataframe_training.json
 rm dedupe_dataframe_learned_settings
-conda create --name data-harmonization-benchmark --file environment-b.yml
+conda env create --name data-harmonization-benchmark --file environment-b.yml
 conda activate data-harmonization-benchmark
 python deduplication.py
 ```

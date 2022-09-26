@@ -22,9 +22,12 @@ class Deduplication():
             dataframe = dataframe.append(pd.read_csv(target_dir + f"/data/{csv_file}"))
 
         # Run Dedupe Model
-        dataframe = dataframe[["Name", "Address", "City", "State","Zip","source"]]
+        # dataframe = dataframe[["Name", "Address", "City", "State","Zip","source"]]
+        dataframe = dataframe[['cluster_id', 'Name', 'City', 'Zip', 'Address', 'source']]
+        # final_model = pandas_dedupe.dedupe_dataframe(dataframe,
+        #                                              ["Name", "Address", "City", "State","Zip"])
         final_model = pandas_dedupe.dedupe_dataframe(dataframe,
-                                                     ["Name", "Address", "City", "State","Zip"])
+                                                     ['cluster_id', 'Name', 'City', 'Zip', 'Address', 'source'])
 
         # Cleansing
         final_model = final_model.rename(columns={"cluster id": "cluster_id"})
@@ -34,7 +37,7 @@ class Deduplication():
         final_model.to_csv(target_dir + "/data/benchmark.csv", mode='w+')
 
         return
-        
+
 
 if __name__ == "__main__":
 

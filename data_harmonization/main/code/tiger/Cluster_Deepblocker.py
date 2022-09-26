@@ -25,7 +25,11 @@ import blocking_utils
 class Cluster_Deepblocker():
     """create cluster pairs using DeepBlocker"""
     # TODO: create wrapper for reading datasets
-    filenames = listdir(os.getcwd() + "/data_harmonization/main/data/")
+    current_dir = os.path.dirname(os.path.realpath(__file__))
+    target_dir = os.path.sep.join(current_dir.split(os.path.sep)[:-3])
+    filenames = listdir(target_dir + "/main/data/")
+
+    # filenames = listdir(os.getcwd() + "/data_harmonization/main/data/")
     csv_filenames = [filename for filename in filenames if filename.endswith(".csv")]
     # rawProfiles = pd.DataFrame() # correct data structure here ?
     rawProfiles = []
@@ -70,11 +74,35 @@ class Cluster_Deepblocker():
         db = DeepBlocker(tuple_embedding_model, vector_pairing_model)
         candidate_set_df = db.block_datasets(left_df, right_df, cols_to_block)
 
-        # golden_df = pd.read_csv(Path(folder_root) /  "matches.csv")
-        # statistics_dict = blocking_utils.compute_blocking_statistics(candidate_set_df, golden_df, left_df, right_df)
-        # return statistics_dict
-        return candidate_set_df
+        # left_matched_df = left_df.loc[candidate_set_df["ltable_id"]]
+        # left_matched_df["ltable_id"] = candidate_set_df["ltable_id"]
+        # right_matched_df = right_df.loc[candidate_set_df["rtable_id"]]
+        # right_matched_df["rtable_id"] = candidate_set_df["rtable_id"]
+        # similar_data = pd.concat([left_matched_df, right_matched_df], axis="columns")
+        candidate_set_df.to_csv(self.target_dir + "/main/deepblocker_matching.csv", mode='w+')
+        csv_file = "benchmark.csv"
+        golden_df = pd.read_csv(self.target_dir + f"/main/data/{csv_file}") # pd.read_csv(Path(folder_root) /  "matches.csv")
+        statistics_dict = self.compute_blocking_statistics(candidate_set_df, golden_df, left_df, right_df)
+        return statistics_dict
+        # return candidate_set_df
 
+    def compute_blocking_statistics(self, candidate_set_df, golden_df, left_df, right_df):
+        #Now we have two data frames with two columns ltable_id and rtable_id
+        # If we do an equi-join of these two data frames, we will get the matches that were in the top-K
+        # merged_df = pd.merge(candidate_set_df, golden_df, on=['ltable_id', 'rtable_id'])
+
+        left_num_tuples = len(left_df)
+        right_num_tuples = len(right_df)
+        statistics_dict = {
+            "left_num_tuples": left_num_tuples,
+            "right_num_tuples": right_num_tuples,
+            "candidate_set": len(candidate_set_df),
+            "recall": len(candidate_set_df) / len(golden_df),
+            # "recall": len(merged_df) / len(golden_df),
+            "cssr": len(candidate_set_df) / (left_num_tuples * right_num_tuples)
+            }
+
+        return statistics_dict
 if __name__ == '__main__':
 
     n_hashes = 200
