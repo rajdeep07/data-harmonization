@@ -19,23 +19,31 @@ import itertools
 class Cluster():
     """create cluster pairs using minLSH alogorithm"""
     # TODO: create wrapper for reading datasets
-    filenames = listdir(os.getcwd() + "/data_harmonization/main/data/")
-    csv_filenames = [filename for filename in filenames if filename.endswith(".csv")]
-    rawProfiles = pd.DataFrame() # correct data structure here ?
-    for csv_file in csv_filenames:
-        rawProfiles = rawProfiles.append(pd.read_csv(os.getcwd() + f"/data_harmonization/main/data/{csv_file}"))
+    # filenames = listdir(os.getcwd() + "/data_harmonization/main/data/")
+    # csv_filenames = [filename for filename in filenames if filename.endswith(".csv")]
+    # rawProfiles = pd.DataFrame() # correct data structure here ?
+    # for csv_file in csv_filenames:
+    #     rawProfiles = rawProfiles.append(pd.read_csv(os.getcwd() + f"/data_harmonization/main/data/{csv_file}"))
 
     # print(rawProfiles.head())
     # Flatten rawProfiles to fields which are only string / int
 
     # Cleansing of the data set
-    rawProfilesWithTokens = rawProfiles.apply(lambda r: Sanitizer().toRawEntity(r), axis=1)  #.filter(lambda p: p.id.isNotEmpty)
+    flattenRawprofile = {}
 
-    # Flatten rawProfiles to fields which are only string / int
-    def createflattenRawprofile(self, n_docs: Optional[int]) -> dict:
-        flattenRawprofile = {}
+    # Flatten rawProfiles to fields which are only string / int / float
+    def createflattenRawprofile(self,data:Optional[pd.DataFrame]=None, n_docs: Optional[int]=1000) -> dict:
+        self.rawProfiles = data
+        if not data:
+            filenames = listdir(os.getcwd() + "/data_harmonization/main/data/")
+            csv_filenames = [filename for filename in filenames if filename.endswith(".csv")]
+            rawProfiles = pd.DataFrame() # correct data structure here ?
+            for csv_file in csv_filenames:
+                self.rawProfiles = rawProfiles.append(pd.read_csv(os.getcwd() + f"/data_harmonization/main/data/{csv_file}"))
+
+        rawProfilesWithTokens = self.rawProfiles.apply(lambda r: Sanitizer().toRawEntity(r), axis=1)  #.filter(lambda p: p.id._isNotEmpty)
         id = 0
-        for raw_ent in self.rawProfilesWithTokens.sample(n_docs):
+        for raw_ent in rawProfilesWithTokens.sample(n_docs):
             semiflattenRawprofile = {}
             # raw_ent.__dict__.items()
             raw_dict = raw_ent.__dict__
@@ -47,19 +55,15 @@ class Cluster():
                 else:
                     semiflattenRawprofile[k] = v
             # flattenRawprofile[raw_ent["cluster_id"]] = {k1:v1 for k, v in semiflattenRawprofile.items() if not isinstance(v, (int, str, float) and v) for k1, v1 in v.__dict__.items()}
-            flattenRawprofile[str(id)] = semiflattenRawprofile
+            self.flattenRawprofile[str(id)] = semiflattenRawprofile
             id = id+1
-        return flattenRawprofile
+        return self.flattenRawprofile
 
-    """def filter_flat_map(self, f, arg:str):
-        flatten_str = "".join(filter(lambda s:s!="", arg))
-        return f(flatten_str)"""
-
-    def flatten_list(self, l:list) -> list:
+    def _flatten_list(self, l:list) -> list:
         return [item if isinstance(sublist, list) else sublist for sublist in l for item in sublist]
         # return [item for sublist in l if isinstance(sublist, list) for item in sublist else sublist]
     
-    def isNotEmpty(self, input: Optional[Any]=None) -> bool:
+    def _isNotEmpty(self, input: Optional[Any]=None) -> bool:
         if input is None:
             return False
         elif isinstance(input, str):
@@ -81,6 +85,7 @@ class Cluster():
         # flattend_str = "".join(filter(lambda s: s != "", mapped_str))
         return self.filter_flat_map(shingles, input)"""
 
+    # Create Shingles
     def createShingles(self, input: Optional[str], shingle_size) -> Optional[list[str]]:
         def shingles(x:str) -> list[str]:
             i = x.lower() # TODO: remove extra unnecessary characters when creating shingles
@@ -89,9 +94,9 @@ class Cluster():
             else:
                 return [i]
 
-        return self.flatten_list(
+        return self._flatten_list(
             list(map(shingles, list(filter(
-                self.isNotEmpty, re.split("[-\s\\\\,]s*", input))))))
+                self._isNotEmpty, re.split("[-\s\\\\,]s*", input))))))
 
     # Step 2: Tokenization
     def createTokens(self, profile: dict, shingle_size: int) -> str:
@@ -100,7 +105,7 @@ class Cluster():
         for v in profile.values():
             if isinstance(v, str):
                 output.extend(self.createShingles(v, shingle_size))
-        # return output.flatten.filter(lambda x: (x is not None) and x.isNotEmpty)
+        # return output.flatten.filter(lambda x: (x is not None) and x._isNotEmpty)
         return output
 
     # Step 3: Hash
@@ -156,20 +161,36 @@ class Cluster():
                         similar_docs.append(pair)
         return similar_docs
 
+    def fit(self, n_docs, data:Optional[pd.DataFrame]=None):
+        self.createflattenRawprofile(data, n_docs)
+        return self
+    
+    def transform(self, n_hashes : int = 4000, band_size : int = 5,\
+    shingle_size : int = 5, collectIndexes : bool =True):
+        return self.get_similar_docs(docs=self.flattenRawprofile, n_hashes=n_hashes, band_size=band_size,\
+    shingle_size=shingle_size, collectIndexes=collectIndexes)
+
+    def fit_transform(self, n_docs, data:Optional[pd.DataFrame]=None, n_hashes= 4000, band_size= 5, shingle_size= 5, collectIndexes =True):
+        self.fit(data=data, n_docs=n_docs)
+        return self.transform( n_hashes= n_hashes, band_size= band_size,\
+    shingle_size= shingle_size, collectIndexes =collectIndexes)
+
 if __name__ == '__main__':
 
     n_hashes = 200
     band_size = 5
     shingle_size = 5
-    n_docs = 3000
+    n_docs = 300
     max_doc_length = 400
     n_similar_docs = 10
     random.seed(42)
 
     # docs = generate_random_docs(n_docs, max_doc_length, n_similar_docs)
     clus = Cluster()
-    docs = clus.createflattenRawprofile(n_docs)
-    similar_docs = clus.get_similar_docs(docs, n_hashes, band_size, shingle_size, collectIndexes=False)
+    # clus.fit(n_docs=n_docs)
+    # similar_docs = clus.transform(n_hashes, band_size, shingle_size, collectIndexes=False)
+    similar_docs = clus.fit_transform(n_docs, n_hashes=n_hashes, band_size=band_size, shingle_size=shingle_size,
+                collectIndexes=False)
     print(similar_docs[0])
     df_dict = {}
     for pair1, pair2 in similar_docs:
