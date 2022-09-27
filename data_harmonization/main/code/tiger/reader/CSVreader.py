@@ -1,13 +1,14 @@
-from ast import Add
-import string
-from os import strerror
 import csv
-from pydantic import BaseModel
+import string
+from ast import Add
+from os import strerror
 from typing import List
+
 from data_harmonization.main.code.com.tiger.data.model.datamodel import *
+from pydantic import BaseModel
+
 
 class CSVreader(object):
-
     def __init__(self, file):
         self.file = file
 
@@ -19,9 +20,19 @@ class CSVreader(object):
                 headers = next(self.reader)
                 for row in self.reader:
                     row_data = {key: value for key, value in zip(headers, row)}
-                    _name = Name(name=row_data['name'])
-                    _address = Address(city=row_data['city'], state=row_data['state'], zipcode=row_data['zipcode'], address=row_data['address'])
-                    _raw_entity = RawEntity(id=row_data['id'], name=List[_name], address=List[_address],source=row_data['source'])
+                    _name = Name(name=row_data["name"])
+                    _address = Address(
+                        city=row_data["city"],
+                        state=row_data["state"],
+                        zipcode=row_data["zipcode"],
+                        address=row_data["address"],
+                    )
+                    _raw_entity = RawEntity(
+                        id=row_data["id"],
+                        name=List[_name],
+                        address=List[_address],
+                        source=row_data["source"],
+                    )
                     entities.append(_raw_entity)
             return entities
         except IOError as err:

@@ -1,6 +1,7 @@
 from typing import Optional
-from data_harmonization.main.code.tiger.transformer.utils.StringSupport import *
+
 from data_harmonization.main.code.tiger.model.datamodel import *
+from data_harmonization.main.code.tiger.transformer.utils.StringSupport import *
 
 
 class StringTypeTransformer(StringSupport):
@@ -9,5 +10,9 @@ class StringTypeTransformer(StringSupport):
 
     @staticmethod
     def standardizeStringType(value: str):
-        #value.map(lambda x: x.normalizeTrimAndLowerCaseStringAndRemoveSpecialCharacters)
-        return StringSupport().normalizeTrimAndLowerCaseStringAndRemoveSpecialCharacters(value)
+        # value.map(lambda x: x.normalizeTrimAndLowerCaseStringAndRemoveSpecialCharacters)
+        return (
+            StringSupport().normalizeTrimAndLowerCaseStringAndRemoveSpecialCharacters(
+                value
+            )
+        )

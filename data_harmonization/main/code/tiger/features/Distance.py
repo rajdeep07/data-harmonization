@@ -1,13 +1,13 @@
 import math
-from metaphone import doublemetaphone
-import Levenshtein
-import jaro
 import re
 from collections import Counter
 
+import jaro
+import Levenshtein
+from metaphone import doublemetaphone
 
-class Distance():
 
+class Distance:
     def __init__(self):
         pass
 
@@ -48,11 +48,10 @@ class Distance():
         #     return float(numerator) / denominator
         return 1
 
-    def getCosineDistance(self, text1:str, text2:str):
+    def getCosineDistance(self, text1: str, text2: str):
         # TODO: use lowercase variables
         WORD = re.compile(r"\w+")
         word1 = Counter(WORD.findall(text1))
         word2 = Counter(WORD.findall(text2))
         cosine_dist = self.calcCosineDistance(word1, word2)
         return cosine_dist
-        

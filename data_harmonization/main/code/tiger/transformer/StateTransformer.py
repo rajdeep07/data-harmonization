@@ -1,6 +1,8 @@
-from data_harmonization.main.code.tiger.transformer.utils.StringSupport import StringSupport
-from data_harmonization.main.code.tiger.model.datamodel import *
 from typing import Optional
+
+from data_harmonization.main.code.tiger.model.datamodel import *
+from data_harmonization.main.code.tiger.transformer.utils.StringSupport import \
+    StringSupport
 
 
 class StateTransformer(StringSupport):
@@ -10,6 +12,3 @@ class StateTransformer(StringSupport):
     @staticmethod
     def standardizeState(value: str):
         value.map(lambda x: x.normalizeTrimAndLowerCaseStringAndRemoveSpecialCharacters)
-
-
-

@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
+
 @dataclass(unsafe_hash=True)
 class PostalAddress:
     address: Optional[str]

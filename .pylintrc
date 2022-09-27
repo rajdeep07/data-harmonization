@@ -1,0 +1,27 @@
+[MASTER]
+ignore-patterns=^tests/.*$
+
+[BASIC]
+good-names=
+    i,
+    e,
+    m,
+    logger,
+    df,
+    s3,
+    x,
+    y,
+
+[pre-commit-hook]
+disable=
+    E0401,
+    C0114,
+    C0115,
+    C0116,
+    R0903,
+    C0209,
+    W0613,
+    R0902,
+    C0301,
+    C0103,
+    W0703,

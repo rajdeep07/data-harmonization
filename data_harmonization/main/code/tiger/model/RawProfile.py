@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
+
 @dataclass(unsafe_hash=True)
 class RawProfile:
     id: str
@@ -10,4 +11,3 @@ class RawProfile:
     state: Optional[str]
     zipcode: Optional[str]
     source: Optional[str]
-

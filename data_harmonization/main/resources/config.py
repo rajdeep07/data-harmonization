@@ -14,5 +14,4 @@ mysqlLocalHost = netifaces.gateways()['default'][2][0]
 mysqlDriver = "com.mysql.cj.jdbc.Driver"
 mysqlPort = "3306"
 
-
 # logging credentials
