@@ -26,7 +26,7 @@ class Train():
         band_size = 5
         shingle_size = 5
         n_docs = 2000
-        cluster = Cluster().fit(n_docs=1000)
+        cluster = Cluster().fit(n_docs)
         self.flatten_rawprofile = cluster.flattenRawprofile
         # print("Current Flatten raw profiles", self.flatten_rawprofile)
         self.cluster_pairs = cluster.transform(n_hashes=n_hashes, \
@@ -37,7 +37,7 @@ class Train():
     def _getPositiveExamples(self):
         for pairs in self.cluster_pairs:
             _positive = Features().get(pairs)
-            row = pd.DataFrame(data=[[pairs[0]["cluster_id"],pairs[1]["cluster_id"],_positive, 1]], columns=("cluster_id1","cluster_id2","feature", "target"))
+            row = pd.DataFrame(data=[[pairs[0]["id"],pairs[1]["id"],_positive, 1]], columns=("rid","lid","feature", "target"))
             self._positive_df = pd.concat([self._positive_df, row], axis=0, ignore_index=True)            
         # print(_positive_df.head())
         return self._positive_df
@@ -54,18 +54,18 @@ class Train():
             pair1 = self.flatten_rawprofile[str(pair1_row)]
             pair2 = self.flatten_rawprofile[str(pair2_row)]
             
-            row1 = (self._positive_df["cluster_id1"] == pair1["cluster_id"]).any() \
-                and (self._positive_df["cluster_id2"] == pair2["cluster_id"]).any()
-            row2 = (self._positive_df["cluster_id1"] == pair2["cluster_id"]).any() \
-                and (self._positive_df["cluster_id2"] == pair1["cluster_id"]).any()
+            row1 = (self._positive_df["rid"] == pair1["id"]).any() \
+                and (self._positive_df["lid"] == pair2["id"]).any()
+            row2 = (self._positive_df["lid"] == pair2["id"]).any() \
+                and (self._positive_df["rid"] == pair1["id"]).any()
 
             if not row1 and not row2:
-                negativePair_set.add((pair1["cluster_id"], pair2["cluster_id"]))
+                negativePair_set.add((pair1["id"], pair2["id"]))
 
             if len(negativePair_set) > prev_size:
                 prev_size = len(negativePair_set)
                 _negative = Features().get((pair1, pair2))
-                row = pd.DataFrame(data=[[pair1["cluster_id"],pair2["cluster_id"],_negative, 0]], columns=("cluster_id1","cluster_id2","feature", "target"))
+                row = pd.DataFrame(data=[[pair1["id"],pair2["id"],_negative, 0]], columns=("rid","lid","feature", "target"))
                 self._negative_df = pd.concat([self._negative_df, row], axis=0, ignore_index=True)
 
             
@@ -146,9 +146,9 @@ if __name__ == "__main__":
     one_hot_data = pd.get_dummies(data, prefix=['target'], columns=["target"])
 
     # split
-    df_X = one_hot_data.drop(['target_0', 'target_1', "cluster_id1", "cluster_id2"], axis=1)
+    df_X = one_hot_data.drop(['target_0', 'target_1', "rid", "lid"], axis=1)
     df_y = one_hot_data[['target_0', 'target_1']]
-    print(df_X.shape)
+    # print(df_X.shape)
     # print(df_X["feature"].head())
     # print(df_X["feature"].values[:5])
     # print(df_X["feature"].values[:5].shape)
