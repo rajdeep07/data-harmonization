@@ -8,21 +8,33 @@ servers:
   - url: http://dataharmonization.swagger.io/v1
 components:
   schemas:
+    Gender:
+      properties:
+        gender_field:
+          type: str
     Name:
       properties:
-        name:
+        Name:
           type: str
     Address:
       properties:
-        city:
+        City:
           type: str
-        state:
+        Zip:
           type: str
-        zipcode:
+        Address:
           type: str
-        address:
+    Email:
+      properties:
+        email:
           type: str
-    RawEntity:
+    Contact:
+      properties:
+        country_code:
+          type: str
+        contact_no:
+          type: str
+    Entity1:
       required:
         - id
       properties:
@@ -31,17 +43,54 @@ components:
           format: int64
         name:
           type: string
-          items:
-            $ref: "#/components/schemas/Name"
         address:
-          type: array
-          items:
-            $ref: "#/components/schemas/Address"
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        zipcode:
+          type: string
         source:
           type: string
-    CleansedRawEntity:
+        gender:
+          type: string
+    Entity2:
+      required:
+        - id
       properties:
-        entity:
-          type: array
-          items:
-            $ref: "#/components/schemas/RawEntity"
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        address:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        zipcode:
+          type: string
+        source:
+          type: string
+        gender:
+          type: string
+    RawEntity:
+      required:
+        - cluster_id
+      properties:
+        cluster_id:
+          type: integer
+          format: int64
+        name:
+          type: string
+          $ref: "#/components/schemas/Name"
+        address:
+          type: string
+          $ref: "#/components/schemas/Address"
+        gender:
+          type: string
+          $ref: "#/components/schemas/Gender"
+        source:
+          type: string
