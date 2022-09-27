@@ -50,6 +50,7 @@ pip install -r requirements.txt
 # 3. pre-commit
 pre-commit install
 pre-commit run -a
+```
 
 ## Local Development
 
