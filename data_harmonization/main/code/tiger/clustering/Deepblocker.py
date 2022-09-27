@@ -22,9 +22,10 @@ from tuple_embedding_models import  AutoEncoderTupleEmbedding, CTTTupleEmbedding
 from vector_pairing_models import ExactTopKVectorPairing
 import blocking_utils
 
-class Cluster_Deepblocker():
+class Deepblocker():
     """create cluster pairs using DeepBlocker"""
     # TODO: create wrapper for reading datasets
+    candidate_set_df = pd.DataFrame()
     current_dir = os.path.dirname(os.path.realpath(__file__))
     target_dir = os.path.sep.join(current_dir.split(os.path.sep)[:-3])
     filenames = listdir(target_dir + "/data/")
@@ -67,29 +68,39 @@ class Cluster_Deepblocker():
             return bool(input.strip())
 
     def do_blocking(self, left_df, right_df, cols_to_block, tuple_embedding_model, vector_pairing_model):
-        # folder_root = Path(folder_root)
-        # left_df = pd.read_csv(folder_root / left_table_fname)
-        # right_df = pd.read_csv(folder_root / right_table_fname)
-
         db = DeepBlocker(tuple_embedding_model, vector_pairing_model)
-        candidate_set_df = db.block_datasets(left_df, right_df, cols_to_block)
+        self.candidate_set_df = db.block_datasets(left_df, right_df, cols_to_block)
 
-        # left_matched_df = left_df.loc[candidate_set_df["ltable_id"]]
-        # left_matched_df["ltable_id"] = candidate_set_df["ltable_id"]
-        # right_matched_df = right_df.loc[candidate_set_df["rtable_id"]]
-        # right_matched_df["rtable_id"] = candidate_set_df["rtable_id"]
-        # similar_data = pd.concat([left_matched_df, right_matched_df], axis="columns")
-        candidate_set_df.to_csv(self.target_dir + "/main/deepblocker_matching.csv", mode='w+')
-        csv_file = "benchmark.csv"
-        golden_df = pd.read_csv(self.target_dir + f"/main/data/{csv_file}") # pd.read_csv(Path(folder_root) /  "matches.csv")
-        statistics_dict = self.compute_blocking_statistics(candidate_set_df, golden_df, left_df, right_df)
-        return statistics_dict
-        # return candidate_set_df
+        print("Writing model output file")
+        self.candidate_set_df.to_csv(self.target_dir + "/deepblocker_matching.csv", mode='w+')
+
+        ltable_ids = self.candidate_set_df["ltable_id"]
+        ltable_ids.drop_duplicates(inplace=True)
+
+        rtable_ids = self.candidate_set_df["rtable_id"]
+        rtable_ids.drop_duplicates(inplace=True)
+
+        ltable = left_df.loc[ltable_ids]
+        ltable["ltable_id"] = self.candidate_set_df["ltable_id"]
+        rtable = right_df.loc[rtable_ids]
+        rtable["rtable_id"] = rtable.index
+
+        print("Generating result")
+        result = pd.merge(left=self.candidate_set_df, right=ltable, on="ltable_id", how="inner")
+        result = pd.merge(left=result, right=rtable, on="rtable_id", how="inner", suffixes=("_flna", "_pbna"))
+        result.to_csv(self.target_dir + "/deepblocker.csv", mode='w+')
+        return result
 
     def compute_blocking_statistics(self, candidate_set_df, golden_df, left_df, right_df):
         #Now we have two data frames with two columns ltable_id and rtable_id
         # If we do an equi-join of these two data frames, we will get the matches that were in the top-K
         # merged_df = pd.merge(candidate_set_df, golden_df, on=['ltable_id', 'rtable_id'])
+
+        print("Comparinig model output to ground truth")
+        csv_file = "benchmark.csv"
+        golden_df = pd.read_csv(self.target_dir + f"/{csv_file}") # pd.read_csv(Path(folder_root) /  "matches.csv")
+        # statistics_dict = self.compute_blocking_statistics(self.candidate_set_df, golden_df, left_df, right_df)
+        # return statistics_dict
 
         left_num_tuples = len(left_df)
         right_num_tuples = len(right_df)
@@ -103,6 +114,7 @@ class Cluster_Deepblocker():
             }
 
         return statistics_dict
+
 if __name__ == '__main__':
 
     n_hashes = 200
@@ -113,46 +125,13 @@ if __name__ == '__main__':
     n_similar_docs = 10
     random.seed(42)
 
-    clus = Cluster_Deepblocker()
+    clus = Deepblocker()
     docs = clus.createflattenRawprofile(n_docs)
-    print(docs[0])
-    # print(docs[0].columns)
     cols_to_block = docs[0].columns.values.tolist()
     print(cols_to_block)
     print("using AutoEncoder embedding")
     tuple_embedding_model = AutoEncoderTupleEmbedding()
-    topK_vector_pairing_model = ExactTopKVectorPairing(K=50)
+    topK_vector_pairing_model = ExactTopKVectorPairing(K=5)
     similar_docs = clus.do_blocking(docs[0], docs[1], cols_to_block=cols_to_block,
         tuple_embedding_model=tuple_embedding_model, vector_pairing_model=topK_vector_pairing_model)
     print(similar_docs)
-    """df_dict = {}
-    for pair1, pair2 in similar_docs:
-        for k, v in pair1.items():
-            key_var = f"{k}"+"_pair1"
-            if not df_dict.get(key_var, None):
-                df_dict[key_var] = []
-                df_dict[key_var].append(v)
-            else:
-                df_dict[key_var].append(v)
-
-        for k, v in pair2.items():
-            key_var = f"{k}"+"_pair2"
-            if not df_dict.get(key_var, None):
-                df_dict[key_var] = []
-                df_dict[key_var].append(v)
-            else:
-                df_dict[key_var].append(v)
-    df = pd.DataFrame(df_dict)
-    # df.drop_duplicates(inplace=True)
-    df.to_csv(os.getcwd()+"/similiar.csv")
-
-    r = float(n_hashes/band_size)
-    similarity = (1/r)**(1/float(band_size))
-
-    print("similarity: %f" % similarity)
-    print("# Similar Pairs: %d" % len(similar_docs))
-
-    if len(similar_docs) == n_similar_docs:
-        print("Test Passed: All similar pairs found.")
-    else:
-        print("Test Failed.")"""

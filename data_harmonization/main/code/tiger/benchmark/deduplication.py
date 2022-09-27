@@ -22,7 +22,7 @@ class Deduplication():
             dataframe = dataframe.append(pd.read_csv(target_dir + f"/data/{csv_file}"))
 
         # Run Dedupe Model
-        dataframe = dataframe[["Name", "Address", "City", "State","Zip","source"]]
+        dataframe = dataframe[["Name", "Address", "City", "State","Zip"]]
         final_model = pandas_dedupe.dedupe_dataframe(dataframe,
                                                      ["Name", "Address", "City", "State","Zip"])
 
@@ -31,7 +31,8 @@ class Deduplication():
 
         # Output the data as csv
         print("We are writing dataset on")
-        final_model.to_csv(target_dir + "/data/benchmark.csv", mode='w+')
+        # final_model.to_csv(target_dir + "/data/benchmark.csv", mode='w+')
+        final_model.to_csv(target_dir + "/benchmark.csv", mode='w+')
 
         return
 

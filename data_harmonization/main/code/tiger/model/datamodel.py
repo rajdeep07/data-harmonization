@@ -53,9 +53,7 @@ class Entity2(BaseModel):
     source: Optional[str] = None
     gender: Optional[str] = None
 
-
 class RawEntity(BaseModel):
-    cluster_id: int
     name: Optional[Name] = None
     address: Optional[Address] = None
     gender: Optional[Gender] = None
