@@ -8,5 +8,4 @@ awsDefaultRegion = "AWS_DEFAULT_REGION"
 # database credentials
 
 
-
 # logging credentials

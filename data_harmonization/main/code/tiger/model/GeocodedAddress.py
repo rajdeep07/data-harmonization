@@ -1,10 +1,19 @@
 from typing import Optional
+
 from data_harmonization.main.code.tiger.model import PostalAddress
 
+
 class GeocodedAddress:
-    def __init__(self, address, city, state, country, zipCode,
-                 latitude = Optional[str],
-                 longitude = Optional[str]):
+    def __init__(
+        self,
+        address,
+        city,
+        state,
+        country,
+        zipCode,
+        latitude=Optional[str],
+        longitude=Optional[str],
+    ):
         self.address = address
         self.city = city
         self.state = state
@@ -16,11 +25,11 @@ class GeocodedAddress:
     def get_geo_address(self, PostalAddress):
 
         internal_state = GeocodedAddress(
-            address = PostalAddress.address,
-            city = PostalAddress.city,
-            state = PostalAddress.state,
-            country = PostalAddress.country,
-            zipCode = PostalAddress.zipCode,
-    )
+            address=PostalAddress.address,
+            city=PostalAddress.city,
+            state=PostalAddress.state,
+            country=PostalAddress.country,
+            zipCode=PostalAddress.zipCode,
+        )
 
         return internal_state

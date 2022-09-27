@@ -1,6 +1,7 @@
-from typing import Optional
-from cleantext import clean
 import re
+from typing import Optional
+
+from cleantext import clean
 
 
 class StringSupport:
@@ -19,11 +20,18 @@ class StringSupport:
     def normalizeTrimAndLowerCaseString(self, value: str) -> str:
         return self.normalizeString(self.trimAndLowerCase(value))
 
-    def normalizeTrimAndLowerCaseStringAndRemoveSpecialCharacters(self, value: str) -> str:
+    def normalizeTrimAndLowerCaseStringAndRemoveSpecialCharacters(
+        self, value: str
+    ) -> str:
         return re.sub(
-            "[\+]", "",
-            re.sub("( \+ )|( \+)", " ",
-                    re.sub("[ \+]", "", self.normalizeTrimAndLowerCaseString(value))))
+            "[\+]",
+            "",
+            re.sub(
+                "( \+ )|( \+)",
+                " ",
+                re.sub("[ \+]", "", self.normalizeTrimAndLowerCaseString(value)),
+            ),
+        )
 
     def normalizeTrimAndLowerCaseStringAndRemoveNumbers(self, value: str) -> str:
         return self.normalizeTrimAndLowerCaseString(value).replace("[0123456789]", "")
