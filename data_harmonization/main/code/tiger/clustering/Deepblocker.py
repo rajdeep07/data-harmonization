@@ -27,7 +27,7 @@ class Cluster_Deepblocker():
     # TODO: create wrapper for reading datasets
     current_dir = os.path.dirname(os.path.realpath(__file__))
     target_dir = os.path.sep.join(current_dir.split(os.path.sep)[:-3])
-    filenames = listdir(target_dir + "/main/data/")
+    filenames = listdir(target_dir + "/data/")
 
     # filenames = listdir(os.getcwd() + "/data_harmonization/main/data/")
     csv_filenames = [filename for filename in filenames if filename.endswith(".csv")]
