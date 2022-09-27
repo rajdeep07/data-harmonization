@@ -147,10 +147,10 @@ manage and pin our dependencies.
 
 Note that `pip-tools` will be installed in this project's virtual environment when
 running the [Virtual Environment Setup](#virtual-environment-setup) step (it's
-specified within `serverless/requirements-dev.in` / 
-`serverless/requirements-dev.txt`).
+specified within `requirements.in` / 
+`requirements.txt`).
 
-1. Define your direct development dependencies in `serverless/requirements.in`,
+1. Define your direct development dependencies in `requirements.in`,
    using specific versions wherever possible:
 
    ```
