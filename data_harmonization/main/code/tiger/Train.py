@@ -26,10 +26,10 @@ class Train():
         band_size = 5
         shingle_size = 5
         n_docs = 2000
-        cluster = Cluster()
-        self.flatten_rawprofile = cluster.createflattenRawprofile(n_docs)
+        cluster = Cluster().fit(n_docs=1000)
+        self.flatten_rawprofile = cluster.flattenRawprofile
         # print("Current Flatten raw profiles", self.flatten_rawprofile)
-        self.cluster_pairs = cluster.get_similar_docs(docs=self.flatten_rawprofile, n_hashes=n_hashes, \
+        self.cluster_pairs = cluster.transform(n_hashes=n_hashes, \
             band_size = band_size, shingle_size= shingle_size, collectIndexes=False)
         # print("Intial clusters",self.cluster_pairs)
         return self
