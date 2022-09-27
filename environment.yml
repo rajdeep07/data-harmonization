@@ -19,9 +19,15 @@ dependencies:
   - dataclasses
   - python-levenshtein
   - metaphone
+  - pyspark==3.3.0
+  - SQLAlchemy==1.4.27
+  - netifaces==0.11.0
   - pip:
     - sphinx-autodoc-annotation
     - datamodel-code-generator
     - pydantic
     - clean-text[gpl]
     - jaro-winkler
+    - mysql_connector_repackaged==0.3.1
+
+
