@@ -18,30 +18,39 @@ tf.compat.v1.disable_v2_behavior()
 
 
 class Train:
-    flatten_rawprofile = None
+    flat_rawprofile = None
     cluster_pairs = None
     _positive_df = pd.DataFrame()
     _negative_df = pd.DataFrame()
 
     # TODO: Get clustering output [Postive Examples]
-    def createClusterPairs(self):
+    def create_cluster_pairs(self):
         n_hashes = 200
         band_size = 5
         shingle_size = 5
         n_docs = 2000
-        cluster = Cluster().fit(n_docs)
-        self.flatten_rawprofile = cluster.flattenRawprofile
-        # print("Current Flatten raw profiles", self.flatten_rawprofile)
-        self.cluster_pairs = cluster.transform(
+        # cluster = Cluster().prepare_data(n_docs)
+        # self.flat_rawprofile = cluster.flattenRawprofile
+        cluster = Cluster(
             n_hashes=n_hashes,
             band_size=band_size,
             shingle_size=shingle_size,
-            collectIndexes=False,
+            collect_indexes=False,
+            n_docs=n_docs,
         )
+        self.flat_rawprofile = cluster.prepare_data()
+        # print("Current Flatten raw profiles", self.flat_rawprofile)
+        # self.cluster_pairs = cluster.transform(
+        #     n_hashes=n_hashes,
+        #     band_size=band_size,
+        #     shingle_size=shingle_size,
+        #     collect_indexes=False,
+        # )
+        self.cluster_pairs = cluster.do_blocking(self.flat_rawprofile)
         # print("Intial clusters",self.cluster_pairs)
         return self
 
-    def _getPositiveExamples(self):
+    def _get_positive_examples(self):
         for pairs in self.cluster_pairs:
             _positive = Features().get(pairs)
             row = pd.DataFrame(
@@ -55,16 +64,16 @@ class Train:
         return self._positive_df
 
     # TODO: Create negative examples [Slightly Tricky]
-    def _getNegativeExamples(self):
-        total_length = len(self.flatten_rawprofile)
-        negativePair_set = set()
-        negativeDfSize = 1 * (self._positive_df.shape[0])
+    def _get_negative_examples(self):
+        total_length = len(self.flat_rawprofile)
+        negative_pair_set = set()
+        negative_df_size = 1 * (self._positive_df.shape[0])
         prev_size = -1
-        while len(negativePair_set) < negativeDfSize:
+        while len(negative_pair_set) < negative_df_size:
             pair1_row = random.randint(0, total_length - 1)
             pair2_row = random.randint(0, total_length - 1)
-            pair1 = self.flatten_rawprofile[str(pair1_row)]
-            pair2 = self.flatten_rawprofile[str(pair2_row)]
+            pair1 = self.flat_rawprofile[str(pair1_row)]
+            pair2 = self.flat_rawprofile[str(pair2_row)]
 
             row1 = (self._positive_df["rid"] == pair1["id"]).any() and (
                 self._positive_df["lid"] == pair2["id"]
@@ -74,10 +83,10 @@ class Train:
             ).any()
 
             if not row1 and not row2:
-                negativePair_set.add((pair1["id"], pair2["id"]))
+                negative_pair_set.add((pair1["id"], pair2["id"]))
 
-            if len(negativePair_set) > prev_size:
-                prev_size = len(negativePair_set)
+            if len(negative_pair_set) > prev_size:
+                prev_size = len(negative_pair_set)
                 _negative = Features().get((pair1, pair2))
                 row = pd.DataFrame(
                     data=[[pair1["id"], pair2["id"], _negative, 0]],
@@ -86,41 +95,6 @@ class Train:
                 self._negative_df = pd.concat(
                     [self._negative_df, row], axis=0, ignore_index=True
                 )
-
-        # duplicate_id = set()
-        # for pair1, pair2 in cluster_pairs:
-        #     duplicate_id.add(pair1["cluster_id"])
-        #     duplicate_id.add(pair2["cluster_id"])
-        # _number_of_negative_examples = 5*len(duplicate_id)
-
-        # id = 0
-        # unique_ids = set()
-        # for profile in self.flatten_rawprofile.values():
-        #     while id <= _number_of_negative_examples:
-        #         if profile["cluster_id"] not in duplicate_id:
-        #             unique_ids.add(profile["cluster_id"])
-        #         id += 1
-
-        # _negative_df = pd.DataFrame()
-        # feature_list = ["Name", "City", "Zip", "Address"]
-        # # TODO: Find a better way
-        # unique_ids = [j for j in
-        #               [i for i in self.flatten_rawprofile if self.flatten_rawprofile[i]["cluster_id"]
-        #               not in duplicate_id].values()]
-
-        # p_id = 0
-        # _negative_df = pd.DataFrame()
-        # for id1["cluster_id"] in unique_ids:
-        #     for id2["cluster_id"] in unique_ids:
-        #         if id1["cluster_id"] != id2["cluster_id"]:
-        #             while p_id <= _number_of_negative_examples:
-        #                 _negative = np.darray()
-        #                 for feature in feature_list:
-        #                     _negative += Features.engineerFeatures(id1["".format(feature)], id2["".format(feature)])
-        #                 _negative_df["target"] = 0
-        #                 _negative_df["features"] = _negative.flatten()
-        #                 p_id += 1
-
         return self._negative_df
 
     # TODO: Concat both with appropriate labels
@@ -154,12 +128,12 @@ class Train:
 
 
 if __name__ == "__main__":
-    train = Train().createClusterPairs()
+    train = Train().create_cluster_pairs()
     print("Training dataset", train.cluster_pairs)
 
-    _positive_df = train._getPositiveExamples()
+    _positive_df = train._get_positive_examples()
     # print(_positive_df)
-    _negative_df = train._getNegativeExamples()
+    _negative_df = train._get_negative_examples()
     # print(_negative_df)
     data = train.concat_examples(_positive_df, _negative_df)
 
