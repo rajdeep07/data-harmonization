@@ -2,8 +2,12 @@ from pathlib import Path
 import re
 from typing import Any, Optional
 from data_harmonization.main.code.tiger.transformer.utils import StringSupport
-from data_harmonization.main.code.tiger.transformer import CityTransformer, NameTransformer, \
-    PostalAddressTransformer, StateTransformer
+from data_harmonization.main.code.tiger.transformer import (
+    CityTransformer,
+    NameTransformer,
+    PostalAddressTransformer,
+    StateTransformer,
+)
 from data_harmonization.main.code.tiger.model.GeocodedAddress import GeocodedAddress
 from data_harmonization.main.code.tiger.model.PostalAddress import PostalAddress
 from data_harmonization.main.code.tiger.model.SemiMergedProfile import SemiMergedProfile
@@ -18,12 +22,18 @@ import random
 import itertools
 
 from deep_blocker import DeepBlocker
-from tuple_embedding_models import  AutoEncoderTupleEmbedding, CTTTupleEmbedding, HybridTupleEmbedding
+from tuple_embedding_models import (
+    AutoEncoderTupleEmbedding,
+    CTTTupleEmbedding,
+    HybridTupleEmbedding,
+)
 from vector_pairing_models import ExactTopKVectorPairing
 import blocking_utils
 
-class Deepblocker():
+
+class Deepblocker:
     """create cluster pairs using DeepBlocker"""
+
     # TODO: create wrapper for reading datasets
     candidate_set_df = pd.DataFrame()
     current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -37,9 +47,13 @@ class Deepblocker():
     rawProfilesWithTokens = []
     i = 0
     for csv_file in csv_filenames:
-        rawProfiles.append(pd.read_csv(os.getcwd() + f"/data_harmonization/main/data/{csv_file}"))
+        rawProfiles.append(
+            pd.read_csv(os.getcwd() + f"/data_harmonization/main/data/{csv_file}")
+        )
         # Cleansing of the data set
-        rawProfilesWithTokens.append(rawProfiles[i].apply(lambda r: Sanitizer().toRawEntity(r), axis=1))  #.filter(lambda p: p.id.isNotEmpty)
+        rawProfilesWithTokens.append(
+            rawProfiles[i].apply(lambda r: Sanitizer().toRawEntity(r), axis=1)
+        )  # .filter(lambda p: p.id.isNotEmpty)
         i = i + 1
 
     # Flatten rawProfiles to fields which are only string / int
@@ -61,18 +75,27 @@ class Deepblocker():
             flattenRawprofileDF.append(pd.DataFrame.from_dict(flattenRawprofile))
         return flattenRawprofileDF
 
-    def isNotEmpty(self, input: Optional[Any]=None) -> bool:
+    def isNotEmpty(self, input: Optional[Any] = None) -> bool:
         if input is None:
             return False
         elif isinstance(input, str):
             return bool(input.strip())
 
-    def do_blocking(self, left_df, right_df, cols_to_block, tuple_embedding_model, vector_pairing_model):
+    def do_blocking(
+        self,
+        left_df,
+        right_df,
+        cols_to_block,
+        tuple_embedding_model,
+        vector_pairing_model,
+    ):
         db = DeepBlocker(tuple_embedding_model, vector_pairing_model)
         self.candidate_set_df = db.block_datasets(left_df, right_df, cols_to_block)
 
         print("Writing model output file")
-        self.candidate_set_df.to_csv(self.target_dir + "/deepblocker_matching.csv", mode='w+')
+        self.candidate_set_df.to_csv(
+            self.target_dir + "/deepblocker_matching.csv", mode="w+"
+        )
 
         ltable_ids = self.candidate_set_df["ltable_id"]
         ltable_ids.drop_duplicates(inplace=True)
@@ -86,19 +109,31 @@ class Deepblocker():
         rtable["rtable_id"] = rtable.index
 
         print("Generating result")
-        result = pd.merge(left=self.candidate_set_df, right=ltable, on="ltable_id", how="inner")
-        result = pd.merge(left=result, right=rtable, on="rtable_id", how="inner", suffixes=("_flna", "_pbna"))
-        result.to_csv(self.target_dir + "/deepblocker.csv", mode='w+')
+        result = pd.merge(
+            left=self.candidate_set_df, right=ltable, on="ltable_id", how="inner"
+        )
+        result = pd.merge(
+            left=result,
+            right=rtable,
+            on="rtable_id",
+            how="inner",
+            suffixes=("_flna", "_pbna"),
+        )
+        result.to_csv(self.target_dir + "/deepblocker.csv", mode="w+")
         return result
 
-    def compute_blocking_statistics(self, candidate_set_df, golden_df, left_df, right_df):
-        #Now we have two data frames with two columns ltable_id and rtable_id
+    def compute_blocking_statistics(
+        self, candidate_set_df, golden_df, left_df, right_df
+    ):
+        # Now we have two data frames with two columns ltable_id and rtable_id
         # If we do an equi-join of these two data frames, we will get the matches that were in the top-K
         # merged_df = pd.merge(candidate_set_df, golden_df, on=['ltable_id', 'rtable_id'])
 
         print("Comparinig model output to ground truth")
         csv_file = "benchmark.csv"
-        golden_df = pd.read_csv(self.target_dir + f"/{csv_file}") # pd.read_csv(Path(folder_root) /  "matches.csv")
+        golden_df = pd.read_csv(
+            self.target_dir + f"/{csv_file}"
+        )  # pd.read_csv(Path(folder_root) /  "matches.csv")
         # statistics_dict = self.compute_blocking_statistics(self.candidate_set_df, golden_df, left_df, right_df)
         # return statistics_dict
 
@@ -110,12 +145,13 @@ class Deepblocker():
             "candidate_set": len(candidate_set_df),
             "recall": len(candidate_set_df) / len(golden_df),
             # "recall": len(merged_df) / len(golden_df),
-            "cssr": len(candidate_set_df) / (left_num_tuples * right_num_tuples)
-            }
+            "cssr": len(candidate_set_df) / (left_num_tuples * right_num_tuples),
+        }
 
         return statistics_dict
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
 
     n_hashes = 200
     band_size = 5
@@ -132,6 +168,11 @@ if __name__ == '__main__':
     print("using AutoEncoder embedding")
     tuple_embedding_model = AutoEncoderTupleEmbedding()
     topK_vector_pairing_model = ExactTopKVectorPairing(K=5)
-    similar_docs = clus.do_blocking(docs[0], docs[1], cols_to_block=cols_to_block,
-        tuple_embedding_model=tuple_embedding_model, vector_pairing_model=topK_vector_pairing_model)
+    similar_docs = clus.do_blocking(
+        docs[0],
+        docs[1],
+        cols_to_block=cols_to_block,
+        tuple_embedding_model=tuple_embedding_model,
+        vector_pairing_model=topK_vector_pairing_model,
+    )
     print(similar_docs)
