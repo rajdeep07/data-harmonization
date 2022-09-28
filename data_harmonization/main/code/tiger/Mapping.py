@@ -76,6 +76,15 @@ class Mapping(database_name, table_name):
 
         return g
 
+    def getScore(self, entities, df):
+        total_profiles = getAllProfiles(entities)
+        duplicated_profiles = getAllDuplicate(df)
+        duplicates_percentages = duplicated_profiles/ total_profiles
+        print(f"Total duplicated identified are, {duplicated_profiles} among {total_profiles} total profiles, i.e. "
+              f"{duplicates_percentages}% duplicates.")
+        return duplicates_percentages
+
+
     # read potential matches from DB [Classifier Output] [leftId <-> rightId <-> 1/0] 1 means match, 0 means not a match
     # Presume output from classifier as
     '''
