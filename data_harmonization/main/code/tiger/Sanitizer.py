@@ -54,9 +54,9 @@ class Sanitizer:
 
         return raw_kw
 
-    def toRawEntity(self, cls:Entity1, clean_data:bool) -> RawEntity:
+    def toRawEntity(self, cls:Entity1, clean_data:bool, gen_id:bool=False) -> RawEntity:
         raw_attribute_lists = list(self._get_attr_list(RawEntity))[0]
-        raw_kw = self.get_kwargs(cls, attr_lists=raw_attribute_lists, clean_data=clean_data)
+        raw_kw = self.get_kwargs(cls, attr_lists=raw_attribute_lists, clean_data=clean_data, gen_id=gen_id)
         raw_entity_object = RawEntity(**raw_kw)
         return raw_entity_object
     
@@ -154,20 +154,21 @@ if __name__ == "__main__":
     addr = Address(city="Kolkata!22##*!?@34", zipcode=700000, address="Saltlake + Sdfg")
     entity1 = Entity1(
         id=12,
-        name="ABC",
-        city="Kalyani",
-        state="WB",
-        zipcode=741250,
-        address="Bedibhawan",
+        Name="ABC",
+        City="Kalyani",
+        State="WB",
+        Zip=741250,
+        Address="Bedibhawan",
         source="src",
         gender="F",
     )
     test = pd.Series(
         dict(
-            name="tiger Analytics",
-            city="new_city",
-            zipcode=123456,
-            address="231, asdf, asdfgh",
+            Name="tiger Analytics",
+            City="new_city",
+            Zip=123456,
+            Address="231, asdf, asdfgh",
+            State="ca",
             gender="M",
             source="XYZ",
             age=25,

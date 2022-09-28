@@ -58,7 +58,7 @@ class Cluster:
                 )
 
         rawProfilesWithTokens = self.rawProfiles.apply(
-            lambda r: Sanitizer().toRawEntity(r), axis=1
+            lambda r: Sanitizer().toRawEntity(r, gen_id=True, clean_data=True), axis=1
         )  # .filter(lambda p: p.id._isNotEmpty)
         id = 0
         for raw_ent in rawProfilesWithTokens.sample(n_docs):

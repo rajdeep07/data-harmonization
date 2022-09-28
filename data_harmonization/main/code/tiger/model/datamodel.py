@@ -14,13 +14,13 @@ class Gender(BaseModel):
 
 
 class Name(BaseModel):
-    name: Optional[Any] = None
+    Name: Optional[Any] = None
 
 
 class Address(BaseModel):
-    city: Optional[Any] = None
-    zipcode: Optional[Any] = None
-    address: Optional[Any] = None
+    City: Optional[Any] = None
+    Zip: Optional[Any] = None
+    Address: Optional[Any] = None
 
 
 class Email(BaseModel):
@@ -34,22 +34,22 @@ class Contact(BaseModel):
 
 class Entity1(BaseModel):
     id: int
-    name: Optional[str] = None
-    address: Optional[str] = None
-    city: Optional[str] = None
-    state: Optional[str] = None
-    zipcode: Optional[str] = None
+    Name: Optional[str] = None
+    Address: Optional[str] = None
+    City: Optional[str] = None
+    State: Optional[str] = None
+    Zip: Optional[str] = None
     source: Optional[str] = None
     gender: Optional[str] = None
 
 
 class Entity2(BaseModel):
     id: int
-    name: Optional[str] = None
-    address: Optional[str] = None
-    city: Optional[str] = None
-    state: Optional[str] = None
-    zipcode: Optional[str] = None
+    Name: Optional[str] = None
+    Address: Optional[str] = None
+    City: Optional[str] = None
+    State: Optional[str] = None
+    Zip: Optional[str] = None
     source: Optional[str] = None
     gender: Optional[str] = None
 
