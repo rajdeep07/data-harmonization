@@ -10,6 +10,7 @@ from typing import Any, Optional
 import numpy as np
 import pandas as pd
 
+from data_harmonization.main.code.tiger.clustering.cluster import Blocking
 from data_harmonization.main.code.tiger.model.datamodel import *
 from data_harmonization.main.code.tiger.model.GeocodedAddress import GeocodedAddress
 from data_harmonization.main.code.tiger.model.PostalAddress import PostalAddress
@@ -24,7 +25,7 @@ from data_harmonization.main.code.tiger.transformer import (
 from data_harmonization.main.code.tiger.transformer.utils import StringSupport
 
 
-class MinLSH:
+class MinLSH(Blocking):
     """create cluster pairs using minLSH alogorithm"""
 
     def __init__(
@@ -43,22 +44,27 @@ class MinLSH:
         self.flat_raw_profile = {}
 
     def prepare_data(self, data: Optional[pd.DataFrame] = None) -> dict:
-        """Flatten raw_profiles to fields which are only string / int / float"""
-        self.raw_profiles = data
+        """Flatten raw_profiles to fields which are only string / int / float
+
+        :return: flat raw profile
+        """
+        raw_profiles = data
         if not data:
             filenames = listdir(os.getcwd() + "/data_harmonization/main/data/")
             csv_filenames = [
                 filename for filename in filenames if filename.endswith(".csv")
             ]
-            raw_profiles = pd.DataFrame()
             for csv_file in csv_filenames:
-                self.raw_profiles = raw_profiles.append(
-                    pd.read_csv(
-                        os.getcwd() + f"/data_harmonization/main/data/{csv_file}"
-                    )
+                raw_profiles = pd.concat(
+                    [
+                        raw_profiles,
+                        pd.read_csv(
+                            os.getcwd() + f"/data_harmonization/main/data/{csv_file}"
+                        ),
+                    ],
+                    axis="index",
                 )
-
-        raw_profiles_with_tokens = self.raw_profiles.apply(
+        raw_profiles_with_tokens = raw_profiles.apply(
             lambda r: Sanitizer().toRawEntity(r), axis=1
         )  # .filter(lambda p: p.id._is_not_empty)
         id = 0
@@ -76,6 +82,10 @@ class MinLSH:
         return self.flat_raw_profile
 
     def _flatten_list(self, l: list) -> list:
+        """Convert nested list into one dimensional list
+
+        :return: one dimensional list
+        """
         return [
             item if isinstance(sublist, list) else sublist
             for sublist in l
@@ -83,6 +93,10 @@ class MinLSH:
         ]
 
     def _is_not_empty(self, input: Optional[Any] = None) -> bool:
+        """Check if provided input is not empty
+
+        :return: if not empty
+        """
         if input is None:
             return False
         elif isinstance(input, str):
@@ -92,6 +106,11 @@ class MinLSH:
     def _create_shingles(
         self, input: Optional[str], shingle_size
     ) -> Optional[list[str]]:
+        """Create shingles of provided string
+
+        :return: list of shingles
+        """
+
         def shingles(x: str) -> list[str]:
             i = (
                 x.lower()
@@ -117,6 +136,10 @@ class MinLSH:
 
     # Step 2: Tokenization
     def _create_tokens(self, profile: dict, shingle_size: int) -> str:
+        """Create shingles of values of provided dictionary if they are string type
+
+        :return: list of all shingles
+        """
         output = []
         for v in profile.values():
             if isinstance(v, str):
@@ -125,6 +148,9 @@ class MinLSH:
 
     # Step 3: Hash
     def _get_minhash(self, tot_shingle, n_hashes, random_strings) -> list:
+        """Calculate minHash signature
+
+        :return: minHash signatures"""
         minhash_row = []
         for i in range(n_hashes):
             minhash = sys.maxsize
@@ -137,6 +163,7 @@ class MinLSH:
 
     # LSH ==> MinLSH [More reading]
     def _get_band_hashes(self, minhash_row, band_size) -> list:
+        """ """
         band_hashes = []
         for i in range(len(minhash_row)):
             if i % band_size == 0:
@@ -148,6 +175,10 @@ class MinLSH:
 
     # Similar documents : LSH
     def do_blocking(self, docs: dict):
+        """Block datasets using minLSH
+
+        :return: similar docs or matched values
+        """
         hash_bands = {}
         random_strings = [str(random.random()) for _ in range(self.n_hashes)]
         doc_num = 0

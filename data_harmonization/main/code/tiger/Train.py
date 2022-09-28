@@ -4,7 +4,7 @@ import time
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from main.code.tiger.clustering.min_lsh import MinLSH
+from data_harmonization.main.code.tiger.clustering.min_lsh import MinLSH
 from sklearn.model_selection import StratifiedShuffleSplit
 
 from data_harmonization.main.code.tiger.Features import Features
@@ -13,13 +13,14 @@ tf.compat.v1.disable_v2_behavior()
 
 
 class Train:
+    """Classification using tensorflow"""
+
     def __init__(self):
         self.flat_rawprofile = None
         self.cluster_pairs = None
         self._positive_df = pd.DataFrame()
         self._negative_df = pd.DataFrame()
 
-    # TODO: Get clustering output [Postive Examples]
     def do_blocking(self):
         n_hashes = 200
         band_size = 5
@@ -32,11 +33,19 @@ class Train:
             collect_indexes=False,
             n_docs=n_docs,
         )
+        """Block datasets and create clusters
+
+        :return: class object with prepared input data and clusters
+        """
         self.flat_rawprofile = cluster.prepare_data()
         self.cluster_pairs = cluster.do_blocking(self.flat_rawprofile)
         return self
 
     def _get_positive_examples(self):
+        """Create positive examples (similar values) for classification
+
+        :return: positive examples
+        """
         for pairs in self.cluster_pairs:
             _positive = Features().get(pairs)
             row = pd.DataFrame(
@@ -48,8 +57,11 @@ class Train:
             )
         return self._positive_df
 
-    # TODO: Create negative examples [Slightly Tricky]
     def _get_negative_examples(self):
+        """Create negative examples (nonsimilar values) for Classification.
+
+        :return: negative examples
+        """
         total_length = len(self.flat_rawprofile)
         negative_pair_set = set()
         negative_df_size = 1 * (self._positive_df.shape[0])
@@ -82,16 +94,22 @@ class Train:
                 )
         return self._negative_df
 
-    # TODO: Concat both with appropriate labels
     def _concat_examples(self, _positive_df, _negative_df):
+        """Concatinate positive and negative examples.
+
+        :return: concatinated dataset
+        """
         _positive_df["feature"] = _positive_df["feature"].to_numpy().flatten()
         _negative_df["feature"] = _negative_df["feature"].to_numpy().flatten()
         return pd.concat([_positive_df, _negative_df])
 
-    # Function to run an input tensor through the 3 layers and output a tensor that will give us a match/non match result
-    # Each layer uses a different function to fit lines through the data and predict whether a given input tensor will \
-    #   result in a match or non match profiles
     def predict(self, input_tensor):
+        """Function to run an input tensor through the 3 layers and output a tensor
+        that will give us a match/non match result.
+        Each layer uses a different function to fit lines through the data and
+        predict whether a given input tensor will result in a match or non match profiles.
+
+        :return: match or non match profile"""
         # Sigmoid fits modified data well
         layer1 = tf.nn.sigmoid(tf.matmul(input_tensor, weight_1_node) + biases_1_node)
         # Dropout prevents model from becoming lazy and over confident
@@ -102,8 +120,10 @@ class Train:
         layer3 = tf.nn.softmax(tf.matmul(layer2, weight_3_node) + biases_3_node)
         return layer3
 
-    # Function to calculate the accuracy of the actual result vs the predicted result
     def calculate_accuracy(self, actual, predicted):
+        """Calculate the accuracy of the actual result vs the predicted result
+
+        :result: accuracy in percentage"""
         actual = np.argmax(actual, 1)
         predicted = np.argmax(predicted, 1)
         print(actual, predicted)
@@ -128,19 +148,13 @@ if __name__ == "__main__":
     # split
     df_X = one_hot_data.drop(["target_0", "target_1", "rid", "lid"], axis=1)
     df_y = one_hot_data[["target_0", "target_1"]]
-    # print(df_X.shape)
-    # print(df_X["feature"].head())
-    # print(df_X["feature"].values[:5])
-    # print(df_X["feature"].values[:5].shape)
-    # print(df_X.values, df_X.values.shape)
-    # df_X["feature"] = df_X["feature"].apply(lambda x: np.asarray(x))
+
     print(np.stack(df_X["feature"].values).shape)
-    # print(np.asarray(df_X["feature"].values))
 
     # Convert both data_frames into np arrays of float32
     ar_y = np.asarray(df_y.values, dtype="float32")
     ar_X = np.stack(df_X["feature"].values).astype(dtype="float32")
-    # ar_X = np.asarray(df_X['feature']).astype('float32')
+
     # Allocate first 80% of data into training data and remaining 20% into testing data
 
     # ----------------------------------------------------------------------
