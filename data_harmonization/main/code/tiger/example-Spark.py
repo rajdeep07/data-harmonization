@@ -1,7 +1,7 @@
 import os
 import sys
-from data_harmonization.main.code.tiger.code.tiger.database.MySQL import MySQL
-from data_harmonization.main.code.tiger.code.tiger.spark.SparkClass import SparkClass
+from data_harmonization.main.code.tiger.database.MySQL import MySQL
+from data_harmonization.main.code.tiger.spark.SparkClass import SparkClass
 import netifaces
 import data_harmonization.main.resources.config as config
 
