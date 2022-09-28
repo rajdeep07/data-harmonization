@@ -12,7 +12,7 @@ class StringSupport:
             return None
 
     def trimAndLowerCase(self, value: str) -> str:
-        return value.strip().lower()
+        return value.strip().lower() if value else ""
 
     def normalizeString(self, value: str) -> str:
         return clean(value, normalize_whitespace=True)

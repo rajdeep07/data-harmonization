@@ -10,17 +10,17 @@ from pydantic import BaseModel
 
 
 class Gender(BaseModel):
-    gender_field: Optional[Any] = None
+    gender: Optional[Any] = None
 
 
 class Name(BaseModel):
-    Name: Optional[Any] = None
+    name: Optional[Any] = None
 
 
 class Address(BaseModel):
-    City: Optional[Any] = None
-    Zip: Optional[Any] = None
-    Address: Optional[Any] = None
+    city: Optional[Any] = None
+    zipcode: Optional[Any] = None
+    address: Optional[Any] = None
 
 
 class Email(BaseModel):
@@ -56,8 +56,8 @@ class Entity2(BaseModel):
 
 class RawEntity(BaseModel):
     id: int
-    name: Optional[Name] = None
-    address: Optional[Address] = None
-    gender: Optional[Gender] = None
+    Name: Optional[Name] = None
+    Address: Optional[Address] = None
+    Gender: Optional[Gender] = None
     source: Optional[str] = None
     age: Optional[int] = 0
