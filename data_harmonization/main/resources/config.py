@@ -15,3 +15,11 @@ mysqlDriver = "com.mysql.cj.jdbc.Driver"
 mysqlPort = "3306"
 
 # logging credentials
+
+
+# spark configurations
+sparkCustomConfigs = [('spark.executor.memory','8g'),
+                      ('spark.executor.cores','3'),
+                      ('spark.cores.max','3'),
+                      ('spark.driver.memory','8g'),
+                      ('spark.driver.maxResultSize','4g')]
