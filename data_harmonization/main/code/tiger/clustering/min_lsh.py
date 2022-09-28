@@ -24,7 +24,7 @@ from data_harmonization.main.code.tiger.transformer import (
 from data_harmonization.main.code.tiger.transformer.utils import StringSupport
 
 
-class Cluster:
+class MinLSH:
     """create cluster pairs using minLSH alogorithm"""
 
     def __init__(
@@ -150,21 +150,21 @@ class Cluster:
     def do_blocking(self, docs: dict):
         hash_bands = {}
         random_strings = [str(random.random()) for _ in range(self.n_hashes)]
-        docNum = 0
+        doc_num = 0
         for doc in docs.values():
             shingles = self._create_tokens(doc, self.shingle_size)
             minhash_row = self._get_minhash(shingles, self.n_hashes, random_strings)
             band_hashes = self._get_band_hashes(minhash_row, self.band_size)
 
-            docMember = docNum if self.collect_indexes else doc
+            doc_member = doc_num if self.collect_indexes else doc
             for i in range(len(band_hashes)):
                 if i not in hash_bands:
                     hash_bands[i] = {}
                 if band_hashes[i] not in hash_bands[i]:
-                    hash_bands[i][band_hashes[i]] = [docMember]
+                    hash_bands[i][band_hashes[i]] = [doc_member]
                 else:
-                    hash_bands[i][band_hashes[i]].append(docMember)
-            docNum += 1
+                    hash_bands[i][band_hashes[i]].append(doc_member)
+            doc_num += 1
 
         similar_docs = []
         for i in hash_bands:
@@ -221,7 +221,7 @@ if __name__ == "__main__":
     n_similar_docs = 10
     random.seed(42)
 
-    clus = Cluster(
+    clus = MinLSH(
         n_hashes=n_hashes,
         band_size=band_size,
         shingle_size=shingle_size,

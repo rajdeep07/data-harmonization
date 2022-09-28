@@ -1,37 +1,31 @@
 import random
-import re
 import time
-from shutil import ignore_patterns
-from typing import Tuple
 
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from Cluster import Cluster
+from main.code.tiger.clustering.min_lsh import MinLSH
 from sklearn.model_selection import StratifiedShuffleSplit
 
 from data_harmonization.main.code.tiger.Features import Features
-from data_harmonization.main.code.tiger.features.Distance import Distance
-from data_harmonization.main.code.tiger.model.datamodel import RawEntity
 
 tf.compat.v1.disable_v2_behavior()
 
 
 class Train:
-    flat_rawprofile = None
-    cluster_pairs = None
-    _positive_df = pd.DataFrame()
-    _negative_df = pd.DataFrame()
+    def __init__(self):
+        self.flat_rawprofile = None
+        self.cluster_pairs = None
+        self._positive_df = pd.DataFrame()
+        self._negative_df = pd.DataFrame()
 
     # TODO: Get clustering output [Postive Examples]
-    def create_cluster_pairs(self):
+    def do_blocking(self):
         n_hashes = 200
         band_size = 5
         shingle_size = 5
         n_docs = 2000
-        # cluster = Cluster().prepare_data(n_docs)
-        # self.flat_rawprofile = cluster.flattenRawprofile
-        cluster = Cluster(
+        cluster = MinLSH(
             n_hashes=n_hashes,
             band_size=band_size,
             shingle_size=shingle_size,
@@ -39,15 +33,7 @@ class Train:
             n_docs=n_docs,
         )
         self.flat_rawprofile = cluster.prepare_data()
-        # print("Current Flatten raw profiles", self.flat_rawprofile)
-        # self.cluster_pairs = cluster.transform(
-        #     n_hashes=n_hashes,
-        #     band_size=band_size,
-        #     shingle_size=shingle_size,
-        #     collect_indexes=False,
-        # )
         self.cluster_pairs = cluster.do_blocking(self.flat_rawprofile)
-        # print("Intial clusters",self.cluster_pairs)
         return self
 
     def _get_positive_examples(self):
@@ -60,7 +46,6 @@ class Train:
             self._positive_df = pd.concat(
                 [self._positive_df, row], axis=0, ignore_index=True
             )
-        # print(_positive_df.head())
         return self._positive_df
 
     # TODO: Create negative examples [Slightly Tricky]
@@ -98,7 +83,7 @@ class Train:
         return self._negative_df
 
     # TODO: Concat both with appropriate labels
-    def concat_examples(self, _positive_df, _negative_df):
+    def _concat_examples(self, _positive_df, _negative_df):
         _positive_df["feature"] = _positive_df["feature"].to_numpy().flatten()
         _negative_df["feature"] = _negative_df["feature"].to_numpy().flatten()
         return pd.concat([_positive_df, _negative_df])
@@ -106,7 +91,7 @@ class Train:
     # Function to run an input tensor through the 3 layers and output a tensor that will give us a match/non match result
     # Each layer uses a different function to fit lines through the data and predict whether a given input tensor will \
     #   result in a match or non match profiles
-    def network(self, input_tensor):
+    def predict(self, input_tensor):
         # Sigmoid fits modified data well
         layer1 = tf.nn.sigmoid(tf.matmul(input_tensor, weight_1_node) + biases_1_node)
         # Dropout prevents model from becoming lazy and over confident
@@ -128,14 +113,14 @@ class Train:
 
 
 if __name__ == "__main__":
-    train = Train().create_cluster_pairs()
+    train = Train().do_blocking()
     print("Training dataset", train.cluster_pairs)
 
     _positive_df = train._get_positive_examples()
     # print(_positive_df)
     _negative_df = train._get_negative_examples()
     # print(_negative_df)
-    data = train.concat_examples(_positive_df, _negative_df)
+    data = train._concat_examples(_positive_df, _negative_df)
 
     # Change Class column into target_0 ([1 0] for No Match data) and target_1 ([0 1] for Match data)
     one_hot_data = pd.get_dummies(data, prefix=["target"], columns=["target"])
@@ -221,8 +206,8 @@ if __name__ == "__main__":
 
     # Used to predict what results will be given training or testing input data
     # Remember, X_train_node is just a placeholder for now. We will enter values at run time
-    y_train_prediction = train.network(X_train_node)
-    y_test_prediction = train.network(X_test_node)
+    y_train_prediction = train.predict(X_train_node)
+    y_test_prediction = train.predict(X_test_node)
 
     # Cross entropy loss function measures differences between actual output and predicted output
     cross_entropy = tf.compat.v1.losses.softmax_cross_entropy(
