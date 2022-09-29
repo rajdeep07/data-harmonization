@@ -30,3 +30,6 @@ class MySQL:
                 print(x)
 
         return result
+
+if __name__ == "__main__":
+    msql = MySQL('localhost', 'data-harmonization', 'navazdeen.shamsu', 'root@123')
