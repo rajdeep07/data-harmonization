@@ -7,12 +7,12 @@ from typing import Tuple
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from Blocking import Blocking
 from sklearn.model_selection import StratifiedShuffleSplit
 
 from data_harmonization.main.code.tiger.Features import Features
 from data_harmonization.main.code.tiger.features.Distance import Distance
 from data_harmonization.main.code.tiger.model.datamodel import RawEntity
+from data_harmonization.main.code.tiger.Blocking import Blocking
 
 tf.compat.v1.disable_v2_behavior()
 
