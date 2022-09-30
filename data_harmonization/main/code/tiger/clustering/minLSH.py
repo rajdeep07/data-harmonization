@@ -1,10 +1,12 @@
 import itertools
+from operator import ipow
 import os
 import random
 import re
 import sys
 from os import listdir
 from typing import Any, Optional
+from unittest import result
 
 import numpy as np
 import pandas as pd
@@ -25,20 +27,23 @@ from data_harmonization.main.code.tiger.transformer import (
     StateTransformer,
 )
 from data_harmonization.main.code.tiger.transformer.utils import StringSupport
+from data_harmonization.main.resources.config import (
+    minlsh_band_size,
+    minlsh_max_doc_length,
+    minlsh_n_docs,
+    minlsh_n_hashes,
+    minlsh_n_similar_docs,
+    minlsh_shingle_size,
+    minlsh_collect_indexes,
+)
 
 
 class MinLSH:
-    def __init__(
-        self,
-        n_hashes: int = 4000,
-        band_size: int = 5,
-        shingle_size: int = 5,
-        collect_indexes: bool = True,
-    ):
-        self.n_hashes = n_hashes
-        self.band_size = band_size
-        self.shingle_size = shingle_size
-        self.collect_indexes = collect_indexes
+    def __init__(self):
+        self.n_hashes = minlsh_n_hashes
+        self.band_size = minlsh_band_size
+        self.shingle_size = minlsh_shingle_size
+        self.collect_indexes = minlsh_collect_indexes
         self.flat_raw_profile = {}
 
     # Step 1 : Create shingles
@@ -50,7 +55,7 @@ class MinLSH:
         :return: list of shingles
         """
 
-        def shingles(x: str) -> list[str]:
+        def _shingles(x: str) -> list[str]:
             i = (
                 x.lower()
             )  # TODO: remove extra unnecessary characters when creating shingles
@@ -67,7 +72,7 @@ class MinLSH:
         return _flatten_list(
             list(
                 map(
-                    shingles,
+                    _shingles,
                     list(filter(_isNotEmpty, re.split("[-\s\\\\,]s*", input))),
                 )
             )
@@ -143,3 +148,22 @@ class MinLSH:
                     for pair in itertools.combinations(hash_bands[i][hash_num], r=2):
                         similar_docs.append(pair)
         return similar_docs
+
+    def compute_statistics(self, docs, n_similar_docs):
+        """Calculate blocking statistics
+
+        :parameter docs: output from blocking
+        :parameter n_similar_docs: number of similar docs
+
+        :return: dicttionary of calculated statistics
+        """
+        r = float(minlsh_n_hashes / minlsh_band_size)
+        similarity = (1 / r) ** (1 / float(minlsh_band_size))
+        result = {
+            "Similarity": f"{similarity}%",
+            "Similar Pairs": len(docs),
+            "Test": "Passed: All similar pairs found."
+            if len(docs) == n_similar_docs
+            else "Failed.",
+        }
+        return result

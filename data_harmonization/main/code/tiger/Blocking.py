@@ -68,43 +68,32 @@ class Blocking:
             id = id + 1
         return flattened_raw_profile
 
-    def do_blocking(
-        self,
-        docs: dict,
-        n_hashes: int = 4000,
-        band_size: int = 5,
-        shingle_size: int = 5,
-        collect_indexes: bool = True,
-    ):
-        block_ = MinLSH(
-            n_hashes=n_hashes,
-            band_size=band_size,
-            shingle_size=shingle_size,
-            collect_indexes=False,
-        )
+    def do_blocking(self, docs: dict):
+        """Block datasets"""
+        block_ = MinLSH()
         return block_.block_datasets(docs)
+
+    def get_statistics(self, docs, n_similar_docs):
+        """Get blocking statistics
+
+        :parameter docs: output from blocking
+        :parameter n_similar_docs: number of similar docs
+
+        :return calculated statistics
+        """
+        block_ = MinLSH()
+        return block_.compute_statistics(docs, n_similar_docs)
 
 
 if __name__ == "__main__":
 
-    n_hashes = 200
-    band_size = 5
-    shingle_size = 5
-    n_docs = 300
-    max_doc_length = 400
     n_similar_docs = 10
-    random.seed(42)
 
     clus = Blocking()
     prepared_data = clus.prepare_data(n_docs=300)
-    similar_docs = clus.do_blocking(
-        docs=prepared_data,
-        n_hashes=n_hashes,
-        band_size=band_size,
-        shingle_size=shingle_size,
-        collect_indexes=False,
-    )
-    print(similar_docs[0])
+    similar_docs = clus.do_blocking(docs=prepared_data)
+
+    print(clus.get_statistics(similar_docs, n_similar_docs))
     df_dict = {}
     for pair1, pair2 in similar_docs:
         for k, v in pair1.items():
@@ -123,16 +112,4 @@ if __name__ == "__main__":
             else:
                 df_dict[key_var].append(v)
     df = pd.DataFrame(df_dict)
-    # df.drop_duplicates(inplace=True)
     df.to_csv(os.getcwd() + "/similiar.csv")
-
-    r = float(n_hashes / band_size)
-    similarity = (1 / r) ** (1 / float(band_size))
-
-    print("similarity: %f" % similarity)
-    print("# Similar Pairs: %d" % len(similar_docs))
-
-    if len(similar_docs) == n_similar_docs:
-        print("Test Passed: All similar pairs found.")
-    else:
-        print("Test Failed.")
