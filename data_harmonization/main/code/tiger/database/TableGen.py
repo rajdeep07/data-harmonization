@@ -8,8 +8,7 @@ class TableGen:
     import_statement = """from sqlalchemy import Integer, Column, String, Float, ForeignKey
 from sqlalchemy import create_engine 
 from sqlalchemy.orm import sessionmaker, relationship
-from sqlalchemy.ext.declarative import declarative_base\n\n
-Base = declarative_base()
+from data_harmonization.main.code.tiger.database.Tables.Bottom import Base\n\n
 """
     attrtype_list = {
         'int64':'Column(Integer)\n',
@@ -28,7 +27,7 @@ Base = declarative_base()
 
     def _class_gen(self, table_name : str, attr_dict : dict):
         class_code = f"\nclass {table_name.capitalize()}(Base):\n".lstrip()
-        class_code += f"\t__tablename__ = '{table_name}'\n\n"
+        class_code += f"\t__tablename__ = '{table_name}'\n\n\tid=Column(Integer(), primary_key=True)\n"
         for column_name, col_dtype in attr_dict.items():
             # print(str(col_dtype), col_dtype.name, col_dtype)
             if column_name == "Unnamed: 0":
@@ -63,6 +62,6 @@ Base = declarative_base()
 
 if __name__ == "__main__":
     parser = argparse.PARSER
-    tgen = TableGen('/home/navazdeens/data-harmonization/data_harmonization/main/data/flna.csv', 
+    tgen = TableGen('/home/navazdeens/data-harmonization/data_harmonization/main/data/pbna.csv', 
             '/home/navazdeens/data-harmonization/data_harmonization/main/code/tiger/database/Tables')
     tgen.generate_class()
