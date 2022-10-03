@@ -1,5 +1,5 @@
 from curses import echo
-from data_harmonization.main.code.tiger.database.Tables.Pbna import Pbna
+from data_harmonization.main.code.tiger.database.Tables import *
 import data_harmonization.main.resources.config as config
 import mysql.connector
 import sqlalchemy
@@ -44,7 +44,8 @@ class MySQL:
 if __name__ == "__main__":
     msql = MySQL('localhost', 'data_harmonization', 'root', 'root$Navaz1')
     session = msql.SessionMaker()
-    new = Pbna(id=1, Name="new name")
-    for res in session.query(Pbna).all():
-        print(res)
+    new = Flna(id=3, Name="new name2")
+    session.add(new)
+    session.commit()
+    print(session.query(Flna).first())
     

@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, Column, String, Float, ForeignKey
+from sqlalchemy import BigInteger, Text, Float, Column
 from sqlalchemy import create_engine 
 from sqlalchemy.orm import sessionmaker, relationship
 from data_harmonization.main.code.tiger.database.Tables.Bottom import Base
@@ -7,14 +7,17 @@ from data_harmonization.main.code.tiger.database.Tables.Bottom import Base
 class Flna(Base):
 	__tablename__ = 'flna'
 
-	id=Column(Integer(), primary_key=True)
-	Name = Column(String(12))
-	Address = Column(String(12))
-	City = Column(String(12))
-	State = Column(String(12))
-	Zip = Column(Integer)
-	source = Column(String(12))
+	id=Column(BigInteger, primary_key=True)
+	Name = Column(Text)
+	Address = Column(Text)
+	City = Column(Text)
+	State = Column(Text)
+	Zip = Column(BigInteger)
+	source = Column(Text)
 	CISID = Column(Float)
 	COF = Column(Float)
-	cluster_id = Column(Integer)
+	cluster_id = Column(BigInteger)
 	confidence = Column(Float)
+
+	def __repr__(self) -> str:
+		return f'<Flna Name:{self.Name} Address:{self.Address} City:{self.City} State:{self.State} Zip:{self.Zip} source:{self.source} CISID:{self.CISID} COF:{self.COF} cluster_id:{self.cluster_id} confidence:{self.confidence} >'
