@@ -40,6 +40,9 @@ class Cluster:
     flattenRawprofile = {}
 
     # Flatten rawProfiles to fields which are only string / int / float
+    def Create_enity(self, data:pd.DataFrame): 
+        pass
+
     def createflattenRawprofile(
         self, data: Optional[pd.DataFrame] = None, n_docs: Optional[int] = 1000
     ) -> dict:
@@ -48,7 +51,7 @@ class Cluster:
             filenames = listdir(os.getcwd() + "/data_harmonization/main/data/")
             csv_filenames = [
                 filename for filename in filenames if filename.endswith(".csv")
-            ]
+            ] 
             rawProfiles = pd.DataFrame()  # correct data structure here ?
             for csv_file in csv_filenames:
                 self.rawProfiles = rawProfiles.append(
@@ -58,7 +61,7 @@ class Cluster:
                 )
 
         rawProfilesWithTokens = self.rawProfiles.apply(
-            lambda r: Sanitizer().toRawEntity(r), axis=1
+            lambda r: Sanitizer().toRawEntity(r, gen_id=True, clean_data=True), axis=1
         )  # .filter(lambda p: p.id._isNotEmpty)
         id = 0
         for raw_ent in rawProfilesWithTokens.sample(n_docs):

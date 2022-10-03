@@ -28,7 +28,7 @@ class Train:
         n_hashes = 200
         band_size = 5
         shingle_size = 5
-        n_docs = 2000
+        n_docs = 5000
         cluster = Cluster().fit(n_docs)
         self.flatten_rawprofile = cluster.flattenRawprofile
         # print("Current Flatten raw profiles", self.flatten_rawprofile)
@@ -155,7 +155,7 @@ class Train:
 
 if __name__ == "__main__":
     train = Train().createClusterPairs()
-    print("Training dataset", train.cluster_pairs)
+    # print("Training dataset", train.cluster_pairs)
 
     _positive_df = train._getPositiveExamples()
     # print(_positive_df)

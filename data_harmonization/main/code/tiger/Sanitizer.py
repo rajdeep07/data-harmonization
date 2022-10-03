@@ -27,7 +27,7 @@ class Sanitizer:
             ]
         return (value for item, value in items if item in ("__annotations__"))
 
-    def get_kwargs(self, cls, attr_lists):
+    def get_kwargs(self, cls, attr_lists, gen_id=False, clean_data=True):
         self.cls_map = {}
         for attr, dtype in attr_lists.items():
             dtype = dtype.replace("Optional[", "").replace("]", "")
@@ -35,23 +35,36 @@ class Sanitizer:
         raw_kw = {}
         for attr, tpe in self.cls_map.items():
             kw = {}
-            if attr == "id":
+            if attr == "id" and gen_id:
                 raw_kw[attr] = uuid.uuid4()
             elif tpe not in ("int", "str", "float"):
                 sub_attr_list = list(self._get_attr_list(self.cls_map[attr]))[0]
                 for sub_attr in sub_attr_list.keys():
-                    kw[sub_attr] = cls.get(sub_attr)
-                raw_kw[attr] = self._apply_transformer(kw, tpe)
+                    try:
+                        kw[sub_attr] = cls.get(sub_attr, None)
+                    except:
+                        kw[sub_attr] = getattr(cls, sub_attr, None)
+                
+                raw_kw[attr] = self._apply_transformer(kw, tpe) if clean_data else kw
             else:
-                raw_kw[attr] = self._apply_transformer(cls.get(attr))  # cls.get(attr)
+                try:
+                    raw_kw[attr] = self._apply_transformer(cls.get(attr, None))  if clean_data else cls.get(attr, None)  # for dict conversion
+                except:
+                    raw_kw[attr] = self._apply_transformer(getattr(cls, attr, None)) if clean_data else getattr(cls, attr, None)  # for class conversion
+
         return raw_kw
 
-    def toRawEntity(self, cls):
-
+    def toRawEntity(self, cls:Entity1, clean_data:bool, gen_id:bool=False) -> RawEntity:
         raw_attribute_lists = list(self._get_attr_list(RawEntity))[0]
-        raw_kw = self.get_kwargs(cls, raw_attribute_lists)
+        raw_kw = self.get_kwargs(cls, attr_lists=raw_attribute_lists, clean_data=clean_data, gen_id=gen_id)
         raw_entity_object = RawEntity(**raw_kw)
         return raw_entity_object
+    
+    def toEntity(self, Ent_Obj : Any, data:dict, gen_id=True):
+        entity_attr_list = list(self._get_attr_list(Ent_Obj))[0]
+        kw = self.get_kwargs(data, entity_attr_list, gen_id)
+        entity_obj = Ent_Obj(**kw)
+        return entity_obj
 
     def _apply_transformer(self, attr, cls=None):
         transformed_ = {}
@@ -141,25 +154,26 @@ if __name__ == "__main__":
     addr = Address(city="Kolkata!22##*!?@34", zipcode=700000, address="Saltlake + Sdfg")
     entity1 = Entity1(
         id=12,
-        name="ABC",
-        city="Kalyani",
-        state="WB",
-        zipcode=741250,
-        addr="Bedibhawan",
+        Name="ABC",
+        City="Kalyani",
+        State="WB",
+        Zip=741250,
+        Address="Bedibhawan",
         source="src",
         gender="F",
     )
     test = pd.Series(
         dict(
             Name="tiger Analytics",
-            cluster_id=1,
             City="new_city",
             Zip=123456,
             Address="231, asdf, asdfgh",
-            gender_field="M",
+            State="ca",
+            gender="M",
             source="XYZ",
             age=25,
         )
     )
     snt = Sanitizer()
-    print("final output", snt.toRawEntity(test))
+    print("Entity:\n", snt.toEntity(Entity1, test))
+    print("RawEntity:\n", snt.toRawEntity(entity1, clean_data=False))

@@ -10,7 +10,7 @@ from pydantic import BaseModel
 
 
 class Gender(BaseModel):
-    gender_field: Optional[Any] = None
+    gender: Optional[Any] = None
 
 
 class Name(BaseModel):
@@ -34,30 +34,30 @@ class Contact(BaseModel):
 
 class Entity1(BaseModel):
     id: int
-    name: Optional[str] = None
-    address: Optional[str] = None
-    city: Optional[str] = None
-    state: Optional[str] = None
-    zipcode: Optional[str] = None
+    Name: Optional[str] = None
+    Address: Optional[str] = None
+    City: Optional[str] = None
+    State: Optional[str] = None
+    Zip: Optional[str] = None
     source: Optional[str] = None
     gender: Optional[str] = None
 
 
 class Entity2(BaseModel):
     id: int
-    name: Optional[str] = None
-    address: Optional[str] = None
-    city: Optional[str] = None
-    state: Optional[str] = None
-    zipcode: Optional[str] = None
+    Name: Optional[str] = None
+    Address: Optional[str] = None
+    City: Optional[str] = None
+    State: Optional[str] = None
+    Zip: Optional[str] = None
     source: Optional[str] = None
     gender: Optional[str] = None
 
 
 class RawEntity(BaseModel):
     id: int
-    name: Optional[Name] = None
-    address: Optional[Address] = None
-    gender: Optional[Gender] = None
+    Name: Optional[Name] = None
+    Address: Optional[Address] = None
+    Gender: Optional[Gender] = None
     source: Optional[str] = None
     age: Optional[int] = 0
