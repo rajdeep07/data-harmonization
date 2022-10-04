@@ -1,24 +1,15 @@
-import random
-import re
-import time
-from shutil import ignore_patterns
-from typing import Tuple
-
-import numpy as np
 import pandas as pd
 import tensorflow as tf
-from sklearn.model_selection import StratifiedShuffleSplit
 
-from data_harmonization.main.code.tiger.Features import Features
-from data_harmonization.main.code.tiger.features.Distance import Distance
-from data_harmonization.main.code.tiger.model.datamodel import RawEntity
 from data_harmonization.main.code.tiger.Blocking import Blocking
+from data_harmonization.main.code.tiger.classification.deep_learning import DeepLearning
+import data_harmonization.main.resources.config as config
 
 tf.compat.v1.disable_v2_behavior()
 
 
 class Train:
-    """Classification using tensorflow"""
+    """Classification"""
 
     def __init__(self):
         self.flat_rawprofile = None
@@ -26,119 +17,76 @@ class Train:
         self._positive_df = pd.DataFrame()
         self._negative_df = pd.DataFrame()
 
-    def do_blocking(self):
+    def get_data(self):
         """Block datasets and create clusters
 
         :return: class object with prepared input data and clusters
         """
-        n_hashes = 200
-        band_size = 5
-        shingle_size = 5
-        n_docs = 2000
         cluster = Blocking()
-        self.flat_rawprofile = cluster.prepare_data(n_docs=n_docs)
-        self.cluster_pairs = cluster.do_blocking(
-            docs=self.flat_rawprofile,
-            n_hashes=n_hashes,
-            band_size=band_size,
-            shingle_size=shingle_size,
-            collect_indexes=False,
-        )
+        self.flat_rawprofile = cluster.prepare_data(n_docs=config.minlsh_n_docs)
+        self.cluster_pairs = cluster.do_blocking(docs=self.flat_rawprofile)
         return self
 
-    def _get_positive_examples(self):
-        """Create positive examples (similar values) for classification
+    # def _get_data_from_db(self, app_name, table_name):
+    #     app_name = "data_harmonization"
+    #     table_name = "Raw_Entity"
+    #     mysql = MySQL(
+    #         config.mysqlLocalHost, app_name, config.mysqlUser, config.mysqlPassword
+    #     )
 
-        :return: positive examples
-        """
-        for pairs in self.cluster_pairs:
-            _positive = Features().get(pairs)
-            row = pd.DataFrame(
-                data=[[pairs[0]["id"], pairs[1]["id"], _positive, 1]],
-                columns=("rid", "lid", "feature", "target"),
-            )
-            self._positive_df = pd.concat(
-                [self._positive_df, row], axis=0, ignore_index=True
-            )
-        return self._positive_df
+    #     mysql.mycursor.execute(f"SELECT * FROM {table_name};")
+    #     result_set = mysql.get_result()
+    #     return result_set
 
-    def _get_negative_examples(self):
-        """Create negative examples (nonsimilar values) for Classification.
+    # def get_data(self):
+    #     app_name = "data_harmonization"
+    #     table_name = "Raw_Entity"
+    #     # format flat_rawprofile
+    #     result_set = self._get_data_from_db(app_name, table_name)
+    #     id = 0
+    #     self.flat_rawprofile = {}
+    #     for row in result_set:
+    #         self.flat_rawprofile[str(id)] = row
+    #         id = id + 1
 
-        :return: negative examples
-        """
-        total_length = len(self.flat_rawprofile)
-        negative_pair_set = set()
-        negative_df_size = 1 * (self._positive_df.shape[0])
-        prev_size = -1
-        while len(negative_pair_set) < negative_df_size:
-            pair1_row = random.randint(0, total_length - 1)
-            pair2_row = random.randint(0, total_length - 1)
-            pair1 = self.flat_rawprofile[str(pair1_row)]
-            pair2 = self.flat_rawprofile[str(pair2_row)]
+    #     # get cluster pairs
+    #     table_name = "Cluster_pairs"
+    #     self.cluster_pairs = self._get_data_from_db(app_name, table_name)
 
-            row1 = (self._positive_df["rid"] == pair1["id"]).any() and (
-                self._positive_df["lid"] == pair2["id"]
-            ).any()
-            row2 = (self._positive_df["lid"] == pair2["id"]).any() and (
-                self._positive_df["rid"] == pair1["id"]
-            ).any()
+    #     return self
 
-            if not row1 and not row2:
-                negative_pair_set.add((pair1["id"], pair2["id"]))
+    def train(self, flat_rawprofile=None, cluster_pairs=None):
+        """It will call the train method of specific classification module"""
+        if not flat_rawprofile:
+            flat_rawprofile = self.flat_rawprofile
+        if not cluster_pairs:
+            cluster_pairs = self.cluster_pairs
 
-            if len(negative_pair_set) > prev_size:
-                prev_size = len(negative_pair_set)
-                _negative = Features().get((pair1, pair2))
-                row = pd.DataFrame(
-                    data=[[pair1["id"], pair2["id"], _negative, 0]],
-                    columns=("rid", "lid", "feature", "target"),
-                )
-                self._negative_df = pd.concat(
-                    [self._negative_df, row], axis=0, ignore_index=True
-                )
-        return self._negative_df
+        classification_obj = DeepLearning()
+        return classification_obj.train(self, flat_rawprofile, cluster_pairs)
 
-    def _concat_examples(self, _positive_df, _negative_df):
-        """Concatinate positive and negative examples.
+    def predict(self, flat_rawprofile=None, cluster_pairs=None):
+        """It will call the predict method of specific classification module to predict output"""
+        if not flat_rawprofile:
+            flat_rawprofile = self.flat_rawprofile
+        if not cluster_pairs:
+            cluster_pairs = self.cluster_pairs
 
-        :return: concatinated dataset
-        """
-        _positive_df["feature"] = _positive_df["feature"].to_numpy().flatten()
-        _negative_df["feature"] = _negative_df["feature"].to_numpy().flatten()
-        return pd.concat([_positive_df, _negative_df])
-
-    def predict(self, input_tensor):
-        """Function to run an input tensor through the 3 layers and output a tensor
-        that will give us a match/non match result.
-        Each layer uses a different function to fit lines through the data and
-        predict whether a given input tensor will result in a match or non match profiles.
-
-        :return: match or non match profile"""
-        # Sigmoid fits modified data well
-        layer1 = tf.nn.sigmoid(tf.matmul(input_tensor, weight_1_node) + biases_1_node)
-        # Dropout prevents model from becoming lazy and over confident
-        layer2 = tf.nn.dropout(
-            tf.nn.sigmoid(tf.matmul(layer1, weight_2_node) + biases_2_node), 0.85
-        )
-        # Softmax works very well with one hot encoding which is how results are outputted
-        layer3 = tf.nn.softmax(tf.matmul(layer2, weight_3_node) + biases_3_node)
-        return layer3
-
-    def calculate_accuracy(self, actual, predicted):
-        """Calculate the accuracy of the actual result vs the predicted result
-
-        :result: accuracy in percentage"""
-        actual = np.argmax(actual, 1)
-        predicted = np.argmax(predicted, 1)
-        print(actual, predicted)
-        return 100 * np.sum(np.equal(predicted, actual)) / predicted.shape[0]
-
-    # TODO: predict on all pair within that cluster
+        classification_obj = DeepLearning()
+        return classification_obj.predict(self, flat_rawprofile, cluster_pairs)
 
 
 if __name__ == "__main__":
-    train = Train().do_blocking()
+    dta = Train().get_data()
+    train = Train().get_data()
+    dl = DeepLearning()
+    # fitted = dl.fit(train.flat_rawprofile, train.cluster_pairs)
+    # output = dl.network(fitted)
+    dl.train(train.flat_rawprofile, train.cluster_pairs)
+    output = dl.predict(train.flat_rawprofile, train.cluster_pairs)
+    print(output)
+
+    """ train = Train().get_data()
     print("Training dataset", train.cluster_pairs)
 
     _positive_df = train._get_positive_examples()
@@ -275,3 +223,4 @@ if __name__ == "__main__":
         final_match_y_test, final_match_y_test_prediction
     )
     print("Final match specific accuracy: {0:.2f}%".format(final_match_accuracy))
+ """

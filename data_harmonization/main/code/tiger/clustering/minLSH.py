@@ -39,6 +39,8 @@ from data_harmonization.main.resources.config import (
 
 
 class MinLSH:
+    """Block datasets and create cluster pairs using minLSH alogorithm"""
+
     def __init__(self):
         self.n_hashes = minlsh_n_hashes
         self.band_size = minlsh_band_size

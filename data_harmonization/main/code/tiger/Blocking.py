@@ -1,31 +1,16 @@
-import itertools
 import os
-import random
-import re
-import sys
 from os import listdir
-from typing import Any, Optional
+from typing import Optional
 
-import numpy as np
 import pandas as pd
 
 from data_harmonization.main.code.tiger.model.datamodel import *
-from data_harmonization.main.code.tiger.model.GeocodedAddress import GeocodedAddress
-from data_harmonization.main.code.tiger.model.PostalAddress import PostalAddress
-from data_harmonization.main.code.tiger.model.SemiMergedProfile import SemiMergedProfile
 from data_harmonization.main.code.tiger.Sanitizer import Sanitizer
-from data_harmonization.main.code.tiger.transformer import (
-    CityTransformer,
-    NameTransformer,
-    PostalAddressTransformer,
-    StateTransformer,
-)
-from data_harmonization.main.code.tiger.transformer.utils import StringSupport
 from data_harmonization.main.code.tiger.clustering.minLSH import MinLSH
 
 
 class Blocking:
-    """create cluster pairs using minLSH alogorithm"""
+    """Block datasets"""
 
     def prepare_data(
         self, n_docs: Optional[int] = 1000, data: Optional[pd.DataFrame] = None
