@@ -1,6 +1,4 @@
 import re
-from curses.ascii import isdigit
-from turtle import shape
 from typing import Any, Tuple
 
 import numpy as np
