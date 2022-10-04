@@ -131,6 +131,11 @@ class Classifier():
             final_accuracy = self.calculate_accuracy(final_y_test, final_y_test_prediction)
             print("Final accuracy: {0:.2f}%".format(final_accuracy))
 
+    def predict(self, data_X):
+        pass
+    
+    def load_model(self, path:str):
+        return None
 
     def save_model(self, path:str):
         pass
