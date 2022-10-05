@@ -1,17 +1,18 @@
 from fileinput import filename
 import os
 import os.path as path
+from os import listdir
 from pathlib import Path
 import pandas as pd
-import argparse
 
-class TableGen:
+
+class SchemaGenerator():
     bottom_code = "from sqlalchemy.orm import declarative_base\n\nBase = declarative_base()"
 
     import_statement = """from sqlalchemy import BigInteger, Text, Float, Column
 from sqlalchemy import create_engine 
 from sqlalchemy.orm import sessionmaker, relationship
-from data_harmonization.main.code.tiger.database.Tables.Bottom import Base\n\n
+from data_harmonization.main.code.tiger.model.ingester.Bottom import Base\n\n
 """
     attrtype_list = {
         'int64':'Column(BigInteger)\n',
@@ -29,7 +30,7 @@ from data_harmonization.main.code.tiger.database.Tables.Bottom import Base\n\n
     
     def _update_init(self, filename):
         with open(f'{self.output_path}/__init__.py', 'a') as file:
-            file.write(f"from Tables.{filename} import {filename}\n")
+            file.write(f"from data_harmonization.main.code.tiger.model.ingester.{filename} import {filename}\n")
 
     def _bottom_gen(self):
         if path.exists(os.path.join(self.output_path, 'Bottom.py')):
@@ -68,6 +69,7 @@ from data_harmonization.main.code.tiger.database.Tables.Bottom import Base\n\n
             file.write(self.code)
 
     def generate_class(self) -> None:
+        # read sample 25 rows of CSV to infer schema
         df = pd.read_csv(self.file_path, nrows=25)
         table_name = Path(self.file_path).stem
         attr_dict = dict(df.dtypes)
@@ -79,15 +81,22 @@ from data_harmonization.main.code.tiger.database.Tables.Bottom import Base\n\n
         self._make_file(table_name.capitalize())
         self._update_init(table_name.capitalize())
         self._bottom_gen()
-        # print(self.code)
-            
-
-        
-
 
 
 if __name__ == "__main__":
-    parser = argparse.PARSER
-    tgen = TableGen('/home/navazdeens/data-harmonization/data_harmonization/main/data/pbna.csv', 
-            '/home/navazdeens/data-harmonization/data_harmonization/main/code/tiger/database/Tables')
-    tgen.generate_class()
+
+    current_dir = os.path.dirname(os.path.realpath(__file__))
+    target_dir = os.path.sep.join(current_dir.split(os.path.sep)[:-3])
+
+    filenames = listdir(target_dir + "/data/")
+    csv_filenames = [
+        filename
+        for filename in filenames
+        if filename.endswith(".csv") and not filename.startswith("benchmark")
+    ]
+
+    schema_dir = str(target_dir + '/code/tiger/model/ingester/')
+
+    for csv_file in csv_filenames:
+        schemaGen = SchemaGenerator(str(target_dir + '/data/' + csv_file), schema_dir)
+        schemaGen.generate_class()

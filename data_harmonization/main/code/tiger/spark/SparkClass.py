@@ -1,5 +1,6 @@
 from pyspark.sql import SparkSession, SQLContext, DataFrame
-from pyspark import SparkContext, SparkConf, SparkFiles
+from pyspark import SparkConf, SparkFiles
+from pyspark.context import SparkContext
 import urllib.request
 import data_harmonization.main.resources.config as config
 
@@ -11,8 +12,8 @@ class SparkClass:
         self.password = ''
 
         if config:
-            configs = SparkConf().setAll(config)
-            self.spark = SparkSession().appName("data_harmonization").config(conf=configs).getorCreate()
+            config_ = SparkConf().setAll(config)
+            self.spark = SparkSession().appName("data_harmonization").config(conf=config_).getorCreate()
         else:
             self.spark = SparkSession().appName("data_harmonization").getorCreate()
 

@@ -5,7 +5,7 @@ channels:
 dependencies:
 # conda installs should be used where possible especially for any packages that need to be compiles
   - python=3.9
-  - numpy  # can lock down versions if required
+  - numpy
   - pandas
   - matplotlib
   - pip

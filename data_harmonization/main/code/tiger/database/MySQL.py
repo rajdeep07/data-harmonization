@@ -1,9 +1,9 @@
-from data_harmonization.main.code.tiger.database.Tables import *
+from data_harmonization.main.code.tiger.model.ingester import *
 import data_harmonization.main.resources.config as config
 import mysql.connector
 import sqlalchemy
 from sqlalchemy.orm import sessionmaker
-from data_harmonization.main.code.tiger.database.Tables.Bottom import Base
+from data_harmonization.main.code.tiger.model.Ingester.Bottom import Base
 from sqlalchemy import text
 
 class MySQL:
@@ -56,7 +56,7 @@ class MySQL:
         return session_maker()
 
 if __name__ == "__main__":
-    msql = MySQL('localhost', 'data_harmonization', 'root', 'root$Navaz1')
+    msql = MySQL('localhost', 'data_harmonization', 'root', 'default')
     session = msql.SessionMaker()
     # new = Flna(id=3, Name="new name2")
     # session.add(new)

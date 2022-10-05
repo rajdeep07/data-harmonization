@@ -1,11 +1,11 @@
 from sqlalchemy import BigInteger, Text, Float, Column
 from sqlalchemy import create_engine 
 from sqlalchemy.orm import sessionmaker, relationship
-from data_harmonization.main.code.tiger.database.Tables.Bottom import Base
+from data_harmonization.main.code.tiger.model.ingester.Bottom import Base
 
 
-class Pbna(Base):
-	__tablename__ = 'pbna'
+class Flna(Base):
+	__tablename__ = 'flna'
 
 	id=Column(BigInteger, primary_key=True)
 	Name = Column(Text)
@@ -20,4 +20,4 @@ class Pbna(Base):
 	confidence = Column(Float)
 
 	def __repr__(self) -> str:
-		return f'<Pbna Name:{self.Name} Address:{self.Address} City:{self.City} State:{self.State} Zip:{self.Zip} source:{self.source} CISID:{self.CISID} COF:{self.COF} cluster_id:{self.cluster_id} confidence:{self.confidence} >'
+		return f'<Flna Name:{self.Name} Address:{self.Address} City:{self.City} State:{self.State} Zip:{self.Zip} source:{self.source} CISID:{self.CISID} COF:{self.COF} cluster_id:{self.cluster_id} confidence:{self.confidence} >'
