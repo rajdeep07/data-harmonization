@@ -294,3 +294,19 @@ if __name__ == "__main__":
         print("Test Passed: All similar pairs found.")
     else:
         print("Test Failed.")
+
+    # Adding new Test Pass/Fail condition - 
+    # Comparing pairings with the # of unique cluster ids
+    uniq_cluster_ids = [d['cluster_id'] for d in list(docs.values())]
+    uniq_cluster_ids = set(uniq_cluster_ids)        
+    if len(similar_docs) == len(uniq_cluster_ids):
+        print("My Test Passed: Every doc correctly paired.")
+    elif len(similar_docs) < len(uniq_cluster_ids):
+        print("My Test Passed: Docs may be incorrectly paired")
+    else:
+        print("My Test Failed: Docs not paired")
+        
+    # Adding new Test metric -
+    # True Positive and False Positive count based on cluster id comparison
+    df['correct match'] = np.where(df['cluster_id_pair1']==df['cluster_id_pair2'],'True Positive','False Positive') 
+    print(df['correct match'].value_counts())
