@@ -79,6 +79,7 @@ class Ingester(RawEntity, Sanitizer):
         spark.writeToDatabase(db=database_name, table=csv_file.split(".")[:-1], df=df, mode='overwrite')
 
     # Step 4: With Raw Entities ==> apply sanitiser ==> Persist in MySQL
+    ## Sanitiser ==> dictionary spark.dataFrames()
     sanitiser = Sanitizer()
     # sanitiser.toRawEntity()
 
