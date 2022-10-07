@@ -16,6 +16,7 @@ import pyspark.sql.functions as F
 
 # from data_harmonization.main.code.tiger.model.ingester import *
 from data_harmonization.main.code.tiger.database.MySQL import MySQL
+from data_harmonization.main.code.tiger.model.ingester.raw_entity import RawEntity
 
 
 os.environ["PYSPARK_PYTHON"] = sys.executable
@@ -23,11 +24,6 @@ os.environ["PYSPARK_DRIVER_PYTHON"] = sys.executable
 App_Name = "data_harmonization"
 database_name = "data_harmonization"
 raw_entity_table_name = "Raw_Entity"
-
-
-class RawEntity:
-    def __init__(self):
-        pass
 
 
 class Ingester:
@@ -132,18 +128,18 @@ class Ingester:
             #                 else:
             #                     semi_flatten_profile[k_entity] = v_entity
             #             entity_list.append(semi_flatten_profile)
-            #             # raw_entity = sanitiser.toRawEntity(
-            #             #     entity_dict, gen_id=True, clean_data=True
-            #             # )
-            #             # semi_flatten_rawprofile = {}
-            #             # raw_dict = raw_entity.__dict__
-            #             # for k, v in raw_dict.items():
-            #             #     if not isinstance(v, (int, str, float)) and v:
-            #             #         for k1, v1 in v.__dict__.items():
-            #             #             semi_flatten_rawprofile[k1] = v1
-            #             #     else:
-            #             #         semi_flatten_rawprofile[k] = v
-            #             # raw_entity_list.append(semi_flatten_rawprofile)
+            # raw_entity = sanitiser.toRawEntity(
+            #     entity_dict, gen_id=True, clean_data=True
+            # )
+            # semi_flatten_rawprofile = {}
+            # raw_dict = raw_entity.__dict__
+            # for k, v in raw_dict.items():
+            #     if not isinstance(v, (int, str, float)) and v:
+            #         for k1, v1 in v.__dict__.items():
+            #             semi_flatten_rawprofile[k1] = v1
+            #     else:
+            #         semi_flatten_rawprofile[k] = v
+            # raw_entity_list.append(semi_flatten_rawprofile)
             #         break
 
             # db.commit()
@@ -171,7 +167,10 @@ class Ingester:
         # Step 4: With Raw Entities ==> apply sanitiser ==> Persist in MySQL
         ## Sanitiser ==> dictionary spark.dataFrames()
 
-        # data_collect = df.collect()
+        output = final_df.rdd.map(
+            lambda r: sanitiser.toRawEntity(r, gen_id=True, clean_data=True)
+        ).toDF()
+        # data_collect = final_df.collect()
         # raw_entity_list = []
         # # raw_entities = spark.spark.sparkContext.emptyRDD()
         # for data in data_collect:
@@ -185,14 +184,14 @@ class Ingester:
         #         else:
         #             semi_flatten_rawprofile[k] = v
         #     raw_entity_list.append(semi_flatten_rawprofile)
-        raw_entities = spark.spark.createDataFrame(raw_entity_list)
-        raw_entities.show()
+        # raw_entities = spark.spark.createDataFrame(raw_entity_list)
+        # raw_entities.show()
 
         # Step 4: Write to MySQL RawEntity
         spark.write_to_database_from_df(
             db=database_name,
             table=raw_entity_table_name,
-            df=final_df,
+            df=output,
             mode="overwrite",
         )
 

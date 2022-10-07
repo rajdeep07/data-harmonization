@@ -4,7 +4,13 @@ from typing import Any
 import pandas as pd
 
 # from data_harmonization.main.code.tiger.model.dataclass import RawEntity, CleansedRawEntity
-from data_harmonization.main.code.tiger.model.datamodel import *
+from data_harmonization.main.code.tiger.model.datamodel import (
+    Name,
+    Gender,
+    Address,
+    Email,
+    Contact,
+)
 from data_harmonization.main.code.tiger.transformer.IntegerTypeTransformer import (
     IntegerTypeTransformer,
 )
@@ -17,6 +23,7 @@ from data_harmonization.main.code.tiger.transformer.PostalAddressTransformer imp
 from data_harmonization.main.code.tiger.transformer.StringTypeTransformer import (
     StringTypeTransformer,
 )
+from data_harmonization.main.code.tiger.model.ingester.raw_entity import RawEntity
 
 
 class Sanitizer:
@@ -43,7 +50,7 @@ class Sanitizer:
             kw = {}
             if attr == "id":
                 if gen_id:
-                    raw_kw[attr] = uuid.uuid3().int
+                    raw_kw[attr] = uuid.uuid4().int
             elif tpe not in ("int", "str", "float", "int64", "float64", "object"):
                 sub_attr_list = list(self._get_attr_list(self.cls_map[attr]))[0]
                 for sub_attr in sub_attr_list.keys():
@@ -70,9 +77,7 @@ class Sanitizer:
                 raw_kw[attr] = self._get_item(cls, attr, None)
         return raw_kw
 
-    def toRawEntity(
-        self, cls: Entity1, clean_data: bool, gen_id: bool = False
-    ) -> RawEntity:
+    def toRawEntity(self, cls, clean_data: bool, gen_id: bool = False) -> RawEntity:
         raw_attribute_lists = list(self._get_attr_list(RawEntity))[0]
         raw_kw = self.get_kwargs(
             cls, attr_lists=raw_attribute_lists, clean_data=clean_data, gen_id=gen_id
@@ -220,3 +225,9 @@ if __name__ == "__main__":
     print(entity1)
     print("Entity:\n", snt.toEntity(Pbna, test))
     print("RawEntity:\n", snt.toRawEntity(entity1, clean_data=False))
+
+
+# def to_raw_entity(self, cls):
+#     obj = RawEntity(id=cls.id, ZipCode=standardizeStringType(cls.zipcode))
+#     row1 = obj
+#     return row1
