@@ -5,13 +5,18 @@ import urllib.request
 import data_harmonization.main.resources.config as config
 from pyspark.sql import functions as F
 import data_harmonization.main.resources.config as config_
+import os
+import findspark
+
 
 class SparkClass:
 
-    # Step 1: We all need a spark session instance
-    spark = SparkSession.builder().master("local[*]").appName(config_.APP_NAME)\
-        .config("spark.sql.shuffle.partitions", "2").getOrCreate()
+    findspark.init()
 
+    # Step 1: We all need a spark session instance
+    spark = SparkSession.builder.master("local[*]").appName(config_.APP_NAME)\
+        .config("spark.sql.shuffle.partitions", "2").getOrCreate()
+    os.environ['PYSPARK_SUBMIT_ARGS'] = '--packages mysql:mysql-connector-java:8.0.18 pyspark-shell'
     # Step 2: read_from_database_to_dataframe [MySQL]
     def read_from_database_to_dataframe(self, spark, table, columnTypes=None):
         df = spark.read.format('jdbc').options(
@@ -35,7 +40,8 @@ class SparkClass:
     # Step 4: write_to_csv_from_df
     # data is distributed in 4 partitions: reduce or pandas
     def write_to_csv_from_df(self, local_path, df):
-        return df.repartition(1).write.format('com.databricks.spark.csv').save(local_path, header='true')
+        df.repartition(1).write.format('com.databricks.spark.csv').save(local_path, header='true')
+        return 'Success'
         # df.toPandas().to_csv(local_path)
 
     # Step 5: write_to_database_from_df
@@ -48,6 +54,7 @@ class SparkClass:
             dbtable=table,
             user=config_.mysqlUser,
             password=config_.mysqlPassword).mode(mode).save()
+        return 'Success'
 
 if __name__ == "__main__":
     SparkClass()
