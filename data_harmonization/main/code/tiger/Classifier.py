@@ -20,7 +20,7 @@ class Classifier():
 
     def _feature_data(self, features:pd.DataFrame, target:pd.DataFrame) -> pd.DataFrame:
         features = Features().get(features)
-        return features, pd.get_dummies(target, prefix=["target"], columns=["target"]).values
+        return features, pd.get_dummies(target, prefix=["target"]).values
 
     def _extract_postive_data(self, data:pd.DataFrame, threshold:float = 0.70) -> pd.DataFrame:
         high_thresh_data = data[data['confidence'] >= threshold]

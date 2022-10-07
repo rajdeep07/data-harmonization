@@ -21,8 +21,10 @@ from data_harmonization.main.code.tiger.model.ingester.Bottom import Base\n\n
     }
     repr_code = "\n\tdef __repr__(self) -> str:\n\t\treturn "
 
-    default_type = 'Column(Text)\n'
+    schema_code = "\n\t@staticmethod\n\tdef get_schema() -> dict:\n"
 
+    default_type = 'Column(Text)\n'
+    
     def __init__(self, file_path:path, output_path:path) -> None:
         self.code = ""
         self.file_path = file_path
@@ -68,6 +70,12 @@ from data_harmonization.main.code.tiger.model.ingester.Bottom import Base\n\n
         with open(f'{self.output_path}/{filename}.py', 'w') as file:
             file.write(self.code)
 
+    def _schema_method(self, table_name, dict_types):
+        dict_types['id'] = 'int64'
+        dict_types = {k:str(v) for k, v in dict_types.items() if k != 'Unnamed: 0'}
+        self.schema_code += f"\t\treturn {dict_types}\n"
+        self.code += self.schema_code
+
     def generate_class(self) -> None:
         # read sample 25 rows of CSV to infer schema
         df = pd.read_csv(self.file_path, nrows=25)
@@ -77,6 +85,7 @@ from data_harmonization.main.code.tiger.model.ingester.Bottom import Base\n\n
 
         self._import_statement_gen()
         self._class_gen(table_name ,attr_dict)
+        self._schema_method(table_name, attr_dict)
         self._repr_gen(table_name, attr_dict)
         self._make_file(table_name.capitalize())
         self._update_init(table_name.capitalize())

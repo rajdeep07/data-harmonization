@@ -1,10 +1,9 @@
-from data_harmonization.main.code.tiger.model.ingester import *
 import data_harmonization.main.resources.config as config
 import mysql.connector
 import sqlalchemy
 from sqlalchemy.orm import sessionmaker
-from data_harmonization.main.code.tiger.model.Ingester.Bottom import Base
 from sqlalchemy import text
+import importlib
 
 class MySQL:
     def __init__(self, host, database, user, password):
@@ -21,10 +20,24 @@ class MySQL:
         self.url = f'mysql+mysqlconnector://{self.user}:{self.password}@{self.host}/{self.database}'
         self.engine = sqlalchemy.create_engine(self.url, echo=False)
         self.mycursor = self.mydb.cursor()
-        Base.metadata.create_all(self.engine)
+        self._init_conn()
 
-    def get_tables(self):
-        return list(map(lambda x:x.capitalize(), Base.metadata.tables.keys()))
+    def _init_conn(self):
+        try:
+            from data_harmonization.main.code.tiger.model.ingester.Bottom import Base
+            Base.metadata.create_all(self.engine)
+        except ImportError:
+            print("can't find ingester module, generate one using schemagenerator before importing")
+            raise ImportError
+
+    @staticmethod
+    def get_tables():
+        try:
+            from data_harmonization.main.code.tiger.model.ingester.Bottom import Base
+            return list(map(lambda x:x.capitalize(), Base.metadata.tables.keys()))
+        except ImportError:
+            print("can't find ingester module, generate one using schemagenerator before importing")
+            raise ImportError
 
     def get_col_counts(self):
         stmt = text("""SELECT col,cnt from 
@@ -56,7 +69,7 @@ class MySQL:
         return session_maker()
 
 if __name__ == "__main__":
-    msql = MySQL('localhost', 'data_harmonization', 'root', 'default')
+    msql = MySQL('localhost', 'data_harmonization', 'root', 'root$Navaz1')
     session = msql.SessionMaker()
     # new = Flna(id=3, Name="new name2")
     # session.add(new)

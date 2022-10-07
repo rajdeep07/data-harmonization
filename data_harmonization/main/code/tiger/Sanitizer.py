@@ -1,5 +1,4 @@
 import uuid
-from dataclasses import dataclass
 from typing import Any
 
 import pandas as pd
@@ -18,14 +17,17 @@ from data_harmonization.main.code.tiger.transformer.StringTypeTransformer import
 
 class Sanitizer:
     def _get_attr_list(self, obj, should_print=False):
-        items = obj.__dict__.items()
-        if should_print:
-            [
-                print(f"attribute: {k}  value: {v}")
-                for k, v in items
-                if k in ("__annotations__")
-            ]
-        return (value for item, value in items if item in ("__annotations__"))
+        try:
+            return obj.get_schema()
+        except:
+            items = obj.__dict__.items()
+            if should_print:
+                [
+                    print(f"attribute: {k}  value: {v}")
+                    for k, v in items
+                    if k in ("__annotations__")
+                ]
+            return (value for item, value in items if item in ("__annotations__"))
 
     def get_kwargs(self, cls, attr_lists, gen_id=False, clean_data=True):
         self.cls_map = {}
@@ -36,8 +38,8 @@ class Sanitizer:
         for attr, tpe in self.cls_map.items():
             kw = {}
             if attr == "id" and gen_id:
-                raw_kw[attr] = uuid.uuid4()
-            elif tpe not in ("int", "str", "float"):
+                raw_kw[attr] = uuid.uuid4().int
+            elif tpe not in ("int", "str", "float", "int64", "float64", "object"):
                 sub_attr_list = list(self._get_attr_list(self.cls_map[attr]))[0]
                 for sub_attr in sub_attr_list.keys():
                     try:
@@ -61,7 +63,7 @@ class Sanitizer:
         return raw_entity_object
     
     def toEntity(self, Ent_Obj : Any, data:dict, gen_id=True):
-        entity_attr_list = list(self._get_attr_list(Ent_Obj))[0]
+        entity_attr_list = self._get_attr_list(Ent_Obj)
         kw = self.get_kwargs(data, entity_attr_list, gen_id)
         entity_obj = Ent_Obj(**kw)
         return entity_obj
@@ -152,15 +154,14 @@ class Sanitizer:
 
 if __name__ == "__main__":
     addr = Address(city="Kolkata!22##*!?@34", zipcode=700000, address="Saltlake + Sdfg")
-    entity1 = Entity1(
+    entity1 = Pbna(
         id=12,
         Name="ABC",
         City="Kalyani",
         State="WB",
         Zip=741250,
         Address="Bedibhawan",
-        source="src",
-        gender="F",
+        source="src"
     )
     test = pd.Series(
         dict(
@@ -175,5 +176,6 @@ if __name__ == "__main__":
         )
     )
     snt = Sanitizer()
-    print("Entity:\n", snt.toEntity(Entity1, test))
+    print(entity1)
+    print("Entity:\n", snt.toEntity(Pbna, test))
     print("RawEntity:\n", snt.toRawEntity(entity1, clean_data=False))
