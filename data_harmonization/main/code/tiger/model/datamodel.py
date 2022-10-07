@@ -40,7 +40,6 @@ class Entity1(BaseModel):
     State: Optional[str] = None
     Zip: Optional[str] = None
     source: Optional[str] = None
-    gender: Optional[str] = None
 
 
 class Entity2(BaseModel):
@@ -51,13 +50,10 @@ class Entity2(BaseModel):
     State: Optional[str] = None
     Zip: Optional[str] = None
     source: Optional[str] = None
-    gender: Optional[str] = None
 
 
 class RawEntity(BaseModel):
     id: int
     Name: Optional[Name] = None
     Address: Optional[Address] = None
-    Gender: Optional[Gender] = None
     source: Optional[str] = None
-    age: Optional[int] = 0

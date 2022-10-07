@@ -1,31 +1,37 @@
 import uuid
-from dataclasses import dataclass
 from typing import Any
 
 import pandas as pd
 
 # from data_harmonization.main.code.tiger.model.dataclass import RawEntity, CleansedRawEntity
 from data_harmonization.main.code.tiger.model.datamodel import *
-from data_harmonization.main.code.tiger.transformer.IntegerTypeTransformer import \
-    IntegerTypeTransformer
-from data_harmonization.main.code.tiger.transformer.NameTransformer import \
-    NameTransformer
-from data_harmonization.main.code.tiger.transformer.PostalAddressTransformer import \
-    PostalAddressTransformer
-from data_harmonization.main.code.tiger.transformer.StringTypeTransformer import \
-    StringTypeTransformer
+from data_harmonization.main.code.tiger.transformer.IntegerTypeTransformer import (
+    IntegerTypeTransformer,
+)
+from data_harmonization.main.code.tiger.transformer.NameTransformer import (
+    NameTransformer,
+)
+from data_harmonization.main.code.tiger.transformer.PostalAddressTransformer import (
+    PostalAddressTransformer,
+)
+from data_harmonization.main.code.tiger.transformer.StringTypeTransformer import (
+    StringTypeTransformer,
+)
 
 
 class Sanitizer:
     def _get_attr_list(self, obj, should_print=False):
-        items = obj.__dict__.items()
-        if should_print:
-            [
-                print(f"attribute: {k}  value: {v}")
-                for k, v in items
-                if k in ("__annotations__")
-            ]
-        return (value for item, value in items if item in ("__annotations__"))
+        try:
+            return obj.get_schema()
+        except:
+            items = obj.__dict__.items()
+            if should_print:
+                [
+                    print(f"attribute: {k}  value: {v}")
+                    for k, v in items
+                    if k in ("__annotations__")
+                ]
+            return (value for item, value in items if item in ("__annotations__"))
 
     def get_kwargs(self, cls, attr_lists, gen_id=False, clean_data=True):
         self.cls_map = {}
@@ -35,33 +41,47 @@ class Sanitizer:
         raw_kw = {}
         for attr, tpe in self.cls_map.items():
             kw = {}
-            if attr == "id" and gen_id:
-                raw_kw[attr] = uuid.uuid4()
-            elif tpe not in ("int", "str", "float"):
+            if attr == "id":
+                if gen_id:
+                    raw_kw[attr] = uuid.uuid3().int
+            elif tpe not in ("int", "str", "float", "int64", "float64", "object"):
                 sub_attr_list = list(self._get_attr_list(self.cls_map[attr]))[0]
                 for sub_attr in sub_attr_list.keys():
-                    try:
-                        kw[sub_attr] = cls.get(sub_attr, None)
-                    except:
-                        kw[sub_attr] = getattr(cls, sub_attr, None)
-                
+                    kw[sub_attr] = self._get_item(cls, sub_attr, None)
+                    # try:
+                    #     kw[sub_attr] = cls.get(sub_attr, None)
+                    # except:
+                    #     kw[sub_attr] = getattr(cls, sub_attr, None)
+
                 raw_kw[attr] = self._apply_transformer(kw, tpe) if clean_data else kw
             else:
-                try:
-                    raw_kw[attr] = self._apply_transformer(cls.get(attr, None))  if clean_data else cls.get(attr, None)  # for dict conversion
-                except:
-                    raw_kw[attr] = self._apply_transformer(getattr(cls, attr, None)) if clean_data else getattr(cls, attr, None)  # for class conversion
-
+                # try:
+                #     raw_kw[attr] = (
+                #         self._apply_transformer(cls.get(attr, None))
+                #         if clean_data
+                #         else cls.get(attr, None)
+                #     )  # for dict conversion
+                # except:
+                #     raw_kw[attr] = (
+                #         self._apply_transformer(getattr(cls, attr, None))
+                #         if clean_data
+                #         else getattr(cls, attr, None)
+                #     )  # for class conversion
+                raw_kw[attr] = self._get_item(cls, attr, None)
         return raw_kw
 
-    def toRawEntity(self, cls:Entity1, clean_data:bool, gen_id:bool=False) -> RawEntity:
+    def toRawEntity(
+        self, cls: Entity1, clean_data: bool, gen_id: bool = False
+    ) -> RawEntity:
         raw_attribute_lists = list(self._get_attr_list(RawEntity))[0]
-        raw_kw = self.get_kwargs(cls, attr_lists=raw_attribute_lists, clean_data=clean_data, gen_id=gen_id)
+        raw_kw = self.get_kwargs(
+            cls, attr_lists=raw_attribute_lists, clean_data=clean_data, gen_id=gen_id
+        )
         raw_entity_object = RawEntity(**raw_kw)
         return raw_entity_object
-    
-    def toEntity(self, Ent_Obj : Any, data:dict, gen_id=True):
-        entity_attr_list = list(self._get_attr_list(Ent_Obj))[0]
+
+    def toEntity(self, Ent_Obj: Any, data: dict, gen_id=True):
+        entity_attr_list = self._get_attr_list(Ent_Obj)
         kw = self.get_kwargs(data, entity_attr_list, gen_id)
         entity_obj = Ent_Obj(**kw)
         return entity_obj
@@ -138,6 +158,29 @@ class Sanitizer:
                 transformed_ = cls(**kw)
         return transformed_
 
+    def _get_item(self, row, attr: str, default_value=None):
+        """Retrieve value from spark dataframe row or from class object.
+        Provide default_value to return it if no value found with given attribute.
+        If default value not provided None will be returned by default.
+
+        :return: atrribute value from spark dataframe row or class object
+        """
+        value = default_value
+        try:
+            value = (
+                row.__getitem__(attr) if row.__getitem__(attr) else default_value
+            )  # for spark row
+        except:
+            try:
+                value = (
+                    getattr(row, attr, None)
+                    if getattr(row, attr, None)
+                    else default_value
+                )  # for class object
+            except:
+                value = default_value
+        return value
+
     """@classmethod
     def __getattribute__(cls, attr):
         try:
@@ -152,7 +195,7 @@ class Sanitizer:
 
 if __name__ == "__main__":
     addr = Address(city="Kolkata!22##*!?@34", zipcode=700000, address="Saltlake + Sdfg")
-    entity1 = Entity1(
+    entity1 = Pbna(
         id=12,
         Name="ABC",
         City="Kalyani",
@@ -160,7 +203,6 @@ if __name__ == "__main__":
         Zip=741250,
         Address="Bedibhawan",
         source="src",
-        gender="F",
     )
     test = pd.Series(
         dict(
@@ -175,5 +217,6 @@ if __name__ == "__main__":
         )
     )
     snt = Sanitizer()
-    print("Entity:\n", snt.toEntity(Entity1, test))
+    print(entity1)
+    print("Entity:\n", snt.toEntity(Pbna, test))
     print("RawEntity:\n", snt.toRawEntity(entity1, clean_data=False))
