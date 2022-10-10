@@ -13,9 +13,13 @@ from data_harmonization.main.code.tiger.spark.SparkClass import SparkClass
 import data_harmonization.main.resources.config as config
 import findspark
 from data_harmonization.main.code.tiger.model.ingester import *
+from pyspark.sql import DataFrame
+from functools import reduce
 
+# establish these as SPARK_HOME and PYTHON_HOME, with PATHS in your zshrc or bashrc
 findspark.init("/home/navazdeen/spark-3.1.1-bin-hadoop3.2", "/home/navazdeen/miniconda3/envs/data-harmonization/bin/python")
 
+# add this to external jars and pass when initializing spark session
 findspark.add_packages('mysql:mysql-connector-java:8.0.11')
 
 os.environ['PYSPARK_PYTHON'] = sys.executable
@@ -33,6 +37,7 @@ class Ingester():
         self.target_dir = os.path.sep.join(self.current_dir.split(os.path.sep)[:-2])
         self.csv_files = self._get_csv_files()
         self.schema_dirs = self._get_schema_dirs()
+
     # Step 0: Read individual uploaded CSVs and Infer Schema
     def _get_csv_files(self):
         filenames = listdir(self.target_dir + "/data/")
@@ -54,7 +59,9 @@ class Ingester():
     def _get_all_tables(self) -> list:
         return MySQL.get_tables()
 
-    def _write_to_mysql(self):
+    # TODO: This is not a generalize method, it presumes only reading from csv before writing to mysql.
+    # TODO: Also only meant for raw files upload.
+    def _persist_csv_to_mysql(self, path=None):
         for csv_file in self.csv_files:
             ps = self.spark.read_from_csv_to_dataframe(self.current_dir + "/data" + csv_file)
             self.spark.write_to_database_from_df("db", csv_file, ps)
@@ -82,6 +89,24 @@ class Ingester():
         #     setattr(RawEntity(), raw_entity_attrs[x], x)
         SchemaGenerator().generate_class_from_schema(raw_entity_attrs, 'RawEntity', self.schema_dirs)
 
+    def _persist_raw_entity(self, features_for_deduplication=None):
+
+        cursor = self.spark.get_mysql_cursor()
+
+        series = []
+        table_names = self._get_all_tables()
+
+        for table in table_names:
+            df_ = self.spark.read_from_database_to_dataframe(table)
+            series.append(df_)
+
+        df_series = reduce(DataFrame.unionAll, series)
+
+        self.spark.write_to_database_from_df("db", [], df_series)
+
+        return
+
+
     # Initialize spark session
     def _init_spark(self):
         # spark.init_db(config.mysqlUser, config.mysqlPassword, config.mysqlLocalHost)
@@ -106,5 +131,6 @@ if __name__ == '__main__':
     ingester = Ingester()
     ingester._generate_schemas()
     ingester._init_spark()
-    # ingester._write_to_mysql()
+    ingester._persist_csv_to_mysql()
     ingester._gen_raw_entity()
+    ingester._persist_raw_entity()

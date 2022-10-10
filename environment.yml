@@ -22,6 +22,7 @@ dependencies:
   - pyspark==3.3.0
   - SQLAlchemy==1.4.27
   - netifaces==0.11.0
+  - MySQLdb
   - pip:
     - sphinx-autodoc-annotation
     - datamodel-code-generator

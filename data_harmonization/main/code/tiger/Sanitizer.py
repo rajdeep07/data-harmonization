@@ -2,7 +2,6 @@ import uuid
 from typing import Any
 
 import pandas as pd
-
 # from data_harmonization.main.code.tiger.model.dataclass import RawEntity, CleansedRawEntity
 from data_harmonization.main.code.tiger.model.ingester import *
 from data_harmonization.main.code.tiger.transformer.IntegerTypeTransformer import \
