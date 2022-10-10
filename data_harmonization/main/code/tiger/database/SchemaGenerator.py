@@ -25,14 +25,19 @@ from data_harmonization.main.code.tiger.model.ingester.Bottom import Base\n\n
 
     default_type = 'Column(Text)\n'
     
-    def __init__(self, file_path:path, output_path:path) -> None:
+    def __init__(self, file_path:path = None, output_path:path = None) -> None:
         self.code = ""
         self.file_path = file_path
         self.output_path = output_path
     
     def _update_init(self, filename):
-        with open(f'{self.output_path}/__init__.py', 'a') as file:
-            file.write(f"from data_harmonization.main.code.tiger.model.ingester.{filename} import {filename}\n")
+        with open(f'{self.output_path}/__init__.py', 'r') as file:
+            lines = set(file.readlines())
+            # print(lines)
+            lines.add(f"from data_harmonization.main.code.tiger.model.ingester.{filename} import {filename}\n")
+        with open(f'{self.output_path}/__init__.py', 'w') as file:
+            for line in lines:
+                file.write(line)
 
     def _bottom_gen(self):
         if path.exists(os.path.join(self.output_path, 'Bottom.py')):
@@ -90,6 +95,16 @@ from data_harmonization.main.code.tiger.model.ingester.Bottom import Base\n\n
         self._make_file(table_name.capitalize())
         self._update_init(table_name.capitalize())
         self._bottom_gen()
+    
+    def generate_class_from_schema(self, schema: dict, class_name: str, output_path: path or str):
+        self.output_path = output_path
+
+        self._import_statement_gen()
+        self._class_gen(table_name=class_name, attr_dict=schema)
+        self._schema_method(table_name=class_name, dict_types=schema)
+        self._repr_gen(table_name=class_name, attr_dict=schema)
+        self._make_file(class_name.capitalize())
+        self._update_init(class_name.capitalize())
 
 
 if __name__ == "__main__":

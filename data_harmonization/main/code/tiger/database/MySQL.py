@@ -3,7 +3,6 @@ import mysql.connector
 import sqlalchemy
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import text
-import importlib
 
 class MySQL:
     def __init__(self, host, database, user, password):
@@ -69,7 +68,7 @@ class MySQL:
         return session_maker()
 
 if __name__ == "__main__":
-    msql = MySQL('localhost', 'data_harmonization', 'root', 'root$Navaz1')
+    msql = MySQL('localhost', 'data_harmonization', 'root', 'Root#1234')
     session = msql.SessionMaker()
     # new = Flna(id=3, Name="new name2")
     # session.add(new)

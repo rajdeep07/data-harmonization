@@ -44,11 +44,17 @@ class SparkClass:
     # MySQL [RDBMS] ==> NoSQL or Document DB [Cassandra/ ES/ anything..]
     def write_to_database_from_df(self, db, table, df, mode='error') -> None:
         df.write.format('jdbc').options(
-            url=f'jdbc:mysql://{config_.mysqlLocalHost}/{config_.APP_NAME}',
+            url=f'jdbc:mysql://localhost/{config_.APP_NAME}',
             driver=config_.mysqlDriver,  # 'com.mysql.cj.jdbc.Driver',
             dbtable=table,
             user=config_.mysqlUser,
-            password=config_.mysqlPassword).mode(mode).save()
+            password=config_.mysqlPassword,
+            autoReconnect=True,
+            useSSL=False,
+            verifyServerCertificate=False).mode(mode).save()
+
+    def get_sparkSession(self):
+        return self.spark
 
 if __name__ == "__main__":
     SparkClass()
