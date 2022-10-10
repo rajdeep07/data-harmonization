@@ -8,40 +8,65 @@ from typing import Any, Optional
 
 import numpy as np
 import pandas as pd
+from pyspark.sql import Row
 
 from data_harmonization.main.code.tiger.model.datamodel import *
-from data_harmonization.main.code.tiger.model.GeocodedAddress import \
-    GeocodedAddress
-from data_harmonization.main.code.tiger.model.PostalAddress import \
-    PostalAddress
-from data_harmonization.main.code.tiger.model.SemiMergedProfile import \
-    SemiMergedProfile
+from data_harmonization.main.code.tiger.model.GeocodedAddress import GeocodedAddress
+from data_harmonization.main.code.tiger.model.PostalAddress import PostalAddress
+from data_harmonization.main.code.tiger.model.SemiMergedProfile import SemiMergedProfile
 from data_harmonization.main.code.tiger.Sanitizer import Sanitizer
 from data_harmonization.main.code.tiger.transformer import (
-    CityTransformer, NameTransformer, PostalAddressTransformer,
-    StateTransformer)
+    CityTransformer,
+    NameTransformer,
+    PostalAddressTransformer,
+    StateTransformer,
+)
 from data_harmonization.main.code.tiger.transformer.utils import StringSupport
+from data_harmonization.main.code.tiger.database.MySQL import MySQL
+import data_harmonization.main.resources.config as config_
+from data_harmonization.main.code.tiger.spark.SparkClass import SparkClass
 
 
 class Cluster:
     """create cluster pairs using minLSH alogorithm"""
 
     # TODO: create wrapper for reading datasets
-    # filenames = listdir(os.getcwd() + "/data_harmonization/main/data/")
-    # csv_filenames = [filename for filename in filenames if filename.endswith(".csv")]
-    # rawProfiles = pd.DataFrame() # correct data structure here ?
-    # for csv_file in csv_filenames:
-    #     rawProfiles = rawProfiles.append(pd.read_csv(os.getcwd() + f"/data_harmonization/main/data/{csv_file}"))
 
-    # print(rawProfiles.head())
-    # Flatten rawProfiles to fields which are only string / int
-
-    # Cleansing of the data set
     flattenRawprofile = {}
 
-    # Flatten rawProfiles to fields which are only string / int / float
-    def Create_enity(self, data:pd.DataFrame): 
-        pass
+    def get_data_from_db(self, table_name):
+        # mysql = MySQL(
+        #     config_.mysqlLocalHost,
+        #     config_.APP_NAME,
+        #     config_.mysqlUser,
+        #     config_.mysqlPassword,
+        # )
+        # mysql.mycursor.execute(f"SELECT * FROM {table_name};")
+        # return mysql.mycursor.fetchall()
+
+        spark = SparkClass()
+        return spark.read_from_database_to_dataframe(table_name)
+
+    def _to_entity(self, df, cls):
+        def _map_to_raw_entity(row):
+            # print(row)
+            obj = RawEntity()
+            # fields = row.__fields__
+            # return obj
+            attributes = obj.__dict__.items()
+            for attr, val in attributes:
+                if attribute_value := row.__getitem__(attr):
+                    setattr(obj, attr, attribute_value)
+
+            return obj
+
+        raw_profiles = (
+            df.rdd.map(lambda r: _map_to_raw_entity(r))  # self._map_to_object(r, cls)
+            .toDF()
+            .na.drop(how="all")
+        )
+        raw_profiles.show()
+        return raw_profiles
 
     def createflattenRawprofile(
         self, data: Optional[pd.DataFrame] = None, n_docs: Optional[int] = 1000
@@ -51,7 +76,7 @@ class Cluster:
             filenames = listdir(os.getcwd() + "/data_harmonization/main/data/")
             csv_filenames = [
                 filename for filename in filenames if filename.endswith(".csv")
-            ] 
+            ]
             rawProfiles = pd.DataFrame()  # correct data structure here ?
             for csv_file in csv_filenames:
                 self.rawProfiles = rawProfiles.append(
@@ -95,22 +120,6 @@ class Cluster:
             return bool(input.strip())
 
     # Step 1 : Create shingles
-    """def createShingles(self, input: Optional[str]) -> Optional[list[str]]:
-        def shingles(x:str) -> list[str]:
-            i = x.lower() # TODO: remove extra unnecessary characters when creating shingles
-            if len(i) > 5:
-                a = list(map(lambda j: i[j:j+5], range(0, len(i) - 5 + 1)))
-                # return list(map(lambda j: i[j:j+5], range(0, len(i) - 5 + 1)))
-                return a
-            else:
-                return list(i)
-
-
-        # mapped_str = list(map(lambda i: i.split("[-\\s,]"), input))
-        # flattend_str = "".join(filter(lambda s: s != "", mapped_str))
-        return self.filter_flat_map(shingles, input)"""
-
-    # Create Shingles
     def createShingles(self, input: Optional[str], shingle_size) -> Optional[list[str]]:
         def shingles(x: str) -> list[str]:
             i = (
@@ -136,42 +145,51 @@ class Cluster:
         )
 
     # Step 2: Tokenization
-    def createTokens(self, profile: dict, shingle_size: int) -> str:
-        # output = self.createShingles(profile.get('Name', "")) + self.createShingles(profile.get('City'," ")) + self.createShingles(profile.get('Address', " ")) #+ self.createShingles(profile.get('source'," "))
+    def createTokens(self, profile: Row, shingle_size: int) -> str:
+        # def createTokens(self, profile: dict, shingle_size: int) -> str:
         output = []
-        for v in profile.values():
+        for v in profile.asDict().values():
+            # for v in profile.values():
             if isinstance(v, str):
                 output.extend(self.createShingles(v, shingle_size))
         # return output.flatten.filter(lambda x: (x is not None) and x._isNotEmpty)
-        return output
+        # return output
+        row = Row(output)
+        return row
 
     # Step 3: Hash
-    def get_minhash(self, tot_shingle, n_hashes, random_strings) -> list:
+    def get_minhash(
+        self, tot_shingle: Row, n_hashes: int, random_strings: list
+    ) -> list:
         minhash_row = []
         for i in range(n_hashes):
             minhash = sys.maxsize
-            for shingle in tot_shingle:
+            a = tot_shingle.__getitem__("_1")
+            for shingle in tot_shingle.__getitem__("_1"):
                 hash_candidate = abs(hash(shingle + random_strings[i]))
                 if hash_candidate < minhash:
                     minhash = hash_candidate
             minhash_row.append(minhash)
-        return minhash_row
+        return Row(minhash_row)
 
     # LSH ==> MinLSH [More reading]
-    def get_band_hashes(self, minhash_row, band_size) -> list:
+    def get_band_hashes(self, minhash_row: Row, band_size: int) -> list:
         band_hashes = []
-        for i in range(len(minhash_row)):
+        minhash_list = list(minhash_row.__getitem__("_1"))
+        # print("minhash size : ", str(len(minhash_list)))
+        band_hash = 0
+        for i in range(len(minhash_list)):
             if i % band_size == 0:
                 if i > 0:
                     band_hashes.append(band_hash)
                 band_hash = 0
-            band_hash += hash(minhash_row[i])
-        return band_hashes
+            band_hash += hash(minhash_list[i])
+        return Row(band_hashes)
 
     # Similar documents : LSH
     def get_similar_docs(
         self,
-        docs: dict,
+        docs: Row,
         n_hashes: int = 4000,
         band_size: int = 5,
         shingle_size: int = 5,
@@ -180,29 +198,43 @@ class Cluster:
         hash_bands = {}
         random_strings = [str(random.random()) for _ in range(n_hashes)]
         docNum = 0
-        for doc in docs.values():
-            shingles = self.createTokens(doc, shingle_size)
-            minhash_row = self.get_minhash(shingles, n_hashes, random_strings)
-            band_hashes = self.get_band_hashes(minhash_row, band_size)
+        # b = list(docs.__getitem__("_1"))
+        # print(b)
+        # print("band hashes size: ", str(len(b)))
+        # for doc in docs.values():
+        # for band_hashes in list(docs.__getitem__("_1")):
+        # shingles = self.createTokens(doc, shingle_size)
+        # minhash_row = self.get_minhash(shingles, n_hashes, random_strings)
+        # band_hashes = self.get_band_hashes(minhash_row, band_size)
 
-            docMember = docNum if collectIndexes else doc
-            for i in range(len(band_hashes)):
-                if i not in hash_bands:
-                    hash_bands[i] = {}
-                if band_hashes[i] not in hash_bands[i]:
-                    hash_bands[i][band_hashes[i]] = [docMember]
-                else:
-                    hash_bands[i][band_hashes[i]].append(docMember)
-            docNum += 1
-
+        # docMember = docNum if collectIndexes else band_hashes
+        # for i in range(len(band_hashes)):
+        #     if i not in hash_bands:
+        #         hash_bands[i] = {}
+        #     if band_hashes[i] not in hash_bands[i]:
+        #         hash_bands[i][band_hashes[i]] = [docMember]
+        #     else:
+        #         hash_bands[i][band_hashes[i]].append(docMember)
+        # docNum += 1
+        band_hashes = list(docs.__getitem__("_1"))
+        docMember = docNum if collectIndexes else band_hashes
+        for i in range(len(band_hashes)):
+            # for i in range(len(band_hashes)):
+            if i not in hash_bands:
+                hash_bands[i] = {}
+            if band_hashes[i] not in hash_bands[i]:
+                hash_bands[i][band_hashes[i]] = [docMember]
+            else:
+                hash_bands[i][band_hashes[i]].append(docMember)
+        docNum += 1
         similar_docs = []
         for i in hash_bands:
             for hash_num in hash_bands[i]:
-                if len(hash_bands[i][hash_num]) > 1:
-                    for pair in itertools.combinations(hash_bands[i][hash_num], r=2):
-                        # print(pair)
+                if len(hash_bands[i][hash_num][0]) > 1:
+                    for pair in itertools.combinations(hash_bands[i][hash_num][0], r=2):
+                        # print("Pairs : ", pair)
                         similar_docs.append(pair)
-        return similar_docs
+        return Row(similar_docs)
 
     def fit(self, n_docs, data: Optional[pd.DataFrame] = None):
         self.createflattenRawprofile(data, n_docs)
@@ -253,44 +285,63 @@ if __name__ == "__main__":
 
     # docs = generate_random_docs(n_docs, max_doc_length, n_similar_docs)
     clus = Cluster()
-    # clus.fit(n_docs=n_docs)
-    # similar_docs = clus.transform(n_hashes, band_size, shingle_size, collectIndexes=False)
-    similar_docs = clus.fit_transform(
-        n_docs,
-        n_hashes=n_hashes,
-        band_size=band_size,
-        shingle_size=shingle_size,
-        collectIndexes=False,
-    )
-    print(similar_docs[0])
-    df_dict = {}
-    for pair1, pair2 in similar_docs:
-        for k, v in pair1.items():
-            key_var = f"{k}" + "_pair1"
-            if not df_dict.get(key_var, None):
-                df_dict[key_var] = []
-                df_dict[key_var].append(v)
-            else:
-                df_dict[key_var].append(v)
+    df = clus.get_data_from_db("Raw_Entity")
+    raw_profiles = clus._to_entity(df, RawEntity)
+    raw_profiles.show()
+    raw_profiles_RE_class_tokens = raw_profiles.rdd.map(
+        lambda r: clus.createTokens(r, shingle_size)
+    ).toDF()
+    raw_profiles_RE_class_tokens.show()
+    print("Generate min hash")
+    random_strings = [str(random.random()) for _ in range(n_hashes)]
+    raw_profiles_minhash = raw_profiles_RE_class_tokens.rdd.map(
+        lambda r: clus.get_minhash(r, n_hashes, random_strings)
+    ).toDF()
+    raw_profiles_band_hashes = raw_profiles_minhash.rdd.map(
+        lambda r: clus.get_band_hashes(r, band_size)
+    ).toDF()
+    raw_profiles_band_hashes.show()
+    a = raw_profiles_band_hashes.rdd.map(
+        lambda r: clus.get_similar_docs(r, n_hashes, band_size, shingle_size, False)
+    ).toDF()
+    a.show()
 
-        for k, v in pair2.items():
-            key_var = f"{k}" + "_pair2"
-            if not df_dict.get(key_var, None):
-                df_dict[key_var] = []
-                df_dict[key_var].append(v)
-            else:
-                df_dict[key_var].append(v)
-    df = pd.DataFrame(df_dict)
-    # df.drop_duplicates(inplace=True)
-    df.to_csv(os.getcwd() + "/similiar.csv")
+    # similar_docs = clus.fit_transform(
+    #     n_docs,
+    #     n_hashes=n_hashes,
+    #     band_size=band_size,
+    #     shingle_size=shingle_size,
+    #     collectIndexes=False,
+    # )
+    # print(similar_docs[0])
+    # df_dict = {}
+    # for pair1, pair2 in similar_docs:
+    #     for k, v in pair1.items():
+    #         key_var = f"{k}" + "_pair1"
+    #         if not df_dict.get(key_var, None):
+    #             df_dict[key_var] = []
+    #             df_dict[key_var].append(v)
+    #         else:
+    #             df_dict[key_var].append(v)
 
-    r = float(n_hashes / band_size)
-    similarity = (1 / r) ** (1 / float(band_size))
+    #     for k, v in pair2.items():
+    #         key_var = f"{k}" + "_pair2"
+    #         if not df_dict.get(key_var, None):
+    #             df_dict[key_var] = []
+    #             df_dict[key_var].append(v)
+    #         else:
+    #             df_dict[key_var].append(v)
+    # df = pd.DataFrame(df_dict)
+    # # df.drop_duplicates(inplace=True)
+    # df.to_csv(os.getcwd() + "/similiar.csv")
 
-    print("similarity: %f" % similarity)
-    print("# Similar Pairs: %d" % len(similar_docs))
+    # r = float(n_hashes / band_size)
+    # similarity = (1 / r) ** (1 / float(band_size))
 
-    if len(similar_docs) == n_similar_docs:
-        print("Test Passed: All similar pairs found.")
-    else:
-        print("Test Failed.")
+    # print("similarity: %f" % similarity)
+    # print("# Similar Pairs: %d" % len(similar_docs))
+
+    # if len(similar_docs) == n_similar_docs:
+    #     print("Test Passed: All similar pairs found.")
+    # else:
+    #     print("Test Failed.")
