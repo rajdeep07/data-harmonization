@@ -3,7 +3,7 @@ from pyspark import SparkContext
 from pyspark.sql.session import SparkSession
 from pyspark.sql.types import *
 from data_harmonization.main.code.tiger.spark.SparkClass import SparkClass
-from data_harmonization.main.code.tiger.datamodel.ingester.Rawentity import Rawentity
+from data_harmonization.main.code.tiger.model.ingester.Rawentity import Rawentity
 from typing import Optional
 from pyspark.ml.feature import Word2Vec, Word2VecModel, CountVectorizer, HashingTF, IDF, \
     Tokenizer, StopWordsRemover,RegexTokenizer, CountVectorizerModel
@@ -23,7 +23,7 @@ def Blocking(is_train=True, if_word_2vec=False, if_min_lsh=True):
         def shingle(x: str) -> list[str]:
             i = x.lower()
             if len(i) >= 5:
-                range(0, i.length - 5 + 1).map(lambda j: i.substring(j, j + 5))
+                range(0, len(i) - 5 + 1).map(lambda j: i.substring(j, j + 5))
             else:
                 list(i)
 
@@ -45,14 +45,14 @@ def Blocking(is_train=True, if_word_2vec=False, if_min_lsh=True):
 
     # Space Tokenizer
     tokenizer = Tokenizer(inputCol='shingles', outputCol='tokens')
-    tokensDF = tokenizer.transform(cleansed_df).select("id", "shingles")
+    tokensDF = tokenizer.transform(cleansed_df).select("id", "tokens")
 
     # Regex Tokenizer
-    regexTokenizer = RegexTokenizer(inputCol="shingles", outputCol="tokens", pattern="\\W", toLowercase=True)
+    regexTokenizer = RegexTokenizer(inputCol="tokens", outputCol="reg_tokens", pattern="\\W", toLowercase=True)
     regexTokensDF = regexTokenizer.transform(tokensDF).select("id", "tokens")
 
     # remove stop words
-    remover = StopWordsRemover(inputCol="tokens", outputCol="clean_tokens")
+    remover = StopWordsRemover(inputCol="reg_tokens", outputCol="clean_tokens")
     cleansedTokensDF = remover.transform(regexTokensDF).select("id", "clean_tokens")
 
     if if_word_2vec:
