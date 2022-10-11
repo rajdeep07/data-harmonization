@@ -4,13 +4,7 @@ from typing import Any
 import pandas as pd
 
 # from data_harmonization.main.code.tiger.model.dataclass import RawEntity, CleansedRawEntity
-from data_harmonization.main.code.tiger.model.datamodel import (
-    Name,
-    Gender,
-    Address,
-    Email,
-    Contact,
-)
+from data_harmonization.main.code.tiger.model.datamodel import *
 from data_harmonization.main.code.tiger.transformer.IntegerTypeTransformer import (
     IntegerTypeTransformer,
 )
@@ -23,7 +17,8 @@ from data_harmonization.main.code.tiger.transformer.PostalAddressTransformer imp
 from data_harmonization.main.code.tiger.transformer.StringTypeTransformer import (
     StringTypeTransformer,
 )
-from data_harmonization.main.code.tiger.model.ingester.raw_entity import RawEntity
+
+# from data_harmonization.main.code.tiger.model.ingester.raw_entity import RawEntity
 
 
 class Sanitizer:
@@ -50,7 +45,7 @@ class Sanitizer:
             kw = {}
             if attr == "id":
                 if gen_id:
-                    raw_kw[attr] = uuid.uuid4().int
+                    raw_kw[attr] = str(uuid.uuid4().int)
             elif tpe not in ("int", "str", "float", "int64", "float64", "object"):
                 sub_attr_list = list(self._get_attr_list(self.cls_map[attr]))[0]
                 for sub_attr in sub_attr_list.keys():

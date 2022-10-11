@@ -53,7 +53,10 @@ class Entity2(BaseModel):
 
 
 class RawEntity(BaseModel):
-    id: int
-    Name: Optional[Name] = None
-    Address: Optional[Address] = None
+    id: Optional[str]
+    Name: Optional[str] = None
+    Address: Optional[str] = None
+    City: Optional[str] = None
+    State: Optional[str] = None
+    Zip: Optional[str] = None
     source: Optional[str] = None
