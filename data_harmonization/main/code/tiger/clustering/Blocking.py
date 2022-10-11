@@ -57,30 +57,35 @@ def Blocking(is_train=True, if_word_2vec=False, if_min_lsh=True):
     # Space Tokenizer
     tokenizer = Tokenizer(inputCol='shingles', outputCol='tokens')
     tokensDF = tokenizer.transform(cleansed_df).select("id", "tokens")
-    tokensDF.withColumn('tokens', concat_ws(" ",col("tokens")))
+    tokensDF = tokensDF.withColumn('tokens', concat_ws(" ",col('tokens')))
     tokensDF.show()
     # Regex Tokenizer
     regexTokenizer = RegexTokenizer(inputCol="tokens", outputCol="reg_tokens", pattern="\\W", toLowercase=True)
-    regexTokensDF = regexTokenizer.transform(tokensDF).select("id", "tokens")
-
+    regexTokensDF = regexTokenizer.transform(tokensDF).select("id", "reg_tokens")
+    regexTokensDF.show()
     # remove stop words
     remover = StopWordsRemover(inputCol="reg_tokens", outputCol="clean_tokens")
     cleansedTokensDF = remover.transform(regexTokensDF).select("id", "clean_tokens")
 
+    cleansedTokensDF.show()
     if if_word_2vec:
         if is_train:
             # word2Vec
-            w2v_model = Word2Vec(vectorSize=10000, inputCol='clean_tokens', outputCol='vector', minCount=3)
+            w2v_model = Word2Vec(vectorSize=1000, inputCol='clean_tokens', outputCol='vector', minCount=3)
             model = w2v_model.fit(cleansedTokensDF)
             model.write().overwrite().save("/data_harmonization/main/model/model.word2vec")
-            # model = Word2VecModel.load("/data_harmonization/main/model/model.word2vec")
+            resultsDF = model.transform(cleansedTokensDF).select("id", "vector")
+        else:
+            model = Word2VecModel.load("/data_harmonization/main/model/model.word2vec")
             resultsDF = model.transform(cleansedTokensDF).select("id", "vector")
     else:
         if is_train:
             cv = CountVectorizer(inputCol="clean_tokens", outputCol="vector", vocabSize=200 * 10000, minDF=1.0)
             cv_model = cv.fit(cleansedTokensDF)
-            cv_model.write().overwrite().save("/data_harmonization/main/model/model.countvec")
-            # cv_model = CountVectorizerModel.load("models/CV.model")
+            cv_model.write().overwrite().save(os.path.abspath(__file__)+"/../../../../../../data_harmonization/main/model/model.countvec")
+            resultsDF = cv_model.transform(cleansedTokensDF).select("id", "vector")
+        else:
+            cv_model = CountVectorizerModel.load(os.path.abspath(__file__)+"/../../../../../../data_harmonization/main/model/model.countvec")
             resultsDF = cv_model.transform(cleansedTokensDF).select("id", "vector")
 
     if if_min_lsh:
@@ -95,17 +100,20 @@ def Blocking(is_train=True, if_word_2vec=False, if_min_lsh=True):
 
     # approx threshold score
     threshold = 0.80
+    model.transform(resultsDF).show()
+    similarDF = model.approxSimilarityJoin(resultsDF, resultsDF, threshold, distCol="JaccardDistance").filter("JaccardDistance != 0")\
+        .select(col("datasetA.id").alias("idA"),
+                col("datasetB.id").alias("idB"),
+                col("JaccardDistance")).sort(col("JaccardDistance").desc())
+    similarDF.show(n=20)
+    # finalResultsDF = similarDF.withColumnRenamed(col("datasetA.id"), "id1")\
+    #     .withColumnRenamed(col("datasetB.id"), "id2").select("id1", "id2", "distcol").sort(col("distcol").desc())
 
-    similarDF = model.approxSimilarityJoin(resultsDF, resultsDF, threshold, distCol='JaccardDistance').filter("distCol != 0")
-
-    finalResultsDF = similarDF.withColumnRenamed(col("datasetA.id"), "id1")\
-        .withColumnRenamed(col("datasetB.id"), "id2").select("id1", "id2", "distcol").sort(col("distcol").desc())
-
-    spark.write_to_database_from_df(db="data_harmonization", table="semi_merged", df=finalResultsDF,
+    spark.write_to_database_from_df(table="semi_merged", df=similarDF,
                                          mode='overwrite')
 
 if __name__ == "__main__":
     # word2vec + minLSH
-    Blocking(is_train=True, if_word_2vec=True, if_min_lsh=True)
+    Blocking(is_train=False, if_word_2vec=False, if_min_lsh=True)
     # CountVectorizer + minLSH
-    Blocking(is_train=True, if_word_2vec=False, if_min_lsh=True)
+    # Blocking(is_train=True, if_word_2vec=False, if_min_lsh=True)

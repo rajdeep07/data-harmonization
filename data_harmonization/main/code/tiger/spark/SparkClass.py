@@ -4,6 +4,7 @@ from pyspark.context import SparkContext
 import urllib.request
 from pyspark.sql import functions as F
 import data_harmonization.main.resources.config as config_
+from pyspark.conf import SparkConf
 import findspark
 # import MySQLdb
 
@@ -18,7 +19,15 @@ class SparkClass:
         findspark.add_packages('mysql:mysql-connector-java:8.0.11')
 
         self.spark = SparkSession.builder.master("local[*]").appName(config_.APP_NAME)\
-            .config("spark.sql.shuffle.partitions", "2").getOrCreate()
+                        .config("spark.sql.shuffle.partitions", "8").getOrCreate()
+
+        # self.conf = SparkConf()
+        # self.conf.setAll([
+        #     ('spark.executor.memory', "12g"), 
+        #     ("spark.yarn.executor.memoryOverhead","2048"), 
+        #     ("spark.driver.maxResultSize", "0"),
+        #     ])
+        # print(self.conf.getAll())
 
     # def get_mysql_cursor(self):
     #     connection = MySQLdb.connect(host=config_.mysqlLocalHost,

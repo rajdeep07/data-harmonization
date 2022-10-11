@@ -36,7 +36,7 @@ class Deduplication:
 
         # Run Dedupe Model
         # DataFrame :: features_for_deduplication + id columns
-        dataframe = dataframe[["Name", "Address", "City", "State", "Zip", "id"]]  # "source"
+        dataframe = dataframe[["Name", "Address", "City", "State", "Zip"]]  # "source"
         final_model = pandas_dedupe.dedupe_dataframe(
             # features_for_deduplication
             dataframe, ["Name", "Address", "City", "State", "Zip"]
