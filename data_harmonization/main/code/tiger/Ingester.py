@@ -56,7 +56,7 @@ class Ingester():
 
     # Step 1: read individual csvs and write to mysql with same referred class
     # get all entities
-    def _get_all_tables(self) -> list:
+    def _get_all_tables(self) -> list[str]:
         return MySQL.get_tables()
 
     # TODO: This is not a generalize method, it presumes only reading from csv before writing to mysql.
@@ -67,7 +67,7 @@ class Ingester():
             sanitiser = Sanitizer()
             df = self.spark.read_from_csv_to_dataframe(str(self.target_dir + '/data/' + csv_file))
             ls = df.rdd.map(lambda row : sanitiser.toEntity(Pbna, row.asDict())).toDF(sampleRatio=0.01)
-            self.spark.write_to_database_from_df(db=database_name, table=csv_file.split(".")[0], df=ls,
+            self.spark.write_to_database_from_df(table=csv_file.split(".")[0], df=ls,
                                                  mode='overwrite')
 
     # Find common attributes for raw entity class
@@ -95,38 +95,32 @@ class Ingester():
 
     def _persist_raw_entity(self, features_for_deduplication=None):
         '''
-
         :param features_for_deduplication: User []
         :return:
         '''
 
-        cursor = self.spark.get_mysql_cursor()
+        # cursor = self.spark.get_mysql_cursor()
 
         series = []
         table_names = self._get_all_tables()
+        table_names.remove('Rawentity')
 
         # PBNA + FLNA ==> concat[vertical stack] ==> RawEntity
         for table in table_names:
-            df_ = self.spark.read_from_database_to_dataframe(table)
+            df_ = self.spark.read_from_database_to_dataframe(table.lower())
             series.append(df_)
 
         df_series = reduce(DataFrame.unionAll, series)
-        df_series = df_series.rdd.map(lambda r : Sanitizer().toRawEntity(r.asDict)).toDF()
+        # ls = df_series.rdd.map(lambda row : Sanitizer().toRawEntity(row.asDict())).collect()
+
+        df_series = df_series.rdd.map(lambda r : Sanitizer().toRawEntity(r.asDict())).toDF()
 
         if features_for_deduplication:
             df_series = df_series.select(features_for_deduplication)
 
-        self.spark.write_to_database_from_df("db", [], df_series)
+        self.spark.write_to_database_from_df(table="rawentity", df=df_series, mode='overwrite')
 
         return
-
-
-    # Initialize spark session
-    def _init_spark(self):
-        # spark.init_db(config.mysqlUser, config.mysqlPassword, config.mysqlLocalHost)
-        sparksession = self.spark.get_sparkSession()
-        # Step 3: Write individual entities to MySQL
-        return sparksession
 
         # Step 4: With Raw Entities ==> apply sanitiser ==> Persist in MySQL
         ## Sanitiser ==> dictionary spark.dataFrames()
@@ -138,7 +132,6 @@ class Ingester():
 if __name__ == '__main__':
     ingester = Ingester()
     ingester._generate_schemas()
-    ingester._init_spark()
     ingester._persist_csv_to_mysql()
     ingester._gen_raw_entity()
     ingester._persist_raw_entity()

@@ -29,10 +29,11 @@ class Sanitizer:
             
         return raw_kw
 
-    def toRawEntity(self, cls : Any, clean_data:bool = False, gen_id:bool=False) -> Rawentity:
-        raw_attribute_lists = list(self._get_attr_list(Rawentity))[0]
-        raw_kw = self.get_kwargs(cls, attr_lists=raw_attribute_lists, clean_data=clean_data, gen_id=gen_id)
+    def toRawEntity(self, data : dict, clean_data:bool = True, gen_id:bool=False, return_dict:bool=True) -> Rawentity or dict:
+        raw_attribute_lists = self._get_attr_list(Rawentity)
+        raw_kw = self.get_kwargs(data, attr_lists=raw_attribute_lists, clean_data=clean_data, gen_id=gen_id)
         raw_entity_object = Rawentity(**raw_kw)
+        if return_dict: return raw_kw
         return raw_entity_object
     
     def toEntity(self, Ent_Obj : Any, data:dict, gen_id=True, return_dict:bool=True):
@@ -44,9 +45,10 @@ class Sanitizer:
         return entity_obj
 
     def _apply_transformer(self, value:str or int):
-        if value.isdigit() or isinstance(int, value):
+        transformed_ = ""
+        if str(value).isdigit() or isinstance(value, int):
             transformed_ = IntegerTypeTransformer.standardizeIntegerType(str(value))
-        elif isinstance(str, value):
+        elif isinstance(value, str):
             transformed_ = StringTypeTransformer.standardizeStringType(value)
         return transformed_
 
@@ -77,7 +79,6 @@ if __name__ == "__main__":
     snt = Sanitizer()
     spark = SparkSession.builder.appName("sanitizer").getOrCreate()
     df = spark.createDataFrame(test)
-    print(df[0])
-    print(entity1)  
-    print("Entity:\n", snt.toEntity(Pbna, df[0]))
-    print("RawEntity:\n", snt.toRawEntity(entity1, clean_data=True))
+    print(df.head())  
+    print("Entity:\n", snt.toEntity(Pbna, df.head().asDict()))
+    print("RawEntity:\n", snt.toRawEntity(df.head().asDict(), clean_data=True))

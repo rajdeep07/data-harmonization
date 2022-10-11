@@ -4,7 +4,6 @@ from typing import Any, Tuple
 import numpy as np
 
 from data_harmonization.main.code.tiger.features.Distance import Distance
-from data_harmonization.main.code.tiger.model.datamodel import RawEntity
 
 
 class Features:

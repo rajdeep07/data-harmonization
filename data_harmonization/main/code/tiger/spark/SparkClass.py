@@ -4,7 +4,7 @@ from pyspark.context import SparkContext
 import urllib.request
 from pyspark.sql import functions as F
 import data_harmonization.main.resources.config as config_
-import MySQLdb
+# import MySQLdb
 
 
 class SparkClass:
@@ -15,14 +15,14 @@ class SparkClass:
             .config("spark.sql.shuffle.partitions", "2").getOrCreate()
         # pass
 
-    def get_mysql_cursor(self):
-        connection = MySQLdb.connect(host=config_.mysqlLocalHost,
-                                     user=config_.mysqlUser,
-                                     passwd=config_.mysqlPassword,
-                                     db=config_.DB_NAME)
-        cursor = connection.cursor()
-        cursor.execute(f"SELECT table_name FROM information_schema.tables WHERE table_schema = {config_.DB_NAME}")
-        return cursor
+    # def get_mysql_cursor(self):
+    #     connection = MySQLdb.connect(host=config_.mysqlLocalHost,
+    #                                  user=config_.mysqlUser,
+    #                                  passwd=config_.mysqlPassword,
+    #                                  db=config_.DB_NAME)
+    #     cursor = connection.cursor()
+    #     cursor.execute(f"SELECT table_name FROM information_schema.tables WHERE table_schema = {config_.DB_NAME}")
+    #     return cursor
 
     # Step 2: read_from_database_to_dataframe [MySQL]
     def read_from_database_to_dataframe(self, table, columnTypes=None) -> DataFrame:
