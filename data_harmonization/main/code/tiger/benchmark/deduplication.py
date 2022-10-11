@@ -21,7 +21,7 @@ class Deduplication:
         return pandas_df
 
     # This method is used for model training.
-    def model_training(self, df: pd.DataFrame, col_names: list):
+    def model_training(self, df: pd.DataFrame, col_names: list = []):
 
         # Generate dataframe
         # current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -52,13 +52,15 @@ class Deduplication:
 
         # remove id column from dataframe
         # df_for_dedupe_model = df.drop("id")
-
+        df_for_dedupe_model = df.copy()
         if col_names and len(col_names) > 0:
-            if "id" in col_names:
-                col_names.remove("id")
             # df_for_dedupe_model = df_for_dedupe_model.columns.intersection(col_names)
             df_for_dedupe_model = df_for_dedupe_model[col_names]
-
+        else:
+            col_names = list(df_for_dedupe_model.columns)
+        if "id" in col_names:
+                col_names.remove("id")
+        print(col_names)
         final_model = pandas_dedupe.dedupe_dataframe(
             # features_for_deduplication
             # dataframe, ["Name", "Address", "City", "State", "Zip"]
@@ -117,7 +119,8 @@ if __name__ == "__main__":
 
     dedupe = Deduplication()
     print("Begin Active Learning.")
-    dedupe.model_training()
+    df = dedupe.get_data("Raw_Entity")
+    dedupe.model_training(df)
     print("We are done with training.")
 
     # For Prediction
