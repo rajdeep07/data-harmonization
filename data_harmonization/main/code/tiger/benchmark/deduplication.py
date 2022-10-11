@@ -22,13 +22,23 @@ class Deduplication:
             for filename in filenames
             if filename.endswith(".csv") and not filename.startswith("benchmark")
         ]
+
+        # Read from MYSQL + RawEntity ==> PySpark DF
+        # PySparkDf to toPandas()
+        # len(PySparkDf) < 20,000 Records :: Take the entire dataset
+        # If not, randomly sample 20k records.
+        # if not None, features_for_deduplication [User Provided] Subset pandas dataframe
+        # if None, use all columns
+
         dataframe = pd.DataFrame()  # correct data structure here ?
         for csv_file in csv_filenames:
             dataframe = dataframe.append(pd.read_csv(target_dir + f"/data/{csv_file}"))
 
         # Run Dedupe Model
-        dataframe = dataframe[["Name", "Address", "City", "State", "Zip"]]  # "source"
+        # DataFrame :: features_for_deduplication + id columns
+        dataframe = dataframe[["Name", "Address", "City", "State", "Zip", "id"]]  # "source"
         final_model = pandas_dedupe.dedupe_dataframe(
+            # features_for_deduplication
             dataframe, ["Name", "Address", "City", "State", "Zip"]
         )
 
@@ -40,14 +50,31 @@ class Deduplication:
 
         # Output the data as csv
         print("We are writing dataset on")
+        # Persist this in MYSQL + benckmark
         final_model.to_csv(target_dir + "/data/benchmark.csv", mode="w+")
+
+
+        # Few Statistics
+        # Total_Records
+        # Duplicates
+        # %_duplicate = Duplicates/ Total_Records
+
+        # Show 1 cluster which has maximum duplicates
+
 
         return
 
 
 if __name__ == "__main__":
 
+
+    # For Training
+    # rm dedupe_dataframe_training.json
+    # rm dedupe_dataframe_learned_settings
+
     dedupe = Deduplication()
     print("Begin Active Learning.")
     dedupe.model_training()
     print("We are done with training.")
+
+    # For Prediction
