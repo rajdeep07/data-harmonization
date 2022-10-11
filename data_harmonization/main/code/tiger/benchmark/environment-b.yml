@@ -9,10 +9,13 @@ dependencies:
   - numpy
   - pandas
   - xlrd
+  #
+  - pyspark
+  - netifaces==0.11.0
+  # - mysql-python
   - pip:
       - dedupe
       - pandas-dedupe
       - unidecode
       - dedupe-hcluster
       - rlr
-

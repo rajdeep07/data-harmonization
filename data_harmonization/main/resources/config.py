@@ -13,8 +13,8 @@ awsDefaultRegion = "AWS_DEFAULT_REGION"
 
 # database credentials
 mysqlUser = "root"
-mysqlPassword = "Root#1234"
-mysqlLocalHost = netifaces.gateways()['default'][2][0]
+mysqlPassword = "Root_123"
+mysqlLocalHost = "localhost"  # netifaces.gateways()['default'][2][0]
 mysqlDriver = "com.mysql.cj.jdbc.Driver"
 mysqlPort = "3306"
 
@@ -22,8 +22,10 @@ mysqlPort = "3306"
 
 
 # spark configurations
-sparkCustomConfigs = [('spark.executor.memory','8g'),
-                      ('spark.executor.cores','3'),
-                      ('spark.cores.max','3'),
-                      ('spark.driver.memory','8g'),
-                      ('spark.driver.maxResultSize','4g')]
+sparkCustomConfigs = [
+    ("spark.executor.memory", "8g"),
+    ("spark.executor.cores", "3"),
+    ("spark.cores.max", "3"),
+    ("spark.driver.memory", "8g"),
+    ("spark.driver.maxResultSize", "4g"),
+]
