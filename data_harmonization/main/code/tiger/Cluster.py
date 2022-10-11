@@ -8,7 +8,6 @@ from typing import Any, Optional
 
 import numpy as np
 import pandas as pd
-from data_harmonization.main.code.tiger.model.datamodel import *
 from data_harmonization.main.code.tiger.model.SemiMergedProfile import \
     SemiMergedProfile
 from data_harmonization.main.code.tiger.Sanitizer import Sanitizer
@@ -286,3 +285,6 @@ if __name__ == "__main__":
         print("Test Passed: All similar pairs found.")
     else:
         print("Test Failed.")
+
+    ## Pyspark Code
+
