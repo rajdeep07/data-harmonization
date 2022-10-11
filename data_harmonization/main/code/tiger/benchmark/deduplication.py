@@ -84,9 +84,9 @@ class Deduplication:
         target_dir = os.path.sep.join(current_dir.split(os.path.sep)[:-2])
         if not df:
             df = self.get_data(self.raw_entity_table_name)
-        if os.path.isfile(target_dir + "/tiger/benchmark/dedupe_dataframe_learned_settings"):
+        if not os.path.isfile(target_dir + "/tiger/benchmark/dedupe_dataframe_learned_settings"):
             print("Cannot find dedupe_dataframe_learned_settings file")
-        if os.path.isfile(target_dir + "/tiger/benchmark/dedupe_dataframe_training.json"):
+        if not os.path.isfile(target_dir + "/tiger/benchmark/dedupe_dataframe_training.json"):
             print("Cannot find dedupe_dataframe_training.json file")
         return self._run_model(df, col_names)
 
