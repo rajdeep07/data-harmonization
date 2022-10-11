@@ -11,16 +11,11 @@ import os
 import sys
 from data_harmonization.main.code.tiger.spark.SparkClass import SparkClass
 import data_harmonization.main.resources.config as config
-import findspark
 from data_harmonization.main.code.tiger.model.ingester import *
 from pyspark.sql import DataFrame
 from functools import reduce
 
-# establish these as SPARK_HOME and PYTHON_HOME, with PATHS in your zshrc or bashrc
-findspark.init("/home/navazdeen/spark-3.1.1-bin-hadoop3.2", "/home/navazdeen/miniconda3/envs/data-harmonization/bin/python")
 
-# add this to external jars and pass when initializing spark session
-findspark.add_packages('mysql:mysql-connector-java:8.0.11')
 
 os.environ['PYSPARK_PYTHON'] = sys.executable
 os.environ['PYSPARK_DRIVER_PYTHON'] = sys.executable

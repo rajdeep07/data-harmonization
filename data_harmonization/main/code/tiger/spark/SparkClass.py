@@ -4,16 +4,21 @@ from pyspark.context import SparkContext
 import urllib.request
 from pyspark.sql import functions as F
 import data_harmonization.main.resources.config as config_
+import findspark
 # import MySQLdb
 
 
 class SparkClass:
 
     # Step 1: We all need a spark session instance
-    def __init__(self) -> None:    
+    def __init__(self) -> None:
+        # establish these as SPARK_HOME and PYTHON_HOME, with PATHS in your zshrc or bashrc
+        findspark.init("/home/navazdeen/spark-3.1.1-bin-hadoop3.2", "/home/navazdeen/miniconda3/envs/data-harmonization/bin/python")
+        # add this to external jars and pass when initializing spark session
+        findspark.add_packages('mysql:mysql-connector-java:8.0.11')
+
         self.spark = SparkSession.builder.master("local[*]").appName(config_.APP_NAME)\
             .config("spark.sql.shuffle.partitions", "2").getOrCreate()
-        # pass
 
     # def get_mysql_cursor(self):
     #     connection = MySQLdb.connect(host=config_.mysqlLocalHost,
