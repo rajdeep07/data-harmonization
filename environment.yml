@@ -23,6 +23,8 @@ dependencies:
   - SQLAlchemy==1.4.27
   - netifaces==0.11.0
   - MySQLdb
+  - graphframes==0.6
+  - findspark==2.0.1
   - pip:
     - sphinx-autodoc-annotation
     - datamodel-code-generator
