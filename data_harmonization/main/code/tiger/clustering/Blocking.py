@@ -3,7 +3,7 @@ import re
 from pyspark import SparkContext
 from pyspark import Row
 from pyspark.sql.types import *
-from data_harmonization.main.code.tiger.spark.SparkClass import SparkClass
+from data_harmonization.main.code.tiger.spark import SparkClass
 from data_harmonization.main.code.tiger.model.ingester.Rawentity import Rawentity
 from typing import Optional
 from pyspark.ml.feature import Word2Vec, Word2VecModel, CountVectorizer, HashingTF, IDF, \

@@ -1,9 +1,8 @@
 import re
-from typing import Any, Tuple
-
 import numpy as np
 
 from data_harmonization.main.code.tiger.features.Distance import Distance
+from typing import Any, Tuple
 
 
 class Features:
@@ -54,6 +53,12 @@ class Features:
             n_Features.extend(self.engineerFeatures(pairs[0][key], pairs[1][key]))
         # print(n_Features.shape)
         return n_Features
+    
+    """def get(self, pairs : (Rawentity, Rawentity)) -> SparseVector:
+        n_Features = []
+        for key in pairs[0].get_schema().keys():
+            n_Features.extend(self.engineerFeatures(getattr(pairs[0], key), getattr(pairs[1], key)))"""
+
 
 
 if __name__ == "__main__":
