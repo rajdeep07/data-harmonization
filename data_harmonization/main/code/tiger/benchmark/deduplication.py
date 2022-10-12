@@ -1,22 +1,23 @@
 import os
+from re import finditer
 
 import pandas as pd
 import pandas_dedupe
 
-from data_harmonization.main.code.tiger.spark.SparkClass import SparkClass
+from data_harmonization.main.code.tiger.spark import SparkClass
 
 
 class Deduplication:
 
     def __init__(self):
-        self.raw_entity_table_name = "Raw_Entity"
+        self.raw_entity_table_name = "rawentity"
 
-    def get_data(self, table: str = "Raw_Entity", max_length: int=20000) -> pd.DataFrame:
+    def get_data(self, table: str = "rawentity", max_length: int=20000) -> pd.DataFrame:
         spark = SparkClass()
         df = spark.read_from_database_to_dataframe(table)
         pandas_df = df.toPandas()
         # if there are more than max_length records, take randomly sampled 20000 records
-        if len(pandas_df.index) > max_length:
+        if pandas_df.shape[0] > max_length:
             pandas_df = pandas_df.sample(n=max_length)
         return pandas_df
 
@@ -33,8 +34,11 @@ class Deduplication:
         final_model = pandas_dedupe.dedupe_dataframe(
             df_for_dedupe_model,
             col_names,
+            threshold=0.8,
+            canonicalize=True
         )
 
+        final_model = final_model[final_model["id"] != final_model["canonical_id"]]
 
         # Cleansing
         final_model = final_model.rename(columns={"cluster id": "cluster_id"})
@@ -42,7 +46,7 @@ class Deduplication:
             by=["cluster_id", "confidence"], ascending=True, inplace=True
         )
         # Persist this in MYSQL + benckmark
-        self._save_data_in_db(final_model, "benchmark")
+        self._save_data_in_db(final_model[['id', 'canonical_id', "cluster_id"]], "benchmark")
         print(self._get_statistics(df_for_dedupe_model, final_model))
 
         return
@@ -93,11 +97,11 @@ class Deduplication:
 if __name__ == "__main__":
     dedupe = Deduplication()
     print("Begin Active Learning.")
-    # df = dedupe.get_data("Raw_Entity")
+    # df = dedupe.get_data("rawentity")
     # dedupe.train(df)
     print("We are done with training.")
 
-    # For Prediction
+    # # For Prediction
     dedupe.predict(['Name', 'Address', 'Zip', 'City', 'id', 'State'])
     dedupe.predict()
     print("We are done with prediction.")

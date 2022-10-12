@@ -9,7 +9,7 @@ from collections import Counter
 from data_harmonization.main.code.tiger.Sanitizer import Sanitizer
 import os
 import sys
-from data_harmonization.main.code.tiger.spark.SparkClass import SparkClass
+from data_harmonization.main.code.tiger.spark import SparkClass
 import data_harmonization.main.resources.config as config
 from data_harmonization.main.code.tiger.model.ingester import *
 from pyspark.sql import DataFrame

@@ -4,7 +4,6 @@ from pyspark.context import SparkContext
 import urllib.request
 from pyspark.sql import functions as F
 import data_harmonization.main.resources.config as config_
-from pyspark.conf import SparkConf
 import findspark
 # import MySQLdb
 

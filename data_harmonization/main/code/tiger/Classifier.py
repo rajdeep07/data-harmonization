@@ -8,29 +8,34 @@ import time
 
 from sklearn.model_selection import StratifiedShuffleSplit
 from data_harmonization.main.code.tiger.Features import Features
+from data_harmonization.main.code.tiger.spark import SparkClass
+from pyspark import Row
+from pyspark.sql import DataFrame
+from pyspark.sql.functions import col
 
 tf.compat.v1.disable_v2_behavior()
 
 class Classifier():
     def __init__(self) -> None:
+        self.spark = SparkClass()
+        self.sparksession = self.spark.get_sparkSession()
         self.input_dim : int
         self.output_dim : int
-        self.optimizer
-        self.cross_entropy
 
-    def _feature_data(self, features:pd.DataFrame, target:pd.DataFrame) -> pd.DataFrame:
+    def _feature_data(self, features:DataFrame, target:DataFrame) -> pd.DataFrame:
         features = Features().get(features)
         return features, pd.get_dummies(target, prefix=["target"]).values
 
-    def _extract_postive_data(self, data:pd.DataFrame, threshold:float = 0.70) -> pd.DataFrame:
-        high_thresh_data = data[data['confidence'] >= threshold]
+    def _extract_postive_data(self, data:DataFrame, threshold:float = 0.70) -> pd.DataFrame:
+        """high_thresh_data = data[data['confidence'] >= threshold]
         joined_data = pd.merge(high_thresh_data, high_thresh_data, how='inner', on='cluster_id')
         joined_data.drop_duplicates(inplace=True)
-        joined_data = joined_data[~(joined_data['id_x'] == joined_data['id_y'])]
-        return joined_data
+        joined_data = joined_data[~(joined_data['id_x'] == joined_data['id_y'])]"""
+        positive_df = data.filter(f"confidence > {threshold}").filter("id != canonical_id")
+        return positive_df.toPandas()
 
-    def _extract_negative_data(self, data:pd.DataFrame, match_ratio:float=0.5) -> pd.DataFrame:
-        cluster_ids = data['cluster_id']
+    def _extract_negative_data(self, data:DataFrame, match_ratio:float=0.5) -> pd.DataFrame:
+        """cluster_ids = data.select(cols=col(""))
         master_set = set()
         while len(master_set) < data.shape[0] * match_ratio:
             clus_id1, clus_id2 = random.sample(cluster_ids, 2)
@@ -38,16 +43,46 @@ class Classifier():
             left_ids = set(data[data['cluster_id'] == clus_id2]['id'])
             right_ids.difference_update(left_ids)
             left_ids.difference_update(right_ids)
-            master_set.add(set(itertools.product(right_ids, left_ids)))
+            master_set.add(set(itertools.product(right_ids, left_ids)))"""
+        all_id = data.select(col("id"), col("canonical_id")).rdd.flatMap(lambda x : x).collect() 
+        rawentity_df = self.spark.read_from_database_to_dataframe("rawentity")
+        rawentity_df = rawentity_df.sample(0.5, seed=42)
+        rawentity_df_can = rawentity_df.rdd.toDF(["canonical_"+col for col in rawentity_df.columns])
+        master_set = set()
+        while len(master_set) < (data.count()*match_ratio):
+            clus_ida, clus_idb = random.sample(all_id, 2)
+            is_match = data.filter((data.id==clus_ida) & (data.canonical_id == clus_idb)).collect() and data.filter((data.id==clus_idb) & (data.canonical_id == clus_ida)).collect()
+            if is_match:
+                continue
+            master_set.add((clus_ida, clus_idb))
+            master_set.add((clus_idb, clus_ida))
+        id_df = self.sparksession.createDataFrame(list(master_set), ["id", "canonical_id"]) #[(ida, idb), (idc, idd)]
+        negative_df = (id_df.alias("a")
+               .join(
+                   rawentity_df.alias("b"),
+                   (col("a.id") == col("b.id")),
+                   "inner"
+               )).drop(col("b.id"))
+        negative_df = (negative_df.alias("a")
+              .join(
+                  rawentity_df_can.alias("b"),
+                  (col("a.canonical_id") == col("b.canonical_id")),
+                  "inner"
+              )).drop(col("b.canonocal_id"))
+        
+        return negative_df.toPandas()
+
+        
 
     
-    def _preprocess_data(self, data:pd.DataFrame) -> pd.DataFrame:
+    def _preprocess_data(self, data:DataFrame) -> DataFrame:
         positive_df = self._extract_postive_data(data)
         negative_df = self._extract_negative_data(data)
         data = pd.concat([positive_df, negative_df])
         data['feature'], data['target'] = self._feature_data(data.drop('target', axis=1), data['feature'])
+        return data
      
-    def _train_test_split(self, feature : np.array, target : np.array, n_splits : int = 1, test_size : float = 0.2,
+    def _train_test_split(self, feature : np.array, target : np.array, n_splits : int = 2, test_size : float = 0.2,
                         random_state : int = 42) -> np.array:
 
         split = StratifiedShuffleSplit(n_splits, test_size, random_state)
@@ -95,8 +130,9 @@ class Classifier():
 
         
 
-    def train(self, data:pd.DataFrame, num_epochs, cross_entropy, optimizer):
-        feature, target = self._preprocess_data(data)
+    def train(self, table_name:str, num_epochs:int=100):
+        data_df = self.spark.read_from_database_to_dataframe(table=table_name)
+        feature, target = self._preprocess_data(data_df)
         raw_X_train, raw_y_train, raw_X_test, raw_y_test = self._train_test_split(feature, target)
         X_train_node = tf.compat.v1.placeholder(
             tf.float32, [None, self.input_dim], name="X_train"
@@ -106,10 +142,10 @@ class Classifier():
         )
         X_test_node = tf.constant(raw_X_test, name="X_test")
         y_test_node = tf.constant(raw_y_test, name="y_test")
-        y_train_prediction = self.network(self.X_train_node)
-        y_test_prediction = self.network(self.X_test_node)
-        self.cross_entropy = cross_entropy(self.y_train_node, y_train_prediction)
-        self.optimizer = optimizer(0.005).minimize(self.cross_entropy)
+        y_train_prediction = self._network(self.X_train_node)
+        y_test_prediction = self._network(self.X_test_node)
+        self.cross_entropy = tf.compat.v1.keras.losses.CategoricalCrossentropy(self.y_train_node, y_train_prediction)
+        self.optimizer = tf.compat.v1.optimizers.Adam(0.005).minimize(self.cross_entropy)
         with tf.compat.v1.Session() as session:
             tf.compat.v1.global_variables_initializer().run()
             for epoch in range(num_epochs):
@@ -142,6 +178,6 @@ class Classifier():
 
 
 if __name__ == "__main__":
-    data = pd.read_csv('/home/navazdeens/data-harmonization/data_harmonization/main/data/benchmark.csv')
+    # data = pd.read_csv('/home/navazdeens/data-harmonization/data_harmonization/main/data/benchmark.csv')
 
-    Classifier().train(data=data)
+    Classifier().train(table_name='benchmark')
