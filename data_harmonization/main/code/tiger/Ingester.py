@@ -6,7 +6,6 @@ import sys, importlib
 import inspect
 import numpy as np
 from collections import Counter
-from data_harmonization.main.code.tiger.Sanitizer import Sanitizer
 import os
 import sys
 from data_harmonization.main.code.tiger.spark import SparkClass
@@ -57,6 +56,7 @@ class Ingester():
     # TODO: This is not a generalize method, it presumes only reading from csv before writing to mysql.
     # TODO: Also only meant for raw files upload.
     def _persist_csv_to_mysql(self, path=None): # write_to_mysql
+        from data_harmonization.main.code.tiger.Sanitizer import Sanitizer
         for csv_file in self.csv_files:
             # TODO: generalize csv reader to almost everything later.
             sanitiser = Sanitizer()
@@ -95,7 +95,7 @@ class Ingester():
         '''
 
         # cursor = self.spark.get_mysql_cursor()
-
+        from data_harmonization.main.code.tiger.Sanitizer import Sanitizer
         series = []
         table_names = self._get_all_tables()
         table_names.remove('Rawentity')
@@ -127,6 +127,8 @@ class Ingester():
 if __name__ == '__main__':
     ingester = Ingester()
     ingester._generate_schemas()
-    ingester._persist_csv_to_mysql()
     ingester._gen_raw_entity()
+    ingester._persist_csv_to_mysql()
     ingester._persist_raw_entity()
+
+# TODO: sort methods, fix broken imports

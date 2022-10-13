@@ -31,10 +31,16 @@ from data_harmonization.main.code.tiger.model.ingester.Bottom import Base\n\n
         self.output_path = output_path
     
     def _update_init(self, filename):
-        with open(f'{self.output_path}/__init__.py', 'r') as file:
-            lines = set(file.readlines())
-            # print(lines)
-            lines.add(f"from data_harmonization.main.code.tiger.model.ingester.{filename} import {filename}\n")
+        try:
+            with open(f'{self.output_path}/__init__.py', 'r') as file:
+                lines = set(file.readlines())
+                # print(lines)
+                lines.add(f"from data_harmonization.main.code.tiger.model.ingester.{filename} import {filename}\n")
+        except:
+            with open(f'{self.output_path}/__init__.py', 'w') as file:
+                lines = set(file.readlines())
+                # print(lines)
+                lines.add(f"from data_harmonization.main.code.tiger.model.ingester.{filename} import {filename}\n")
         with open(f'{self.output_path}/__init__.py', 'w') as file:
             for line in lines:
                 file.write(line)

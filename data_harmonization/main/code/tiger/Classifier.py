@@ -12,6 +12,7 @@ from data_harmonization.main.code.tiger.spark import SparkClass
 from pyspark import Row
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import col
+from sklearn.metrics import classification_report
 
 tf.compat.v1.disable_v2_behavior()
 
@@ -27,7 +28,7 @@ class Classifier():
     def _feature_data(self, features:pd.DataFrame, target:pd.DataFrame) -> pd.DataFrame:
         feature_df  = features.copy()
         feature_df['features'] = feature_df.apply(lambda x:Features().get(x), axis=1)
-        target_df = pd.get_dummies(target, prefix='target', columns=['target'])
+        target_df = pd.get_dummies(target, prefix='target', columns=['target'], drop_first=False)
         return pd.concat([feature_df, target_df], axis=1)
 
     def create_df_from_id_pairs(self, id_pair:DataFrame) -> pd.DataFrame:
@@ -48,8 +49,11 @@ class Classifier():
 
     def _extract_postive_data(self, data:DataFrame, threshold:float = 0.80) -> pd.DataFrame:
         positive_df_id = data.filter(f"confidence > {threshold}").select("id", "canonical_id")
-        positive_df = self.create_df_from_id_pairs(id_pair = positive_df_id)
+        print(positive_df_id.count())
+        positive_df = self.create_df_from_id_pairs(id_pair=positive_df_id)
+        print(positive_df.shape)
         positive_df['target'] = pd.Series(np.ones(positive_df.shape[0])).astype('int')
+        print(positive_df.shape)
         return positive_df
 
     def _extract_negative_data(self, data:DataFrame, match_ratio:float=0.3) -> pd.DataFrame:
@@ -73,11 +77,13 @@ class Classifier():
         print("Started preprocessing data......")
         print("extracting positive data......")
         positive_df = self._extract_postive_data(data)
+        print("Positive data shape:",positive_df.shape)
         print("extracting negative data......")
         negative_df = self._extract_negative_data(data)
+        print("Negative data shape:", negative_df.shape)
         print("done extracting data......")
         data = pd.concat([positive_df, negative_df])
-        print("Extracting features from the data.......")
+        print(f"Extracting features from the data.......\nTotal Rows : {data.shape[0]}")
         data = self._feature_data(data.drop('target', axis=1), data['target'])
         print("Done preprocessing data......")
         return data
@@ -115,10 +121,15 @@ class Classifier():
         return layer3
 
     def _calculate_accuracy(self, actual, predicted):
-        actual = np.argmax(actual, 1)
-        predicted = np.argmax(predicted, 1)
-        print(actual, predicted)
-        return 100 * np.sum(np.equal(predicted, actual)) / predicted.shape[0]
+        TP = tf.math.count_nonzero(predicted * actual)
+        TN = tf.math.count_nonzero((predicted - 1) * (actual - 1))
+        FP = tf.math.count_nonzero(predicted * (actual - 1))
+        FN = tf.math.count_nonzero((predicted - 1) * actual)
+        precision = TP / (TP + FP)
+        recall = TP / (TP + FN)
+        f1 = 2 * precision * recall / (precision + recall)
+        # print(classification_report(actual, predicted))
+        return precision, recall, f1
 
     def _initialize_model(self) -> None:
         # First layer takes in input and passes output to 2nd layer
@@ -141,7 +152,7 @@ class Classifier():
 
         
 
-    def train(self, table_name:str, num_epochs:int=300):
+    def train(self, table_name:str, num_epochs:int=500):
         data_df = self.spark.read_from_database_to_dataframe(table=table_name)
         final_df = self._preprocess_data(data_df)
         raw_X_train, raw_X_test, raw_y_train, raw_y_test = self._train_test_split(
@@ -149,8 +160,8 @@ class Classifier():
             final_df[['target_0', 'target_1']].values)
         
         #stacking data
-        raw_X_train = np.stack(raw_X_train, axis=0)
-        raw_X_test = np.stack(raw_X_test, axis=0)
+        raw_X_train = np.stack(raw_X_train, axis=0).astype(dtype='float32')
+        raw_X_test = np.stack(raw_X_test, axis=0).astype(dtype='float32')
         print("Input shape:",raw_X_train.shape,"Output shape", raw_y_test.shape)
 
         # Gets a percent of match vs no match (6% of data are match?)
@@ -199,7 +210,7 @@ class Classifier():
         # Adam optimizer function will try to minimize loss (cross_entropy) but changing the 3 layers' variable values at a
         #   learning rate of 0.005
         optimizer = tf.compat.v1.train.AdamOptimizer(0.005).minimize(cross_entropy)
-        saver = tf.train.Saver()
+        saver = tf.compat.v1.train.Saver()
 
         with tf.compat.v1.Session() as session:
             tf.compat.v1.global_variables_initializer().run()
@@ -224,25 +235,34 @@ class Classifier():
 
                     final_y_test = y_test_node.eval()
                     final_y_test_prediction = y_test_prediction.eval()
-                    final_accuracy = self._calculate_accuracy(
+                    precision, recall, f1 = self._calculate_accuracy(
                         final_y_test, final_y_test_prediction
                     )
-                    print("Current accuracy: {0:.2f}%".format(final_accuracy))
+                    print("Precision: {}\n recall: {}\n f1: {}".format(precision.eval(session=session),
+                    recall.eval(session=session),
+                    f1.eval(session=session)
+                    ))
 
             final_y_test = y_test_node.eval()
             final_y_test_prediction = y_test_prediction.eval()
-            final_accuracy = self._calculate_accuracy(
+            precision, recall, f1  = self._calculate_accuracy(
                 final_y_test, final_y_test_prediction
             )
-            print("Final accuracy: {0:.2f}%".format(final_accuracy))
+            print("Precision: {}\n recall: {}\n f1: {}".format(precision.eval(session=session),
+                    recall.eval(session=session),
+                    f1.eval(session=session)
+                    ))
             self.save_model({"saver": saver, "session": session})
             # saver.save(session, "my_test_model")
         final_match_y_test = final_y_test[final_y_test[:, 1] == 1]
         final_match_y_test_prediction = final_y_test_prediction[final_y_test[:, 1] == 1]
-        final_match_accuracy = self._calculate_accuracy(
+        precision, recall, f1  = self._calculate_accuracy(
             final_match_y_test, final_match_y_test_prediction
         )
-        print("Final match specific accuracy: {0:.2f}%".format(final_match_accuracy))
+        print("Precision: {}\n recall: {}\n f1: {}".format(precision.eval(session=session),
+                    recall.eval(session=session),
+                    f1.eval(session=session)
+                    ))
 
 
     def predict(self, data_X):
