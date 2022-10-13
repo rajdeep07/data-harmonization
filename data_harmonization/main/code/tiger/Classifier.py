@@ -19,35 +19,42 @@ class Classifier():
     def __init__(self) -> None:
         self.spark = SparkClass()
         self.sparksession = self.spark.get_sparkSession()
+        self.rawentity_df = self.spark.read_from_database_to_dataframe('rawentity')
+        self.rawentity_df_can = self.rawentity_df.rdd.toDF(["canonical_"+col for col in self.rawentity_df.columns])
         self.input_dim : int
         self.output_dim : int
 
-    def _feature_data(self, features:DataFrame, target:DataFrame) -> pd.DataFrame:
-        features = Features().get(features)
-        return features, pd.get_dummies(target, prefix=["target"]).values
+    def _feature_data(self, features:pd.DataFrame, target:pd.DataFrame) -> pd.DataFrame:
+        feature_df  = features.copy()
+        feature_df['features'] = feature_df.apply(lambda x:Features().get(x), axis=1)
+        target_df = pd.get_dummies(target, prefix='target', columns=['target'])
+        return pd.concat([feature_df, target_df], axis=1)
 
-    def _extract_postive_data(self, data:DataFrame, threshold:float = 0.70) -> pd.DataFrame:
-        """high_thresh_data = data[data['confidence'] >= threshold]
-        joined_data = pd.merge(high_thresh_data, high_thresh_data, how='inner', on='cluster_id')
-        joined_data.drop_duplicates(inplace=True)
-        joined_data = joined_data[~(joined_data['id_x'] == joined_data['id_y'])]"""
-        positive_df = data.filter(f"confidence > {threshold}").filter("id != canonical_id")
-        return positive_df.toPandas()
+    def create_df_from_id_pairs(self, id_pair:DataFrame) -> pd.DataFrame:
+        full_df = (id_pair.alias("a")
+               .join(
+                   self.rawentity_df.alias("b"),
+                   (col("a.id") == col("b.id")),
+                   "inner"
+               )).drop(col("b.id"))
+        full_df = (full_df.alias("a")
+              .join(
+                  self.rawentity_df_can.alias("b"),
+                  (col("a.canonical_id") == col("b.canonical_id")),
+                  "inner"
+              )).drop(col("b.canonical_id"))
+        
+        return full_df.toPandas()
 
-    def _extract_negative_data(self, data:DataFrame, match_ratio:float=0.5) -> pd.DataFrame:
-        """cluster_ids = data.select(cols=col(""))
-        master_set = set()
-        while len(master_set) < data.shape[0] * match_ratio:
-            clus_id1, clus_id2 = random.sample(cluster_ids, 2)
-            right_ids = set(data[data['cluster_id'] == clus_id1]['id'])
-            left_ids = set(data[data['cluster_id'] == clus_id2]['id'])
-            right_ids.difference_update(left_ids)
-            left_ids.difference_update(right_ids)
-            master_set.add(set(itertools.product(right_ids, left_ids)))"""
-        all_id = data.select(col("id"), col("canonical_id")).rdd.flatMap(lambda x : x).collect() 
-        rawentity_df = self.spark.read_from_database_to_dataframe("rawentity")
-        rawentity_df = rawentity_df.sample(0.5, seed=42)
-        rawentity_df_can = rawentity_df.rdd.toDF(["canonical_"+col for col in rawentity_df.columns])
+    def _extract_postive_data(self, data:DataFrame, threshold:float = 0.80) -> pd.DataFrame:
+        positive_df_id = data.filter(f"confidence > {threshold}").select("id", "canonical_id")
+        positive_df = self.create_df_from_id_pairs(id_pair = positive_df_id)
+        positive_df['target'] = pd.Series(np.ones(positive_df.shape[0])).astype('int')
+        return positive_df
+
+    def _extract_negative_data(self, data:DataFrame, match_ratio:float=0.3) -> pd.DataFrame:
+        rawentity_df = self.rawentity_df.sample(match_ratio, seed=42)
+        all_id = rawentity_df.select(col("id")).rdd.flatMap(lambda x : x).collect() 
         master_set = set()
         while len(master_set) < (data.count()*match_ratio):
             clus_ida, clus_idb = random.sample(all_id, 2)
@@ -56,36 +63,29 @@ class Classifier():
                 continue
             master_set.add((clus_ida, clus_idb))
             master_set.add((clus_idb, clus_ida))
+
         id_df = self.sparksession.createDataFrame(list(master_set), ["id", "canonical_id"]) #[(ida, idb), (idc, idd)]
-        negative_df = (id_df.alias("a")
-               .join(
-                   rawentity_df.alias("b"),
-                   (col("a.id") == col("b.id")),
-                   "inner"
-               )).drop(col("b.id"))
-        negative_df = (negative_df.alias("a")
-              .join(
-                  rawentity_df_can.alias("b"),
-                  (col("a.canonical_id") == col("b.canonical_id")),
-                  "inner"
-              )).drop(col("b.canonocal_id"))
-        
-        return negative_df.toPandas()
-
-        
-
-    
-    def _preprocess_data(self, data:DataFrame) -> DataFrame:
+        negative_df = self.create_df_from_id_pairs(id_pair=id_df)
+        negative_df['target'] = pd.Series(np.zeros(negative_df.shape[0])).astype('int')
+        return negative_df
+ 
+    def _preprocess_data(self, data:DataFrame) -> pd.DataFrame:
+        print("Started preprocessing data......")
+        print("extracting positive data......")
         positive_df = self._extract_postive_data(data)
+        print("extracting negative data......")
         negative_df = self._extract_negative_data(data)
+        print("done extracting data......")
         data = pd.concat([positive_df, negative_df])
-        data['feature'], data['target'] = self._feature_data(data.drop('target', axis=1), data['feature'])
+        print("Extracting features from the data.......")
+        data = self._feature_data(data.drop('target', axis=1), data['target'])
+        print("Done preprocessing data......")
         return data
      
     def _train_test_split(self, feature : np.array, target : np.array, n_splits : int = 2, test_size : float = 0.2,
                         random_state : int = 42) -> np.array:
 
-        split = StratifiedShuffleSplit(n_splits, test_size, random_state)
+        split = StratifiedShuffleSplit(n_splits=n_splits,test_size=test_size, random_state=random_state)
         for train_index, validation_index in split.split(feature, target):
             raw_X_train, raw_X_test = feature[train_index], feature[validation_index]
             raw_y_train, raw_y_test = target[train_index], target[validation_index]
@@ -93,14 +93,25 @@ class Classifier():
         return raw_X_train, raw_X_test, raw_y_train, raw_y_test
 
     def _network(self, input_tensor):
+        """Function to run an input tensor through the 3 layers and output a tensor
+        that will give us a match/non match result.
+        Each layer uses a different function to fit lines through the data and
+        predict whether a given input tensor will result in a match or non match profiles.
+
+        :return: match or non match profile"""
         # Sigmoid fits modified data well
-        layer1 = tf.nn.sigmoid(tf.matmul(input_tensor, self.weight_1_node) + self.biases_1_node)
+        layer1 = tf.nn.sigmoid(
+            tf.matmul(input_tensor, self.weight_1_node) + self.biases_1_node
+        )
         # Dropout prevents model from becoming lazy and over confident
         layer2 = tf.nn.dropout(
-            tf.nn.sigmoid(tf.matmul(layer1, self.weight_2_node) + self.biases_2_node), 0.85
+            tf.nn.sigmoid(tf.matmul(layer1, self.weight_2_node) + self.biases_2_node),
+            0.85,
         )
         # Softmax works very well with one hot encoding which is how results are outputted
-        layer3 = tf.nn.softmax(tf.matmul(layer2, self.weight_3_node) + self.biases_3_node)
+        layer3 = tf.nn.softmax(
+            tf.matmul(layer2, self.weight_3_node) + self.biases_3_node
+        )
         return layer3
 
     def _calculate_accuracy(self, actual, predicted):
@@ -130,42 +141,109 @@ class Classifier():
 
         
 
-    def train(self, table_name:str, num_epochs:int=100):
+    def train(self, table_name:str, num_epochs:int=300):
         data_df = self.spark.read_from_database_to_dataframe(table=table_name)
-        feature, target = self._preprocess_data(data_df)
-        raw_X_train, raw_y_train, raw_X_test, raw_y_test = self._train_test_split(feature, target)
+        final_df = self._preprocess_data(data_df)
+        raw_X_train, raw_X_test, raw_y_train, raw_y_test = self._train_test_split(
+            final_df['features'].values, 
+            final_df[['target_0', 'target_1']].values)
+        
+        #stacking data
+        raw_X_train = np.stack(raw_X_train, axis=0)
+        raw_X_test = np.stack(raw_X_test, axis=0)
+        print("Input shape:",raw_X_train.shape,"Output shape", raw_y_test.shape)
+
+        # Gets a percent of match vs no match (6% of data are match?)
+        count_match, count_no_match = final_df[['target_1']].value_counts()
+        match_ratio = float(count_match / (count_match + count_no_match))
+        print("Percent of match ratios: ", match_ratio)
+
+        # Applies a logit weighting to match profiles to cause model to pay more attention to them
+        weighting = 1 / match_ratio
+        raw_y_train[:, 1] = raw_y_train[:, 1] * weighting
+
+        # 30 cells for the input
+        self.input_dim = input_dimensions =raw_X_train.shape[1]
+        # 2 cells for the output
+        self.output_dim = output_dimensions =raw_y_train.shape[1]
+        # 100 cells for the 1st layer
+        self.num_layer_1_cells = 100
+        # 150 cells for the second layer
+        self.num_layer_2_cells = 150
+
+        # We will use these as inputs to the model when it comes time to train it (assign values at run time)
         X_train_node = tf.compat.v1.placeholder(
-            tf.float32, [None, self.input_dim], name="X_train"
+            tf.float32, [None, input_dimensions], name="X_train"
         )
         y_train_node = tf.compat.v1.placeholder(
-            tf.float32, [None, self.output_dim], name="y_train"
+            tf.float32, [None, output_dimensions], name="y_train"
         )
+
+        # We will use these as inputs to the model once it comes time to test it
         X_test_node = tf.constant(raw_X_test, name="X_test")
         y_test_node = tf.constant(raw_y_test, name="y_test")
-        y_train_prediction = self._network(self.X_train_node)
-        y_test_prediction = self._network(self.X_test_node)
-        self.cross_entropy = tf.compat.v1.keras.losses.CategoricalCrossentropy(self.y_train_node, y_train_prediction)
-        self.optimizer = tf.compat.v1.optimizers.Adam(0.005).minimize(self.cross_entropy)
+
+        self._initialize_model()
+
+
+        # Used to predict what results will be given training or testing input data
+        # Remember, X_train_node is just a placeholder for now. We will enter values at run time
+        y_train_prediction = self._network(X_train_node)
+        y_test_prediction = self._network(X_test_node)
+
+        # Cross entropy loss function measures differences between actual output and predicted output
+        cross_entropy = tf.compat.v1.losses.softmax_cross_entropy(
+            y_train_node, y_train_prediction
+        )
+
+        # Adam optimizer function will try to minimize loss (cross_entropy) but changing the 3 layers' variable values at a
+        #   learning rate of 0.005
+        optimizer = tf.compat.v1.train.AdamOptimizer(0.005).minimize(cross_entropy)
+        saver = tf.train.Saver()
+
         with tf.compat.v1.Session() as session:
             tf.compat.v1.global_variables_initializer().run()
             for epoch in range(num_epochs):
+
                 start_time = time.time()
+
+                operation_ = [optimizer, cross_entropy]
                 _, cross_entropy_score = session.run(
-                    [self.optimizer, self.cross_entropy],
-                    feed_dict={self.X_train_node: self.raw_X_train, self.y_train_node: self.raw_y_train},)
+                    operation_,
+                    feed_dict={X_train_node: raw_X_train, y_train_node: raw_y_train},
+                )
+
                 if epoch % 10 == 0:
                     timer = time.time() - start_time
-                    print("Epoch: {}".format(epoch),
+
+                    print(
+                        "Epoch: {}".format(epoch),
                         "Current loss: {0:.4f}".format(cross_entropy_score),
-                        "Elapsed time: {0:.2f} seconds".format(timer),)
-                    final_y_test = self.y_test_node.eval()
-                    final_y_test_prediction = self.y_test_prediction.eval()
-                    final_accuracy = self.calculate_accuracy(final_y_test, final_y_test_prediction)
+                        "Elapsed time: {0:.2f} seconds".format(timer),
+                    )
+
+                    final_y_test = y_test_node.eval()
+                    final_y_test_prediction = y_test_prediction.eval()
+                    final_accuracy = self._calculate_accuracy(
+                        final_y_test, final_y_test_prediction
+                    )
                     print("Current accuracy: {0:.2f}%".format(final_accuracy))
-            final_y_test = self.y_test_node.eval()
-            final_y_test_prediction = self.y_test_prediction.eval()
-            final_accuracy = self.calculate_accuracy(final_y_test, final_y_test_prediction)
+
+            final_y_test = y_test_node.eval()
+            final_y_test_prediction = y_test_prediction.eval()
+            final_accuracy = self._calculate_accuracy(
+                final_y_test, final_y_test_prediction
+            )
             print("Final accuracy: {0:.2f}%".format(final_accuracy))
+            self.save_model({"saver": saver, "session": session})
+            # saver.save(session, "my_test_model")
+        final_match_y_test = final_y_test[final_y_test[:, 1] == 1]
+        final_match_y_test_prediction = final_y_test_prediction[final_y_test[:, 1] == 1]
+        final_match_accuracy = self._calculate_accuracy(
+            final_match_y_test, final_match_y_test_prediction
+        )
+        print("Final match specific accuracy: {0:.2f}%".format(final_match_accuracy))
+
 
     def predict(self, data_X):
         pass

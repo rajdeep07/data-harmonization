@@ -12,7 +12,7 @@ class Deduplication:
     def __init__(self):
         self.raw_entity_table_name = "rawentity"
 
-    def get_data(self, table: str = "rawentity", max_length: int=20000) -> pd.DataFrame:
+    def get_data(self, table: str = "rawentity", max_length: int=5000) -> pd.DataFrame:
         spark = SparkClass()
         df = spark.read_from_database_to_dataframe(table)
         pandas_df = df.toPandas()
@@ -97,8 +97,8 @@ class Deduplication:
 if __name__ == "__main__":
     dedupe = Deduplication()
     print("Begin Active Learning.")
-    # df = dedupe.get_data("rawentity")
-    # dedupe.train(df)
+    df = dedupe.get_data("rawentity")
+    dedupe.train()
     print("We are done with training.")
 
     # # For Prediction
