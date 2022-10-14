@@ -1,17 +1,13 @@
 import os
 import sys
 from data_harmonization.main.code.tiger.spark.SparkClass import SparkClass
-from pyspark import SparkContext
-from pyspark.sql import Column, DataFrame, SQLContext
-from pyspark.storagelevel import StorageLevel
+from pyspark.sql import DataFrame
 from graphframes import *
 
 # from graphframes.lib import Pegal
 from pyspark.sql import functions as F
-from pyspark.sql.types import StructType, StructField, StringType, IntegerType
-import netifaces
+from pyspark.sql.types import StructType, StructField, StringType
 import data_harmonization.main.resources.config as config_
-from data_harmonization.main.code.tiger.database.MySQL import MySQL
 
 # TODO: While running also pass package parameter to get appropriate packges.
 # ./bin/pyspark --packages graphframes:graphframes:0.6.0-spark2.3-s_2.11
@@ -24,6 +20,7 @@ class Mapping:
         self.App_Name = config_.APP_NAME
         os.environ["PYSPARK_PYTHON"] = sys.executable
         os.environ["PYSPARK_DRIVER_PYTHON"] = sys.executable
+        self.spark = SparkClass()
 
     def _getAllDuplicate(self, df):
         """Get all duplicates from dataframe based on isMatch column
@@ -87,7 +84,7 @@ class Mapping:
 
         :return: spark dataframe of table values
         """
-        df = SparkClass().read_from_database_to_dataframe(table)
+        df = self.spark.read_from_database_to_dataframe(table)
         return df
 
     def graphObject(self, raw_profiles_df=None) -> GraphFrame:
@@ -96,8 +93,6 @@ class Mapping:
 
         :return: GraphFrame object
         """
-        # Initialize spark session
-        spark = SparkClass()
 
         # if raw_profiles_df is not provided, fetch it from database
         if not raw_profiles_df:
@@ -112,7 +107,7 @@ class Mapping:
         # v = self._getLocalVertices(emptyRDD, entities)
 
         # Get all edges with appropriate edge for only matches
-        mergesDF = spark.read_from_database_to_dataframe(self.table_name)
+        mergesDF = self.spark.read_from_database_to_dataframe(self.table_name)
         e = self._getLocalEdges(mergesDF)
 
         # Create a graph
@@ -120,7 +115,18 @@ class Mapping:
 
         return g
 
-    def getScore(self, entities, df):
+    def saveConnectedComponents(self, g: GraphFrame) -> DataFrame:
+        self.spark.get_sparkSession().sparkContext.setCheckpointDir(
+            "data_harmonization/main/code/tiger/checkpoints"
+        )
+        df = g.connectedComponents()
+        df = df.select(["id", "component"]).withColumnRenamed("component", "cluster_id")
+        self.spark.write_to_database_from_df(
+            config_.graph_connected_components_table, df, mode="overwrite"
+        )
+        return df
+
+    def getScore(self, entities, df) -> float:
         """Print few statistics and return percentage of duplicate data
 
         :return: duplicate percentage
@@ -163,25 +169,27 @@ if __name__ == "__main__":
     map = Mapping(database_name, table_name)
     g = map.graphObject()
     g.cache()
+    df = map.saveConnectedComponents(g)
+    df.show()
     # g.vertices.show()
     # g.edges.show()
     # ## Check the number of edges of each vertex
     # g.degrees.show()
 
     # Calculate complete pairs : triangle counts
-    triangle_count = g.triangleCount()
+    # triangle_count = g.triangleCount()
     # triangle_count.show()
 
     # Calculate all sub_graphs : connected components / strongly connected components
-    strongly_connected_components = g.stronglyConnectedComponents(maxIter=10)
+    # strongly_connected_components = g.stronglyConnectedComponents(maxIter=10)
     # strongly_connected_components.show()
-    SparkClass().get_sparkSession().sparkContext.setCheckpointDir(
-        "data_harmonization/main/code/tiger/checkpoints"
-    )
-    df1 = g.connectedComponents()
-    df1.show()
+    # SparkClass().get_sparkSession().sparkContext.setCheckpointDir(
+    #     "data_harmonization/main/code/tiger/checkpoints"
+    # )
+    # df1 = g.connectedComponents()
+    # df1.show()
     # Drop singular un-matched profiles : dropIsolatedVertices
-    final = g.dropIsolatedVertices()
+    # final = g.dropIsolatedVertices()
     # print(final)
 
     # print score

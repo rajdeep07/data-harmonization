@@ -33,7 +33,8 @@ sparkCustomConfigs = [
 # table names
 raw_entity_table = "rawentity"
 blocking_table = "semimerged"
-classification_table = "classifier"
+classification_table = "merged"
+graph_connected_components_table = "connectedprofiles"
 benchmark_table = "benchmark"
 
 # Threshold
