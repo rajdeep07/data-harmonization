@@ -75,7 +75,7 @@ class Ingester:
                 if k.__eq__(class_name):
                     class_ = v
                     break
-            ls = df.rdd.map(lambda row: sanitiser.toEntity(v, row.asDict())).toDF(
+            ls = df.rdd.map(lambda row: sanitiser.toEntity(class_, row.asDict())).toDF(
                 sampleRatio=0.01
             )
             self.spark.write_to_database_from_df(
