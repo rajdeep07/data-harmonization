@@ -48,7 +48,6 @@ class Deduplication:
 
         # Cleansing
         final_model = final_model.rename(columns={"cluster id": "cluster_id"})
-        print(final_model.columns)
         # final_model.sort_values(
         #     by=["cluster_id", "confidence"], ascending=True, inplace=True
         # )
@@ -62,7 +61,6 @@ class Deduplication:
 
     def _save_data_in_db(self, df: pd.DataFrame, table: str):
         spark = SparkClass()
-        print(df.head())
         spark_df = spark.get_sparkSession().createDataFrame(df)
         spark.write_to_database_from_df(table, spark_df, mode="overwrite")
 
