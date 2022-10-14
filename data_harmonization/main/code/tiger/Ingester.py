@@ -3,16 +3,16 @@ from data_harmonization.main.code.tiger.database.SchemaGenerator import SchemaGe
 from data_harmonization.main.code.tiger.database import MySQL
 import os
 from os import listdir
-import sys, importlib
+import sys
+import importlib
 import inspect
 from collections import Counter
 from pyspark.sql import DataFrame
 from functools import reduce
-
 from data_harmonization.main.code.tiger.Sanitizer import Sanitizer
 from data_harmonization.main.code.tiger.spark import SparkClass
 import data_harmonization.main.resources.config as config
-from data_harmonization.main.code.tiger.model.ingester import *
+
 
 os.environ["PYSPARK_PYTHON"] = sys.executable
 os.environ["PYSPARK_DRIVER_PYTHON"] = sys.executable
@@ -22,7 +22,8 @@ class Ingester:
     def __init__(self):
         self.spark = SparkClass()
         self.current_dir = os.path.dirname(os.path.realpath(__file__))
-        self.target_dir = os.path.sep.join(self.current_dir.split(os.path.sep)[:-2])
+        self.target_dir = os.path.sep.join(
+            self.current_dir.split(os.path.sep)[:-2])
         self.csv_files = self._get_csv_files()
         self.schema_dirs = self._get_schema_dirs()
 
@@ -48,6 +49,37 @@ class Ingester:
     # get all entities
     def _get_all_tables(self) -> list[str]:
         return MySQL.get_tables()
+
+    # Find common attributes for raw entity class
+    def _gen_raw_entity(self, features_for_deduplication: list = None):
+        total_attributes = []
+        attr_dict = dict()
+        for _, cls in inspect.getmembers(
+            importlib.import_module(
+                "data_harmonization.main.code.tiger.model.ingester"
+            ),
+            inspect.isclass,
+        ):
+            total_attributes.extend(cls.get_schema().keys())
+            attr_dict.update(cls.get_schema())
+
+        total_attributes_count = Counter(total_attributes)
+
+        raw_entity_attrs = dict()
+        table_list = self._get_all_tables()
+        if features_for_deduplication:
+            total_attributes_count = {
+                key: total_attributes_count[key] for key in features_for_deduplication}
+
+        for key, value in total_attributes_count.items():
+            if value == len(table_list):
+                raw_entity_attrs[key] = attr_dict[key]
+
+        raw_entity_attrs.pop("id")
+        # Step 2: Create Raw Entity class with appropriate attribute
+        SchemaGenerator().generate_class_from_schema(
+            raw_entity_attrs, config.raw_entity_table, self.schema_dirs  # , "Rawentity"
+        )
 
     # TODO: This is not a generalize method, it presumes only reading from csv before writing to mysql.
     # TODO: Also only meant for raw files upload.
@@ -82,33 +114,6 @@ class Ingester:
                 table=csv_file.split(".")[0], df=ls, mode="overwrite"
             )
 
-    # Find common attributes for raw entity class
-    def _gen_raw_entity(self, features_for_deduplication=None):
-        total_attributes = []
-        attr_dict = dict()
-        for _, cls in inspect.getmembers(
-            importlib.import_module(
-                "data_harmonization.main.code.tiger.model.ingester"
-            ),
-            inspect.isclass,
-        ):
-            total_attributes.extend(cls.get_schema().keys())
-            attr_dict.update(cls.get_schema())
-
-        total_attributes_count = Counter(total_attributes)
-
-        raw_entity_attrs = dict()
-        table_list = self._get_all_tables()
-        for key, value in total_attributes_count.items():
-            if value == len(table_list):
-                raw_entity_attrs[key] = attr_dict[key]
-
-        raw_entity_attrs.pop("id")
-        # Step 2: Create Raw Entity class with appropriate attribute
-        SchemaGenerator().generate_class_from_schema(
-            raw_entity_attrs, config.raw_entity_table, self.schema_dirs  # , "Rawentity"
-        )
-
     def _persist_raw_entity(self, features_for_deduplication=None):
         """
         :param features_for_deduplication: User []
@@ -116,8 +121,9 @@ class Ingester:
         """
 
         # cursor = self.spark.get_mysql_cursor()
-        from data_harmonization.main.code.tiger.Sanitizer import Sanitizer
-
+        importlib.invalidate_caches()
+        rawentity = importlib.import_module(
+            "data_harmonization.main.code.tiger.model.ingester.Rawentity")
         series = []
         table_names = self._get_all_tables()
         if config.raw_entity_table in table_names:
@@ -132,7 +138,8 @@ class Ingester:
         # ls = df_series.rdd.map(lambda row : Sanitizer().toRawEntity(row.asDict())).collect()
 
         df_series = df_series.rdd.map(
-            lambda r: Sanitizer().toRawEntity(r.asDict())
+            lambda r: Sanitizer().toRawEntity(
+                data=r.asDict(), rawentity_obj=rawentity.Rawentity)
         ).toDF()
 
         if features_for_deduplication:
@@ -145,7 +152,7 @@ class Ingester:
         return
 
         # Step 4: With Raw Entities ==> apply sanitiser ==> Persist in MySQL
-        ## Sanitiser ==> dictionary spark.dataFrames()
+        # Sanitiser ==> dictionary spark.dataFrames()
         # sanitiser.toRawEntity()
 
         # Step 4: Write to MySQL RawEntity

@@ -36,10 +36,15 @@ class Deduplication:
             col_names.remove("id")
         print(col_names)
         final_model = pandas_dedupe.dedupe_dataframe(
-            df_for_dedupe_model, col_names, threshold=0.7, canonicalize=True
+            df_for_dedupe_model,
+            col_names,
+            threshold=0.7,
+            canonicalize=True,
+
         )
 
-        final_model = final_model[final_model["id"] != final_model["canonical_id"]]
+        final_model = final_model[final_model["id"]
+                                  != final_model["canonical_id"]]
 
         # Cleansing
         final_model = final_model.rename(columns={"cluster id": "cluster_id"})
@@ -89,14 +94,12 @@ class Deduplication:
     def train(self, col_names: list = [], df=None):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         target_dir = os.path.sep.join(current_dir.split(os.path.sep)[:-2])
-        # if os.path.isfile(
-        #     target_dir + "/tiger/benchmark/dedupe_dataframe_learned_settings"
-        # ):
-        #     os.remove(target_dir + "/tiger/benchmark/dedupe_dataframe_learned_settings")
-        # if os.path.isfile(
-        #     target_dir + "/tiger/benchmark/dedupe_dataframe_training.json"
-        # ):
-        #     os.remove(target_dir + "/tiger/benchmark/dedupe_dataframe_training.json")
+        if os.path.isfile(target_dir + "/tiger/benchmark/dedupe_dataframe_learned_settings"):
+            os.remove(
+                target_dir + "/tiger/benchmark/dedupe_dataframe_learned_settings")
+        if os.path.isfile(target_dir + "/tiger/benchmark/dedupe_dataframe_training.json"):
+            os.remove(
+                target_dir + "/tiger/benchmark/dedupe_dataframe_training.json")
         print("removed")
         if not df:
             df = self.get_data(self.raw_entity_table_name)
@@ -122,10 +125,10 @@ if __name__ == "__main__":
     dedupe = Deduplication()
     print("Begin Active Learning.")
     # df = dedupe.get_data("rawentity")
-    dedupe.train()
-    print("We are done with training.")
+    # dedupe.train()
+    # print("We are done with training.")
 
     # # For Prediction
     # dedupe.predict(['Name', 'Address', 'Zip', 'City', 'id', 'State'])
-    # dedupe.predict()
+    dedupe.predict()
     print("We are done with prediction.")

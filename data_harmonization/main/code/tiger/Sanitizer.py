@@ -4,7 +4,6 @@ from typing import Any
 import pandas as pd
 
 # from data_harmonization.main.code.tiger.model.dataclass import RawEntity, CleansedRawEntity
-from data_harmonization.main.code.tiger.model.ingester import *
 from data_harmonization.main.code.tiger.transformer.IntegerTypeTransformer import (
     IntegerTypeTransformer,
 )
@@ -36,18 +35,14 @@ class Sanitizer:
 
         return raw_kw
 
-    def toRawEntity(
-        self,
-        data: dict,
-        clean_data: bool = True,
-        gen_id: bool = False,
-        return_dict: bool = True,
-    ):
-        raw_attribute_lists = self._get_attr_list(Rawentity)
+    def toRawEntity(self, data: dict, rawentity_obj, clean_data: bool = True,
+                    return_dict: bool = True):
+
+        raw_attribute_lists = self._get_attr_list(rawentity_obj)
         raw_kw = self.get_kwargs(
-            data, attr_lists=raw_attribute_lists, clean_data=clean_data, gen_id=gen_id
+            data, attr_lists=raw_attribute_lists, clean_data=clean_data, gen_id=False
         )
-        raw_entity_object = Rawentity(**raw_kw)
+        raw_entity_object = rawentity_obj(**raw_kw)
         if return_dict:
             return raw_kw
         return raw_entity_object
@@ -64,13 +59,15 @@ class Sanitizer:
     def _apply_transformer(self, value: str or int):
         transformed_ = ""
         if str(value).isdigit() or isinstance(value, int):
-            transformed_ = IntegerTypeTransformer.standardizeIntegerType(str(value))
+            transformed_ = IntegerTypeTransformer.standardizeIntegerType(
+                str(value))
         elif isinstance(value, str):
             transformed_ = StringTypeTransformer.standardizeStringType(value)
         return transformed_
 
 
 if __name__ == "__main__":
+    from data_harmonization.main.code.tiger.model.ingester import *
     entity1 = Pbna(
         id=12,
         Name="ABC",

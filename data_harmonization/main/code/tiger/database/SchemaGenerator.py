@@ -33,15 +33,17 @@ from data_harmonization.main.code.tiger.model.ingester.Bottom import Base\n\n
         self.output_path = output_path
 
     def _update_init(self, filename, alias: str = ""):
-        new_line = ""
-        if not alias.strip():
-            new_line = f"from data_harmonization.main.code.tiger.model.ingester.{filename} import {filename}\n"
-        else:
-            new_line = f"from data_harmonization.main.code.tiger.model.ingester.{filename} import {filename} as {alias}\n"
-        with open(f"{self.output_path}/__init__.py", "r") as file:
-            lines = set(file.readlines())
-            # print(lines)
-            lines.add(new_line)
+        lines = set()
+        try:
+            with open(f"{self.output_path}/__init__.py", "r") as file:
+                lines = set(file.readlines())
+                # print(lines)
+                lines.add(f"from data_harmonization.main.code.tiger.model.ingester.{filename} import {filename}\n")
+        except FileNotFoundError:
+            print(
+                f"{str(FileNotFoundError.errno)} initializing ingester module")
+            lines.add(f"from data_harmonization.main.code.tiger.model.ingester.{filename} import {filename}\n")
+
         with open(f"{self.output_path}/__init__.py", "w") as file:
             for line in lines:
                 file.write(line)
@@ -62,7 +64,8 @@ from data_harmonization.main.code.tiger.model.ingester.Bottom import Base\n\n
             # print(str(col_dtype), col_dtype.name, col_dtype)
             if column_name == "Unnamed: 0" or column_name.lower() == "id":
                 continue
-            col_type = self.attrtype_list.get(str(col_dtype), self.default_type)
+            col_type = self.attrtype_list.get(
+                str(col_dtype), self.default_type)
             class_code += f"\t{column_name} = {col_type}"
         # self.code = self.code.rstrip()
         self.code += class_code
@@ -84,7 +87,8 @@ from data_harmonization.main.code.tiger.model.ingester.Bottom import Base\n\n
 
     def _schema_method(self, table_name, dict_types):
         dict_types["id"] = "int64"
-        dict_types = {k: str(v) for k, v in dict_types.items() if k != "Unnamed: 0"}
+        dict_types = {k: str(v)
+                      for k, v in dict_types.items() if k != "Unnamed: 0"}
         self.schema_code += f"\t\treturn {dict_types}\n"
         self.code += self.schema_code
 
@@ -130,5 +134,6 @@ if __name__ == "__main__":
     schema_dir = str(target_dir + "/code/tiger/model/ingester/")
 
     for csv_file in csv_filenames:
-        schemaGen = SchemaGenerator(str(target_dir + "/data/" + csv_file), schema_dir)
+        schemaGen = SchemaGenerator(
+            str(target_dir + "/data/" + csv_file), schema_dir)
         schemaGen.generate_class()
