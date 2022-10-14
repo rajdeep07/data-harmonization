@@ -5,12 +5,13 @@ import numpy as np
 import pandas as pd
 
 # import tensorflow as tf
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from sklearn.model_selection import StratifiedShuffleSplit
 
 from data_harmonization.main.code.tiger.Features import Features
 
 # tf.compat.v1.disable_v2_behavior()
+tf = tf.compat.v1
 tf.disable_v2_behavior()
 
 

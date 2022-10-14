@@ -15,10 +15,10 @@ class SparkClass:
     def __init__(self) -> None:
         # establish these as SPARK_HOME and PYTHON_HOME, with PATHS in your zshrc or bashrc
         findspark.init(
-            # "/home/navazdeen/spark-3.1.1-bin-hadoop3.2",
-            "/mnt/c/BigData/spark3",
-            "/home/saikat/miniconda3/envs/data-harmonization/bin/python"
-            # "/home/navazdeen/miniconda3/envs/data-harmonization/bin/python",
+            "/home/navazdeen/spark-3.1.1-bin-hadoop3.2",
+            # "/mnt/c/BigData/spark3",
+            # "/home/saikat/miniconda3/envs/data-harmonization/bin/python"
+            "/home/navazdeen/miniconda3/envs/data-harmonization/bin/python",
         )
         # add this to external jars and pass when initializing spark session
         findspark.add_packages(

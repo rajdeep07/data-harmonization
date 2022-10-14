@@ -34,7 +34,7 @@ class Deduplication:
         final_model = pandas_dedupe.dedupe_dataframe(
             df_for_dedupe_model,
             col_names,
-            threshold=0.8,
+            threshold=0.7,
             canonicalize=True
         )
 
@@ -42,11 +42,12 @@ class Deduplication:
 
         # Cleansing
         final_model = final_model.rename(columns={"cluster id": "cluster_id"})
+        print(final_model.columns)
         final_model.sort_values(
             by=["cluster_id", "confidence"], ascending=True, inplace=True
         )
         # Persist this in MYSQL + benckmark
-        self._save_data_in_db(final_model[['id', 'canonical_id', "cluster_id"]], "benchmark")
+        self._save_data_in_db(final_model[['id', 'canonical_id', "cluster_id", "confidence"]], "benchmark")
         print(self._get_statistics(df_for_dedupe_model, final_model))
 
         return
@@ -60,13 +61,13 @@ class Deduplication:
         total_records = len(input_data.index)
         duplicates = len(model_output)
         number_of_clusters = model_output["cluster_id"].nunique()
-        duplicates = model_output.loc[model_output["confidence"] > 0.8].groupby(by="cluster_id")["confidence"].count().sum()
-        cluster_with_max_duplicates = model_output.loc[model_output["confidence"] > 0.8].groupby(by="cluster_id")["confidence"].count().idxmax()
+        duplicates = model_output.loc[model_output["confidence"] > 0.7].groupby(by="cluster_id")["confidence"].count().sum()
+        cluster_with_max_duplicates = model_output.loc[model_output["confidence"] > 0.7].groupby(by="cluster_id")["confidence"].count().idxmax()
         result = {
             "Total records": total_records,
             "Number of duplicate sets": number_of_clusters,
             "Duplicates": duplicates,
-            "% duplicates": duplicates / total_records,
+            "/% duplicates": duplicates / total_records,
             "Cluster with maximum duplicates" : cluster_with_max_duplicates
         }
         return result
@@ -98,8 +99,8 @@ if __name__ == "__main__":
     dedupe = Deduplication()
     print("Begin Active Learning.")
     # df = dedupe.get_data("rawentity")
-    # dedupe.train(df)
-    print("We are done with training.")
+    # dedupe.train()
+    # print("We are done with training.")
 
     # # For Prediction
     dedupe.predict(['Name', 'Address', 'Zip', 'City', 'id', 'State'])
