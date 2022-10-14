@@ -1,3 +1,4 @@
+from unicodedata import name
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import collect_list, col, udf
 from pyspark.sql.types import StringType
@@ -11,45 +12,74 @@ class Merger:
     def __init__(self) -> None:
         self.spark = SparkClass()
 
-    def get_data_from_database(
-        self, table: str = config_.classification_table
-    ) -> DataFrame:
-        df = self.spark.read_from_database_to_dataframe(table)
-        return df
-
-    def do_merging(self, conneted_profiles=None):
+    def do_merging(self, conneted_profiles=None) -> DataFrame:
         # fetch data from conneted_profiles if dataframe not provided
         if not conneted_profiles:
             conneted_profiles = self.spark.read_from_database_to_dataframe(
-                config_.classification_table
+                config_.graph_connected_components_table
             )
-
+        # conneted_profiles.show()
         # fetch raw entity table data
         raw_entities = self.spark.read_from_database_to_dataframe(
             config_.raw_entity_table
         )
+        # raw_entities.show()
+        if "cluster_id" in raw_entities.columns:
+            raw_entities = raw_entities.drop("cluster_id")
 
         # join classifier and raw profiles table
         conneted_raw_entities = conneted_profiles.join(
-            other=raw_entities, on="id", how="inner"
-        )
+            other=raw_entities, on=conneted_profiles.id == raw_entities.id, how="inner"
+        ).drop(raw_entities.id)
+        # conneted_raw_entities.show()
         attributes = raw_entities.columns
         # attributes.remove("id")
         exprs = [collect_list(x).alias(x) for x in attributes]
+        # a.show()
         collected_profiles = conneted_raw_entities.groupBy("cluster_id").agg(*exprs)
-        collected_profiles.show()
+        # collected_profiles.show()
+        # print("collected_profiles : ", str(collected_profiles.count()))
 
-        def return_max_val(x):
+        def _return_max_val(x):
+            if type(x) in (int, float):
+                return x
             max_ = ""
+            if not x:
+                return x
+            else:
+                if len(x) == 0:
+                    return x
+                else:
+                    if not isinstance(x[0], str):
+                        max_ = 0
             for elem in x:
-                if len(elem) > len(max_):
-                    max_ = elem
+                if isinstance(elem, str):
+                    if len(elem) > len(max_):
+                        max_ = elem
+                else:
+                    if elem > max_:
+                        max_ = elem
 
             return max_
 
         # Converting function to UDF
-        return_max_length_val = udf(lambda z: return_max_val(z), StringType())
-        # collected_profiles.withColumn("Name", returnmaxval(collected_profiles["Name"]))
-        collected_profiles.withColumn(
-            "cluster_Name", return_max_length_val(col("Name"))
+        return_max_length_val = udf(lambda z: _return_max_val(z), StringType())
+
+        # collect data from list based on maximum length if it is str type otherwise take maximum value
+        collected_profiles = collected_profiles.select(
+            *[
+                return_max_length_val(col(col_name)).name(col_name)
+                for col_name in collected_profiles.columns
+            ]
         )
+        # collected_profiles.show()
+        # writing merged data into database
+        self.spark.write_to_database_from_df(
+            config_.merged_table, collected_profiles, "overwrite"
+        )
+        return collected_profiles
+
+
+if __name__ == "__main__":
+    merger = Merger()
+    merger.do_merging()

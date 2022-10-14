@@ -36,6 +36,7 @@ blocking_table = "semimerged"
 classification_table = "merged"
 graph_connected_components_table = "connectedprofiles"
 benchmark_table = "benchmark"
+merged_table = "result"
 
 # Threshold
 jaccard_distance = 0.8
