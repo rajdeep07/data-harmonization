@@ -1,6 +1,7 @@
 import os
 from re import finditer
 
+import numpy as np
 import pandas as pd
 import pandas_dedupe
 
@@ -22,29 +23,55 @@ class Deduplication:
             pandas_df = pandas_df.sample(n=max_length)
         return pandas_df
 
+    def clean_data(self, df: pd.DataFrame, columns: list = []):
+        if columns and len(columns) > 0:
+            df = df[columns]
+        else:
+            columns = list(df.columns)
+        if "cluster_id" in df.columns:
+            df.drop(columns=["cluster_id"], inplace=True)
+            # df.rename(columns={"cluster_id": "provided_cluster_id"})
+
+        if "id" in columns:
+            columns.remove("id")
+
+        df = df.replace(r"^\s*$", np.nan, regex=True)
+        # for col in columns:
+        #     if df[col].isna().sum() > 0:
+        #         columns.remove(col)
+        #         df.drop(columns=[col], inplace=True)
+
+        return df, columns
+
     # This method is used for model training.
     def _run_model(self, df: pd.DataFrame, col_names: list = []):
-        df_for_dedupe_model = df.copy()
-        if "cluster_id" in df_for_dedupe_model.columns:
-            df_for_dedupe_model.drop(columns=["cluster_id"], inplace=True)
-            # df_for_dedupe_model.rename(columns={"cluster_id": "provided_cluster_id"})
-        if col_names and len(col_names) > 0:
-            df_for_dedupe_model = df_for_dedupe_model[col_names]
-        else:
-            col_names = list(df_for_dedupe_model.columns)
-        if "id" in col_names:
-            col_names.remove("id")
-        print(col_names)
+        df_for_dedupe_model, col_ = self.clean_data(df, col_names)  # df.copy()
+
+        # if "cluster_id" in df_for_dedupe_model.columns:
+        #     df_for_dedupe_model.drop(columns=["cluster_id"], inplace=True)
+        #     # df_for_dedupe_model.rename(columns={"cluster_id": "provided_cluster_id"})
+        # if col_names and len(col_names) > 0:
+        #     df_for_dedupe_model = df_for_dedupe_model[col_names]
+        # else:
+        #     col_names = list(df_for_dedupe_model.columns)
+
+        # if "id" in col_names:
+        #     col_names.remove("id")
+        # print(col_names)
+        # for col in col_names:
+        #     if df_for_dedupe_model[col].isna().sum() > 0:
+        #         col_names.remove(col)
+        #         df_for_dedupe_model.drop(columns=[col], inplace=True)
+
+        print(df_for_dedupe_model.head())
         final_model = pandas_dedupe.dedupe_dataframe(
             df_for_dedupe_model,
             col_names,
             threshold=0.7,
             canonicalize=True,
-
         )
 
-        final_model = final_model[final_model["id"]
-                                  != final_model["canonical_id"]]
+        final_model = final_model[final_model["id"] != final_model["canonical_id"]]
 
         # Cleansing
         final_model = final_model.rename(columns={"cluster id": "cluster_id"})
@@ -92,12 +119,14 @@ class Deduplication:
     def train(self, col_names: list = [], df=None):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         target_dir = os.path.sep.join(current_dir.split(os.path.sep)[:-2])
-        if os.path.isfile(target_dir + "/tiger/benchmark/dedupe_dataframe_learned_settings"):
-            os.remove(
-                target_dir + "/tiger/benchmark/dedupe_dataframe_learned_settings")
-        if os.path.isfile(target_dir + "/tiger/benchmark/dedupe_dataframe_training.json"):
-            os.remove(
-                target_dir + "/tiger/benchmark/dedupe_dataframe_training.json")
+        if os.path.isfile(
+            target_dir + "/tiger/benchmark/dedupe_dataframe_learned_settings"
+        ):
+            os.remove(target_dir + "/tiger/benchmark/dedupe_dataframe_learned_settings")
+        if os.path.isfile(
+            target_dir + "/tiger/benchmark/dedupe_dataframe_training.json"
+        ):
+            os.remove(target_dir + "/tiger/benchmark/dedupe_dataframe_training.json")
         print("removed")
         if not df:
             df = self.get_data(self.raw_entity_table_name)

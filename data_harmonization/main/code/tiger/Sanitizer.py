@@ -35,8 +35,13 @@ class Sanitizer:
 
         return raw_kw
 
-    def toRawEntity(self, data: dict, rawentity_obj, clean_data: bool = True,
-                    return_dict: bool = True):
+    def toRawEntity(
+        self,
+        data: dict,
+        rawentity_obj,
+        clean_data: bool = True,
+        return_dict: bool = True,
+    ):
 
         raw_attribute_lists = self._get_attr_list(rawentity_obj)
         raw_kw = self.get_kwargs(
@@ -59,15 +64,17 @@ class Sanitizer:
     def _apply_transformer(self, value: str or int):
         transformed_ = ""
         if str(value).isdigit() or isinstance(value, int):
-            transformed_ = IntegerTypeTransformer.standardizeIntegerType(
-                str(value))
+            transformed_ = IntegerTypeTransformer.standardizeIntegerType(str(value))
         elif isinstance(value, str):
             transformed_ = StringTypeTransformer.standardizeStringType(value)
+        elif isinstance(value, float):
+            transformed_ = value if value is not None else ""
         return transformed_
 
 
 if __name__ == "__main__":
     from data_harmonization.main.code.tiger.model.ingester import *
+
     entity1 = Pbna(
         id=12,
         Name="ABC",
