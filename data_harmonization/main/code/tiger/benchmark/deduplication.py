@@ -62,8 +62,6 @@ class Deduplication:
         #     if df_for_dedupe_model[col].isna().sum() > 0:
         #         col_names.remove(col)
         #         df_for_dedupe_model.drop(columns=[col], inplace=True)
-
-        print(df_for_dedupe_model.head())
         final_model = pandas_dedupe.dedupe_dataframe(
             df_for_dedupe_model,
             col_names,
