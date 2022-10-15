@@ -60,7 +60,7 @@ class Classifier():
             np.ones(positive_df.shape[0])).astype('int')
         return positive_df
 
-    def _extract_negative_data(self, data: DataFrame, match_ratio: float = 1) -> pd.DataFrame:
+    def _extract_negative_data(self, data: DataFrame, match_ratio: float = 0.8) -> pd.DataFrame:
         rawentity_df = self.rawentity_df.sample(match_ratio, seed=42)
         all_id = rawentity_df.select(
             col("id")).rdd.flatMap(lambda x: x).collect()
@@ -253,11 +253,11 @@ class Classifier():
                         final_y_test, final_y_test_prediction
                     )
                     print("Precision: {}\nrecall: {}\nf1: {}".format(precision.eval(session=session),
-                                                                       recall.eval(
-                                                                           session=session),
-                                                                       f1.eval(
-                                                                           session=session)
-                                                                       ))
+                                                                     recall.eval(
+                        session=session),
+                        f1.eval(
+                        session=session)
+                    ))
 
             final_y_test = y_test_node.eval()
             final_y_test_prediction = y_test_prediction.eval()
@@ -265,11 +265,11 @@ class Classifier():
                 final_y_test, final_y_test_prediction
             )
             print("Precision: {}\nrecall: {}\nf1: {}".format(precision.eval(session=session),
-                                                               recall.eval(
-                                                                   session=session),
-                                                               f1.eval(
-                                                                   session=session)
-                                                               ))
+                                                             recall.eval(
+                session=session),
+                f1.eval(
+                session=session)
+            ))
             self.save_model(model_config={"saver": saver, "session": session})
             # saver.save(session, "my_test_model")
         final_match_y_test = final_y_test[final_y_test[:, 1] == 1]
@@ -277,12 +277,9 @@ class Classifier():
         precision, recall, f1 = self._calculate_accuracy(
             final_match_y_test, final_match_y_test_prediction
         )
-        # print("Precision: {}\n recall: {}\n f1: {}".format(precision.eval(session=session),
-        #                                                    recall.eval(
-        #                                                        session=session),
-        #                                                    f1.eval(
-        #                                                        session=session)
-        #                                                    ))
+        print("Final Score:\nPrecision: {}\n recall: {}\n f1: {}".format(precision,
+                                                                         recall,
+                                                                         f1))
 
     def predict(self, table_name=config.blocking_table):
         session = self.load_model(model_path="data_harmonization/main/code/tiger/classification/models/",
@@ -345,7 +342,7 @@ class Classifier():
             model_path + model_name
         )
 
-    def load_model(self, model_name:str, model_path:str) -> tf.compat.v1.Session:
+    def load_model(self, model_name: str, model_path: str) -> tf.compat.v1.Session:
         """This will load the model from saved model meta file
 
         :return: tensorflow session with restored model"""
