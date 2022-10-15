@@ -1,0 +1,2 @@
+model_checkpoint_path: "classification_deep_learing_model"
+all_model_checkpoint_paths: "classification_deep_learing_model"
