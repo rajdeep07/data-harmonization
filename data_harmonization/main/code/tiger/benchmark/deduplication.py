@@ -23,7 +23,7 @@ class Deduplication:
             pandas_df = pandas_df.sample(n=max_length)
         return pandas_df
 
-    def clean_data(self, df: pd.DataFrame, columns: list = []):
+    def _clean_data(self, df: pd.DataFrame, columns: list = []):
         if columns and len(columns) > 0:
             df = df[columns]
         else:
@@ -45,7 +45,7 @@ class Deduplication:
 
     # This method is used for model training.
     def _run_model(self, df: pd.DataFrame, col_names: list = []):
-        df_for_dedupe_model, col_ = self.clean_data(df, col_names)  # df.copy()
+        df_for_dedupe_model, col_ = self._clean_data(df, col_names)  # df.copy()
 
         # if "cluster_id" in df_for_dedupe_model.columns:
         #     df_for_dedupe_model.drop(columns=["cluster_id"], inplace=True)
