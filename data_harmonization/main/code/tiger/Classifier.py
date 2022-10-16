@@ -11,8 +11,11 @@ from data_harmonization.main.code.tiger.spark import SparkClass
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import col
 from data_harmonization.main.resources import config
+from pyspark.sql.functions import lit
+
 
 tf.compat.v1.disable_v2_behavior()
+tf.compat.v1.disable_eager_execution()
 
 
 class Classifier():
@@ -224,9 +227,9 @@ class Classifier():
         optimizer = tf.compat.v1.train.AdamOptimizer(
             0.005).minimize(cross_entropy)
         saver = tf.compat.v1.train.Saver()
-
+        init = tf.compat.v1.global_variables_initializer()
         with tf.compat.v1.Session() as session:
-            tf.compat.v1.global_variables_initializer().run()
+            init.run()
             for epoch in range(num_epochs):
 
                 start_time = time.time()
@@ -270,7 +273,8 @@ class Classifier():
                 f1.eval(
                 session=session)
             ))
-            self.save_model(model_config={"saver": saver, "session": session})
+            self.save_model(
+                model_config={"saver": saver, "session": session, })
             # saver.save(session, "my_test_model")
         final_match_y_test = final_y_test[final_y_test[:, 1] == 1]
         final_match_y_test_prediction = final_y_test_prediction[final_y_test[:, 1] == 1]
@@ -281,7 +285,7 @@ class Classifier():
                                                                          recall,
                                                                          f1))
 
-    def predict(self, table_name=config.blocking_table):
+    def predict(self, table_name="semi_merged"):
         session = self.load_model(model_path="data_harmonization/main/code/tiger/classification/models/",
                                   model_name="classification_deep_learing_model.meta")
 
@@ -294,37 +298,68 @@ class Classifier():
         data_X = np.stack(data_X, axis=0).astype(dtype='float32')
         # raw_X_train = np.stack(raw_X_train, axis=0).astype(dtype='float32')
 
-        with session as sess:
-            # Access the graph
-            graph = tf.compat.v1.get_default_graph()
-            # Now, let's access and create placeholders variables and
-            # create feed-dict to feed new data
+        # Access the graph
+        graph = tf.compat.v1.get_default_graph()
+        # Now, let's access and create placeholders variables and
+        # create feed-dict to feed new data
+        # with session() as session:
 
-            # X_train_node = graph.get_tensor_by_name("X_train_node:0")
-            # y_train_node = graph.get_tensor_by_name("y_train_node:0")
-            # feed_dict = {X_train_node: ar_X, y_train_node: ar_y}
-            # feed_dict={X_train_node: raw_X_train, y_train_node: raw_y_train}
+        a = tf.compat.v1.trainable_variables()
+        var_dict = {}
+        print("Trainable Params:")
+        for var in a:
+            var_dict[var.name] = var
+            print(var.name)
 
-            self.weight_1_node = graph.get_tensor_by_name("weight_1:0")
-            self.biases_1_node = graph.get_tensor_by_name("biases_1:0")
-            self.weight_2_node = graph.get_tensor_by_name("weight_2:0")
-            self.biases_2_node = graph.get_tensor_by_name("biases_2:0")
-            self.weight_3_node = graph.get_tensor_by_name("weight_3:0")
-            self.biases_3_node = graph.get_tensor_by_name("biases_3:0")
+        # graph_def = tf.compat.v1.graph_util.convert_variables_to_constants(
+        #     sess=session,
+        #     input_graph_def=graph.as_graph_def()
+        #     )
+        # X_train_node = graph.get_tensor_by_name("X_train_node:0")
+        # y_train_node = graph.get_tensor_by_name("y_train_node:0")
+        # X_pred_node = tf.compat.v1.placeholder(
+        #     tf.float32, [None, 32], name="X_train"
+        # )
+        # feed_dict = {X_pred_node: data_X}
+        # feed_dict={X_train_node: raw_X_train, y_train_node: raw_y_train}
 
-            predict_node = tf.constant(data_X, name="data_X")
+        self.weight_1_node = session.run(var_dict.get("weight_1:0"))
+        self.biases_1_node = session.run(var_dict.get("biases_1:0"))
+        self.weight_2_node = session.run(var_dict.get("weight_2:0"))
+        self.biases_2_node = session.run(var_dict.get("biases_2:0"))
+        self.weight_3_node = session.run(var_dict.get("weight_3:0"))
+        self.biases_3_node = session.run(var_dict.get("biases_3:0"))
 
-            prediction = self._network(predict_node)
+        predict_node = tf.constant(data_X, name="data_X")
 
-            # # Now, access the op that you want to run.
-            # operation_ = graph.get_tensor_by_name("operation_:0")
+        prediction = self._network(predict_node)
 
-            # session.run(operation_, feed_dict=feed_dict)
-            predicted = prediction.eval(session=sess)
+        # # Now, access the op that you want to run.
+        # operation_ = graph.get_tensor_by_name("operation_:0")
 
-        predicted = np.argmax(predicted, axis=1)
-        semi_merged_data = semi_merged_data.withColumn("predicted", predicted)
-        self.spark.write_to_database_from_df(config.classification_table)
+        # session.run(operation_, feed_dict=feed_dict)
+        predicted = prediction.eval(session=session)
+        session.close()
+        predicted = np.argmax(predicted, axis=1).astype("int32")
+        semi_merged_data_pd = semi_merged_data.toPandas()
+        semi_merged_data_pd["isMatch"] = predicted
+        semi_merged_data_pd = semi_merged_data_pd.drop(columns='JaccardDistance', axis=1)
+        semi_merged_data_pd = semi_merged_data_pd.rename(
+            columns={"id": "leftId", "canonical_id": "rightId"})
+        semi_merged_data = self.sparksession.createDataFrame(
+            semi_merged_data_pd)
+        # predicted = pd.DataFrame(data=predicted, columns=["isMatch"])
+        # pred_df = self.sparksession.createDataFrame(predicted)
+        # pred_df = pred_df.withColumn("leftId", lit(None))
+        # pred_df = pred_df.withColumn("RightId", lit(None))
+        # semi_merged_data = semi_merged_data.withColumnRenamed("id", "leftId")
+        # semi_merged_data = semi_merged_data.withColumnRenamed("canonical_id", "rightId")
+        # semi_merged_data = semi_merged_data.withColumn("isMatch", lit(None))
+        # semi_merged_data = semi_merged_data.drop("JaccardDistance")
+        # semi_merged_data = semi_merged_data = semi_merged_data.unionByName(pred_df, True)
+        # semi_merged_data = semi_merged_data.withColumn(predicted)
+        self.spark.write_to_database_from_df(
+            config.classification_table, df=semi_merged_data, mode='overwrite')
 
     def save_model(self, model_config: dict,
                    model_path: str = "data_harmonization/main/code/tiger/classification/models/",
@@ -347,6 +382,8 @@ class Classifier():
 
         :return: tensorflow session with restored model"""
         session = tf.compat.v1.Session()
+        init = tf.compat.v1.global_variables_initializer()
+        session.run(init)
         saver = tf.compat.v1.train.import_meta_graph(model_path + model_name)
         saver.restore(
             session,
@@ -358,5 +395,5 @@ class Classifier():
 if __name__ == "__main__":
     # data = pd.read_csv('/home/navazdeens/data-harmonization/data_harmonization/main/data/benchmark.csv')
 
-    Classifier().train(table_name='benchmark')
-    # Classifier().predict()
+    # Classifier().train(table_name='benchmark')
+    Classifier().predict()

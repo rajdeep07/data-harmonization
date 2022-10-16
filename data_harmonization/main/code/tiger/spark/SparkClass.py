@@ -96,7 +96,7 @@ class SparkClass:
     # Step 5: write_to_database_from_df
     # data is distributed in 4 partitions: reduce or pandas [MySQL]
     # MySQL [RDBMS] ==> NoSQL or Document DB [Cassandra/ ES/ anything..]
-    def write_to_database_from_df(self, table, df, mode="error") -> None:
+    def write_to_database_from_df(self, table, df, mode="Error") -> None:
         df.write.format("jdbc").options(
             url=f"jdbc:mysql://{config_.mysqlLocalHost}/{config_.DB_NAME}",
             driver=config_.mysqlDriver,  # 'com.mysql.cj.jdbc.Driver',
