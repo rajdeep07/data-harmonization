@@ -10,6 +10,7 @@ from pyspark.ml.feature import Word2Vec, Word2VecModel, CountVectorizer, Hashing
     Tokenizer, StopWordsRemover, RegexTokenizer, CountVectorizerModel
 from pyspark.ml.feature import BucketedRandomProjectionLSH, MinHashLSH
 from pyspark.sql.functions import col, concat_ws
+import argparse
 
 
 def Blocking(is_train=True, if_word_2vec=False, if_min_lsh=True):
@@ -132,3 +133,10 @@ if __name__ == "__main__":
     Blocking(is_train=False, if_word_2vec=False, if_min_lsh=True)
     # CountVectorizer + minLSH
     # Blocking(is_train=True, if_word_2vec=False, if_min_lsh=True)
+    parser = argparse.ArgumentParser(
+        description="Depuplication algorithm for creating benchmark table")
+    parser.add_argument("-t", "--train", help="train the model",
+                        default=True, action="store_true")
+    parser.add_argument("-p", "--predict", help="Predict from the model",
+                        default=False, action="store_true")
+    arg = parser.parse_args()

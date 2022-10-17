@@ -320,7 +320,7 @@ class Classifier:
         # raw_X_train = np.stack(raw_X_train, axis=0).astype(dtype='float32')
 
         # Access the graph
-        graph = tf.compat.v1.get_default_graph()
+        # graph = tf.compat.v1.get_default_graph()
         # Now, let's access and create placeholders variables and
         # create feed-dict to feed new data
         # with session() as session:
@@ -368,19 +368,9 @@ class Classifier:
             columns="JaccardDistance", axis=1
         )
         semi_merged_data_pd = semi_merged_data_pd.rename(
-            columns={"id": "leftId", "canonical_id": "rightId"}
-        )
-        semi_merged_data = self.sparksession.createDataFrame(semi_merged_data_pd)
-        # predicted = pd.DataFrame(data=predicted, columns=["isMatch"])
-        # pred_df = self.sparksession.createDataFrame(predicted)
-        # pred_df = pred_df.withColumn("leftId", lit(None))
-        # pred_df = pred_df.withColumn("RightId", lit(None))
-        # semi_merged_data = semi_merged_data.withColumnRenamed("id", "leftId")
-        # semi_merged_data = semi_merged_data.withColumnRenamed("canonical_id", "rightId")
-        # semi_merged_data = semi_merged_data.withColumn("isMatch", lit(None))
-        # semi_merged_data = semi_merged_data.drop("JaccardDistance")
-        # semi_merged_data = semi_merged_data = semi_merged_data.unionByName(pred_df, True)
-        # semi_merged_data = semi_merged_data.withColumn(predicted)
+            columns={"id": "leftId", "canonical_id": "rightId"})
+        semi_merged_data = self.sparksession.createDataFrame(
+            semi_merged_data_pd)
         self.spark.write_to_database_from_df(
             config.classification_table, df=semi_merged_data, mode="overwrite"
         )

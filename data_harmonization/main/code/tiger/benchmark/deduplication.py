@@ -4,6 +4,7 @@ from re import finditer
 import numpy as np
 import pandas as pd
 import pandas_dedupe
+import argparse
 
 from data_harmonization.main.code.tiger.spark import SparkClass
 
@@ -78,7 +79,8 @@ class Deduplication:
         # )
         # Persist this in MYSQL + benckmark
         self._save_data_in_db(
-            final_model[["id", "canonical_id", "cluster_id", "confidence"]], "benchmark"
+            final_model[["id", "canonical_id",
+                         "cluster_id", "confidence"]], "benchmark"
         )
         print(self._get_statistics(df_for_dedupe_model, final_model))
 
@@ -148,12 +150,24 @@ class Deduplication:
 
 if __name__ == "__main__":
     dedupe = Deduplication()
-    print("Begin Active Learning.")
-    # df = dedupe.get_data("rawentity")
-    # dedupe.train()
-    # print("We are done with training.")
+    parser = argparse.ArgumentParser(
+        description="Depuplication algorithm for creating benchmark table")
+    parser.add_argument("-t", "--train", help="train the model",
+                        default=True, action="store_true")
+    parser.add_argument("-p", "--predict", help="Predict from the model",
+                        default=False, action="store_true")
+    arg = parser.parse_args()
+    # print(arg.train)
+    # For training
+    if arg.predict:
+        print("Begin Active Learning.")
+        df = dedupe.get_data("rawentity")
+        dedupe.train()
+        print("We are done with training.")
 
-    # # For Prediction
-    # dedupe.predict(['Name', 'Address', 'Zip', 'City', 'id', 'State'])
-    dedupe.predict()
-    print("We are done with prediction.")
+    # For Prediction
+    elif arg.train:
+        print("Training the model")
+        dedupe.predict()
+        dedupe.predict()
+        print("We are done with prediction.")
