@@ -12,6 +12,10 @@ from data_harmonization.main.code.tiger.transformer.StringTypeTransformer import
 )
 from pyspark.sql import SparkSession
 
+from data_harmonization.main.code.tiger.transformer.FloatTransformer import (
+    FloatTypeTransformer,
+)
+
 
 class Sanitizer:
     def _get_attr_list(self, obj: Any, should_print: bool = False) -> list:
@@ -61,14 +65,15 @@ class Sanitizer:
             return kw
         return entity_obj
 
-    def _apply_transformer(self, value: str or int):
+    def _apply_transformer(self, value: str or int or float):
         transformed_ = ""
         if str(value).isdigit() or isinstance(value, int):
             transformed_ = IntegerTypeTransformer.standardizeIntegerType(str(value))
         elif isinstance(value, str):
             transformed_ = StringTypeTransformer.standardizeStringType(value)
         elif isinstance(value, float):
-            transformed_ = value if value is not None else ""
+            transformed_ = FloatTypeTransformer.standardizeFloatType(str(value))
+            # transformed_ = value if value is not None else ""
         return transformed_
 
 

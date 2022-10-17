@@ -1,7 +1,9 @@
 from unicodedata import name
 from pyspark.sql import DataFrame
-from pyspark.sql.functions import collect_list, col, udf
+from pyspark.sql.functions import collect_list, col, udf, concat_ws
 from pyspark.sql.types import StringType
+
+# import pyspark.sql.fu import
 
 import data_harmonization.main.resources.config as config_
 from data_harmonization.main.code.tiger.spark.SparkClass import SparkClass
@@ -66,18 +68,33 @@ class Merger:
         return_max_length_val = udf(lambda z: _return_max_val(z), StringType())
 
         # collect data from list based on maximum length if it is str type otherwise take maximum value
-        collected_profiles = collected_profiles.select(
+        collected_profiles.show()
+        collected_profiles_1 = collected_profiles.select(["id", "cluster_id"])
+        # collected_profiles_1 = collected_profiles.groupBy("cluster_id").agg(D.coll)
+        collected_profiles_ = collected_profiles.select(
             *[
                 return_max_length_val(col(col_name)).name(col_name)
                 for col_name in collected_profiles.columns
+                if col_name != "id"
             ]
         )
+        # df
+        #     .groupby("id")
+        #     .agg(F.collect_set("code"),
+        #         F.collect_list("name"))
+
+        result = collected_profiles_1.join(
+            other=collected_profiles_,
+            on=collected_profiles_1.cluster_id == collected_profiles_.cluster_id,
+            how="inner",
+        ).drop(collected_profiles_1.cluster_id)
+        result.show()
         # collected_profiles.show()
         # writing merged data into database
-        self.spark.write_to_database_from_df(
-            config_.merged_table, collected_profiles, "overwrite"
-        )
-        return collected_profiles
+        result_ = result.withColumn("id", concat_ws(",", result.id))
+        result_.show()
+        self.spark.write_to_database_from_df(config_.merged_table, result_, "overwrite")
+        return result
 
 
 if __name__ == "__main__":
