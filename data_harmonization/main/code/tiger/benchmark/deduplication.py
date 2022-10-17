@@ -14,7 +14,7 @@ class Deduplication:
         self.raw_entity_table_name = "rawentity"
 
     def get_data(
-        self, table: str = "rawentity", max_length: int = 20000
+        self, table: str = "rawentity", max_length: int = 2000
     ) -> pd.DataFrame:
         spark = SparkClass()
         df = spark.read_from_database_to_dataframe(table)
@@ -46,23 +46,24 @@ class Deduplication:
 
     # This method is used for model training.
     def _run_model(self, df: pd.DataFrame, col_names: list = []):
-        df_for_dedupe_model, col_ = self._clean_data(df, col_names)  # df.copy()
+        df_for_dedupe_model, col_ = self._clean_data(
+            df, col_names)  # df.copy()
 
-        # if "cluster_id" in df_for_dedupe_model.columns:
-        #     df_for_dedupe_model.drop(columns=["cluster_id"], inplace=True)
-        #     # df_for_dedupe_model.rename(columns={"cluster_id": "provided_cluster_id"})
-        # if col_names and len(col_names) > 0:
-        #     df_for_dedupe_model = df_for_dedupe_model[col_names]
-        # else:
-        #     col_names = list(df_for_dedupe_model.columns)
+        if "cluster_id" in df_for_dedupe_model.columns:
+            df_for_dedupe_model.drop(columns=["cluster_id"], inplace=True)
+            # df_for_dedupe_model.rename(columns={"cluster_id": "provided_cluster_id"})
+        if col_names and len(col_names) > 0:
+            df_for_dedupe_model = df_for_dedupe_model[col_names]
+        else:
+            col_names = list(df_for_dedupe_model.columns)
 
-        # if "id" in col_names:
-        #     col_names.remove("id")
-        # print(col_names)
-        # for col in col_names:
-        #     if df_for_dedupe_model[col].isna().sum() > 0:
-        #         col_names.remove(col)
-        #         df_for_dedupe_model.drop(columns=[col], inplace=True)
+        if "id" in col_names:
+            col_names.remove("id")
+        print(col_names)
+        for col in col_names:
+            if df_for_dedupe_model[col].isna().sum() > 0:
+                col_names.remove(col)
+                df_for_dedupe_model.drop(columns=[col], inplace=True)
         final_model = pandas_dedupe.dedupe_dataframe(
             df_for_dedupe_model,
             col_names,
@@ -70,7 +71,8 @@ class Deduplication:
             canonicalize=True,
         )
 
-        final_model = final_model[final_model["id"] != final_model["canonical_id"]]
+        final_model = final_model[final_model["id"]
+                                  != final_model["canonical_id"]]
 
         # Cleansing
         final_model = final_model.rename(columns={"cluster id": "cluster_id"})
@@ -122,11 +124,13 @@ class Deduplication:
         if os.path.isfile(
             target_dir + "/tiger/benchmark/dedupe_dataframe_learned_settings"
         ):
-            os.remove(target_dir + "/tiger/benchmark/dedupe_dataframe_learned_settings")
+            os.remove(
+                target_dir + "/tiger/benchmark/dedupe_dataframe_learned_settings")
         if os.path.isfile(
             target_dir + "/tiger/benchmark/dedupe_dataframe_training.json"
         ):
-            os.remove(target_dir + "/tiger/benchmark/dedupe_dataframe_training.json")
+            os.remove(
+                target_dir + "/tiger/benchmark/dedupe_dataframe_training.json")
         print("removed")
         if not df:
             df = self.get_data(self.raw_entity_table_name)
@@ -157,17 +161,16 @@ if __name__ == "__main__":
     parser.add_argument("-p", "--predict", help="Predict from the model",
                         default=False, action="store_true")
     arg = parser.parse_args()
-    # print(arg.train)
+    # print(arg)
     # For training
     if arg.predict:
-        print("Begin Active Learning.")
-        df = dedupe.get_data("rawentity")
-        dedupe.train()
-        print("We are done with training.")
+        print(f"Starting to predict....")
+        dedupe.predict()
+        print("We are done with prediction.")
 
     # For Prediction
     elif arg.train:
-        print("Training the model")
-        dedupe.predict()
-        dedupe.predict()
-        print("We are done with prediction.")
+        print("Begin Active Learning.\nTraining the model")
+        # df = dedupe.get_data("rawentity")
+        dedupe.train()
+        print("We are done with training.")

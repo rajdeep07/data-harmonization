@@ -1,3 +1,4 @@
+from distutils.command.config import config
 import os
 import re
 from pyspark import SparkContext
@@ -11,6 +12,7 @@ from pyspark.ml.feature import Word2Vec, Word2VecModel, CountVectorizer, Hashing
 from pyspark.ml.feature import BucketedRandomProjectionLSH, MinHashLSH
 from pyspark.sql.functions import col, concat_ws
 import argparse
+from data_harmonization.main.resources import config as config_
 
 
 def Blocking(is_train=True, if_word_2vec=False, if_min_lsh=True):
@@ -124,19 +126,26 @@ def Blocking(is_train=True, if_word_2vec=False, if_min_lsh=True):
     # finalResultsDF = similarDF.withColumnRenamed(col("datasetA.id"), "id1")\
     #     .withColumnRenamed(col("datasetB.id"), "id2").select("id1", "id2", "distcol").sort(col("distcol").desc())
 
-    spark.write_to_database_from_df(table="semi_merged", df=similarDF,
+    spark.write_to_database_from_df(table=config_.blocking_table, df=similarDF,
                                     mode='overwrite')
 
 
 if __name__ == "__main__":
     # word2vec + minLSH
-    Blocking(is_train=False, if_word_2vec=False, if_min_lsh=True)
     # CountVectorizer + minLSH
     # Blocking(is_train=True, if_word_2vec=False, if_min_lsh=True)
     parser = argparse.ArgumentParser(
-        description="Depuplication algorithm for creating benchmark table")
+        description="Blocking alogrithm creates a cluster pair")
     parser.add_argument("-t", "--train", help="train the model",
                         default=True, action="store_true")
     parser.add_argument("-p", "--predict", help="Predict from the model",
                         default=False, action="store_true")
+    parser.add_argument("--word2vec", "-w2v", action="store_true", default=False,
+                        help="Use Word2Vec algorithm, defaults to use CountVectorizer")
+    parser.add_argument("--min-lsh", "-lsh", action="store_true", default=True,
+                        help="Use MinHashLSH algorithm, defaults to use BucketedRandomProjectionLSH")
     arg = parser.parse_args()
+
+    Blocking(is_train=not (arg.train and arg.predict), if_word_2vec=arg.word2vec,
+             if_min_lsh=arg.min_lsh)
+
