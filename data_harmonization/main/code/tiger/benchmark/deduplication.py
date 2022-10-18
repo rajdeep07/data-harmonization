@@ -23,17 +23,17 @@ class Deduplication:
             pandas_df = pandas_df.sample(n=max_length)
         return pandas_df
 
-    def _clean_data(self, df: pd.DataFrame, columns: list = []):
-        if columns and len(columns) > 0:
-            df = df[columns]
+    def _clean_data(self, df: pd.DataFrame, column_names: list = []):
+        if column_names and len(column_names) > 0:
+            df = df[column_names]
         else:
-            columns = list(df.columns)
+            column_names = list(df.columns)
         if "cluster_id" in df.columns:
             df.drop(columns=["cluster_id"], inplace=True)
             # df.rename(columns={"cluster_id": "provided_cluster_id"})
 
-        if "id" in columns:
-            columns.remove("id")
+        if "id" in column_names:
+            column_names.remove("id")
 
         df = df.replace(r"^\s*$", np.nan, regex=True)
         # for col in columns:
@@ -41,11 +41,11 @@ class Deduplication:
         #         columns.remove(col)
         #         df.drop(columns=[col], inplace=True)
 
-        return df, columns
+        return df, column_names
 
     # This method is used for model training.
     def _run_model(self, df: pd.DataFrame, col_names: list = []):
-        df_for_dedupe_model, col_ = self._clean_data(df, col_names)  # df.copy()
+        df_for_dedupe_model, col_names = self._clean_data(df, col_names)  # df.copy()
 
         # if "cluster_id" in df_for_dedupe_model.columns:
         #     df_for_dedupe_model.drop(columns=["cluster_id"], inplace=True)
@@ -150,10 +150,10 @@ if __name__ == "__main__":
     dedupe = Deduplication()
     print("Begin Active Learning.")
     # df = dedupe.get_data("rawentity")
-    # dedupe.train()
+    dedupe.train()
     # print("We are done with training.")
 
     # # For Prediction
     # dedupe.predict(['Name', 'Address', 'Zip', 'City', 'id', 'State'])
-    dedupe.predict()
-    print("We are done with prediction.")
+    # dedupe.predict()
+    # print("We are done with prediction.")

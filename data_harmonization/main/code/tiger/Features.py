@@ -44,6 +44,8 @@ class Features:
             ]
         elif isinstance(entity1, int) or isinstance(entity1, int):
             return np.array([1] * 4)
+        elif isinstance(entity1, float) or isinstance(entity2, float):
+            return np.array([1] * 4)
 
     # TODO: add capability to trim + lower case before applying these transformations
 
@@ -55,15 +57,16 @@ class Features:
         for key in schema:
             if key == "id":
                 continue
-            arr.extend(self.engineerFeatures(data.get(key), data.get("canonical_"+key)))
-    #         print(str(data[key])+":"+str(data["canonical_"+key]))
+            arr.extend(
+                self.engineerFeatures(data.get(key), data.get("canonical_" + key))
+            )
+        #         print(str(data[key])+":"+str(data["canonical_"+key]))
         return arr
-    
+
     """def get(self, pairs : (Rawentity, Rawentity)) -> SparseVector:
         n_Features = []
         for key in pairs[0].get_schema().keys():
             n_Features.extend(self.engineerFeatures(getattr(pairs[0], key), getattr(pairs[1], key)))"""
-
 
 
 if __name__ == "__main__":
