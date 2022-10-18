@@ -38,7 +38,8 @@ class Merger:
         # attributes.remove("id")
         exprs = [collect_list(x).alias(x) for x in attributes]
         # a.show()
-        collected_profiles = conneted_raw_entities.groupBy("cluster_id").agg(*exprs)
+        collected_profiles = conneted_raw_entities.groupBy(
+            "cluster_id").agg(*exprs)
         # collected_profiles.show()
         # print("collected_profiles : ", str(collected_profiles.count()))
 
@@ -93,7 +94,8 @@ class Merger:
         # writing merged data into database
         result_ = result.withColumn("id", concat_ws(",", result.id))
         result_.show()
-        self.spark.write_to_database_from_df(config_.merged_table, result_, "overwrite")
+        self.spark.write_to_database_from_df(
+            config_.merged_table, result_, "overwrite")
         return result
 
 

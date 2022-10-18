@@ -164,5 +164,3 @@ if __name__ == "__main__":
     ingester._gen_raw_entity()
     ingester._persist_csv_to_mysql()
     ingester._persist_raw_entity()
-
-# TODO: sort methods, fix broken imports

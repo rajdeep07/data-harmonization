@@ -4,6 +4,7 @@ from re import finditer
 import numpy as np
 import pandas as pd
 import pandas_dedupe
+import argparse
 
 from data_harmonization.main.code.tiger.spark import SparkClass
 
@@ -13,7 +14,7 @@ class Deduplication:
         self.raw_entity_table_name = "rawentity"
 
     def get_data(
-        self, table: str = "rawentity", max_length: int = 20000
+        self, table: str = "rawentity", max_length: int = 2000
     ) -> pd.DataFrame:
         spark = SparkClass()
         df = spark.read_from_database_to_dataframe(table)
@@ -46,22 +47,7 @@ class Deduplication:
     # This method is used for model training.
     def _run_model(self, df: pd.DataFrame, col_names: list = []):
         df_for_dedupe_model, col_names = self._clean_data(df, col_names)  # df.copy()
-
-        # if "cluster_id" in df_for_dedupe_model.columns:
-        #     df_for_dedupe_model.drop(columns=["cluster_id"], inplace=True)
-        #     # df_for_dedupe_model.rename(columns={"cluster_id": "provided_cluster_id"})
-        # if col_names and len(col_names) > 0:
-        #     df_for_dedupe_model = df_for_dedupe_model[col_names]
-        # else:
-        #     col_names = list(df_for_dedupe_model.columns)
-
-        # if "id" in col_names:
-        #     col_names.remove("id")
-        # print(col_names)
-        # for col in col_names:
-        #     if df_for_dedupe_model[col].isna().sum() > 0:
-        #         col_names.remove(col)
-        #         df_for_dedupe_model.drop(columns=[col], inplace=True)
+        print(col_names)
         final_model = pandas_dedupe.dedupe_dataframe(
             df_for_dedupe_model,
             col_names,
@@ -148,12 +134,30 @@ class Deduplication:
 
 if __name__ == "__main__":
     dedupe = Deduplication()
-    print("Begin Active Learning.")
-    # df = dedupe.get_data("rawentity")
-    dedupe.train()
-    # print("We are done with training.")
+    parser = argparse.ArgumentParser(
+        description="Depuplication algorithm for creating benchmark table"
+    )
+    parser.add_argument(
+        "-t", "--train", help="train the model", default=True, action="store_true"
+    )
+    parser.add_argument(
+        "-p",
+        "--predict",
+        help="Predict from the model",
+        default=False,
+        action="store_true",
+    )
+    arg = parser.parse_args()
+    # print(arg)
+    # For training
+    if arg.predict:
+        print(f"Starting to predict....")
+        dedupe.predict()
+        print("We are done with prediction.")
 
-    # # For Prediction
-    # dedupe.predict(['Name', 'Address', 'Zip', 'City', 'id', 'State'])
-    # dedupe.predict()
-    # print("We are done with prediction.")
+    # For Prediction
+    elif arg.train:
+        print("Begin Active Learning.\nTraining the model")
+        # df = dedupe.get_data("rawentity")
+        dedupe.train()
+        print("We are done with training.")

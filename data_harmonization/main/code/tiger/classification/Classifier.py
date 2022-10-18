@@ -1,5 +1,5 @@
 import random
-from typing import Any, Optional
+from typing import Optional
 import tensorflow as tf
 import numpy as np
 import pandas as pd
@@ -10,8 +10,7 @@ from data_harmonization.main.code.tiger.Features import Features
 from data_harmonization.main.code.tiger.spark import SparkClass
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import col
-from data_harmonization.main.resources import config
-from pyspark.sql.functions import lit
+from data_harmonization.main.resources import config as config_
 
 
 tf.compat.v1.disable_v2_behavior()
@@ -22,7 +21,8 @@ class Classifier:
     def __init__(self) -> None:
         self.spark = SparkClass()
         self.sparksession = self.spark.get_sparkSession()
-        self.rawentity_df = self.spark.read_from_database_to_dataframe("rawentity")
+        self.rawentity_df = self.spark.read_from_database_to_dataframe(
+            "rawentity")
         self.rawentity_df_can = self.rawentity_df.rdd.toDF(
             ["canonical_" + col for col in self.rawentity_df.columns]
         )
@@ -33,7 +33,8 @@ class Classifier:
         self, features: pd.DataFrame, target: Optional[pd.DataFrame] = pd.DataFrame([])
     ) -> pd.DataFrame:
         feature_df = features.copy()
-        feature_df["features"] = feature_df.apply(lambda x: Features().get(x), axis=1)
+        feature_df["features"] = feature_df.apply(
+            lambda x: Features().get(x), axis=1)
         if target.empty:
             return feature_df
         target_df = pd.get_dummies(
@@ -44,7 +45,8 @@ class Classifier:
     def create_df_from_id_pairs(self, id_pair: DataFrame) -> pd.DataFrame:
         full_df = (
             id_pair.alias("a").join(
-                self.rawentity_df.alias("b"), (col("a.id") == col("b.id")), "inner"
+                self.rawentity_df.alias("b"), (col(
+                    "a.id") == col("b.id")), "inner"
             )
         ).drop(col("b.id"))
         full_df = (
@@ -67,14 +69,16 @@ class Classifier:
         positive_df_id.show()
         positive_df = self.create_df_from_id_pairs(id_pair=positive_df_id)
         print(positive_df.head())
-        positive_df["target"] = pd.Series(np.ones(positive_df.shape[0])).astype("int")
+        positive_df["target"] = pd.Series(
+            np.ones(positive_df.shape[0])).astype("int")
         return positive_df
 
     def _extract_negative_data(
         self, data: DataFrame, match_ratio: float = 0.8
     ) -> pd.DataFrame:
         rawentity_df = self.rawentity_df.sample(match_ratio, seed=42)
-        all_id = rawentity_df.select(col("id")).rdd.flatMap(lambda x: x).collect()
+        all_id = rawentity_df.select(
+            col("id")).rdd.flatMap(lambda x: x).collect()
         master_set = set()
         while len(master_set) < (data.count() * match_ratio):
             clus_ida, clus_idb = random.sample(all_id, 2)
@@ -95,7 +99,8 @@ class Classifier:
             list(master_set), ["id", "canonical_id"]
         )  # [(ida, idb), (idc, idd)]
         negative_df = self.create_df_from_id_pairs(id_pair=id_df)
-        negative_df["target"] = pd.Series(np.zeros(negative_df.shape[0])).astype("int")
+        negative_df["target"] = pd.Series(
+            np.zeros(negative_df.shape[0])).astype("int")
         return negative_df
 
     def _preprocess_data(self, data: DataFrame) -> pd.DataFrame:
@@ -108,7 +113,8 @@ class Classifier:
         print("Negative data shape:", negative_df.shape)
         print("done extracting data......")
         data = pd.concat([positive_df, negative_df])
-        print(f"Extracting features from the data.......\nTotal Rows : {data.shape[0]}")
+        print(
+            f"Extracting features from the data.......\nTotal Rows : {data.shape[0]}")
         data = self._feature_data(data.drop("target", axis=1), data["target"])
         print("Done preprocessing data......")
         return data
@@ -144,7 +150,8 @@ class Classifier:
         )
         # Dropout prevents model from becoming lazy and over confident
         layer2 = tf.nn.dropout(
-            tf.nn.sigmoid(tf.matmul(layer1, self.weight_2_node) + self.biases_2_node),
+            tf.nn.sigmoid(
+                tf.matmul(layer1, self.weight_2_node) + self.biases_2_node),
             0.85,
         )
         # Softmax works very well with one hot encoding which is how results are outputted
@@ -185,19 +192,22 @@ class Classifier:
         self.weight_3_node = tf.Variable(
             tf.zeros([self.num_layer_2_cells, self.output_dim]), name="weight_3"
         )
-        self.biases_3_node = tf.Variable(tf.zeros([self.output_dim]), name="biases_3")
+        self.biases_3_node = tf.Variable(
+            tf.zeros([self.output_dim]), name="biases_3")
 
-    def train(self, table_name: str, num_epochs: int = 500):
+    def train(self, table_name: str = config_.benchmark_table, num_epochs: int = 500):
         data_df = self.spark.read_from_database_to_dataframe(table=table_name)
         final_df = self._preprocess_data(data_df)
         raw_X_train, raw_X_test, raw_y_train, raw_y_test = self._train_test_split(
-            final_df["features"].values, final_df[["target_0", "target_1"]].values
+            final_df["features"].values, final_df[[
+                "target_0", "target_1"]].values
         )
 
         # stacking data
         raw_X_train = np.stack(raw_X_train, axis=0).astype(dtype="float32")
         raw_X_test = np.stack(raw_X_test, axis=0).astype(dtype="float32")
-        print("Input shape:", raw_X_train.shape, "Output shape", raw_y_train.shape)
+        print("Input shape:", raw_X_train.shape,
+              "Output shape", raw_y_train.shape)
 
         # Gets a percent of match vs no match (6% of data are match?)
         count_match, count_no_match = final_df[["target_1"]].value_counts()
@@ -243,7 +253,8 @@ class Classifier:
 
         # Adam optimizer function will try to minimize loss (cross_entropy) but changing the 3 layers' variable values at a
         #   learning rate of 0.005
-        optimizer = tf.compat.v1.train.AdamOptimizer(0.005).minimize(cross_entropy)
+        optimizer = tf.compat.v1.train.AdamOptimizer(
+            0.005).minimize(cross_entropy)
         saver = tf.compat.v1.train.Saver()
         init = tf.compat.v1.global_variables_initializer()
         with tf.compat.v1.Session() as session:
@@ -255,7 +266,8 @@ class Classifier:
                 operation_ = [optimizer, cross_entropy]
                 _, cross_entropy_score = session.run(
                     operation_,
-                    feed_dict={X_train_node: raw_X_train, y_train_node: raw_y_train},
+                    feed_dict={X_train_node: raw_X_train,
+                               y_train_node: raw_y_train},
                 )
 
                 if epoch % 10 == 0:
@@ -305,76 +317,6 @@ class Classifier:
             final_match_y_test, final_match_y_test_prediction
         )
 
-    def predict(self, table_name="semi_merged"):
-        session = self.load_model(
-            model_path="data_harmonization/main/code/tiger/classification/models/",
-            model_name="classification_deep_learing_model.meta",
-        )
-
-        semi_merged_data = self.spark.read_from_database_to_dataframe(table=table_name)
-        data = self.create_df_from_id_pairs(id_pair=semi_merged_data)
-        processed_data = self._feature_data(data)
-
-        data_X = processed_data["features"].values
-        data_X = np.stack(data_X, axis=0).astype(dtype="float32")
-        # raw_X_train = np.stack(raw_X_train, axis=0).astype(dtype='float32')
-
-        # Access the graph
-        # graph = tf.compat.v1.get_default_graph()
-        # Now, let's access and create placeholders variables and
-        # create feed-dict to feed new data
-        # with session() as session:
-
-        a = tf.compat.v1.trainable_variables()
-        var_dict = {}
-        print("Trainable Params:")
-        for var in a:
-            var_dict[var.name] = var
-            print(var.name)
-
-        # graph_def = tf.compat.v1.graph_util.convert_variables_to_constants(
-        #     sess=session,
-        #     input_graph_def=graph.as_graph_def()
-        #     )
-        # X_train_node = graph.get_tensor_by_name("X_train_node:0")
-        # y_train_node = graph.get_tensor_by_name("y_train_node:0")
-        # X_pred_node = tf.compat.v1.placeholder(
-        #     tf.float32, [None, 32], name="X_train"
-        # )
-        # feed_dict = {X_pred_node: data_X}
-        # feed_dict={X_train_node: raw_X_train, y_train_node: raw_y_train}
-
-        self.weight_1_node = session.run(var_dict.get("weight_1:0"))
-        self.biases_1_node = session.run(var_dict.get("biases_1:0"))
-        self.weight_2_node = session.run(var_dict.get("weight_2:0"))
-        self.biases_2_node = session.run(var_dict.get("biases_2:0"))
-        self.weight_3_node = session.run(var_dict.get("weight_3:0"))
-        self.biases_3_node = session.run(var_dict.get("biases_3:0"))
-
-        predict_node = tf.constant(data_X, name="data_X")
-
-        prediction = self._network(predict_node)
-
-        # # Now, access the op that you want to run.
-        # operation_ = graph.get_tensor_by_name("operation_:0")
-
-        # session.run(operation_, feed_dict=feed_dict)
-        predicted = prediction.eval(session=session)
-        session.close()
-        predicted = np.argmax(predicted, axis=1).astype("int32")
-        semi_merged_data_pd = semi_merged_data.toPandas()
-        semi_merged_data_pd["isMatch"] = predicted
-        semi_merged_data_pd = semi_merged_data_pd.drop(
-            columns="JaccardDistance", axis=1
-        )
-        semi_merged_data_pd = semi_merged_data_pd.rename(
-            columns={"id": "leftId", "canonical_id": "rightId"})
-        semi_merged_data = self.sparksession.createDataFrame(
-            semi_merged_data_pd)
-        self.spark.write_to_database_from_df(
-            config.classification_table, df=semi_merged_data, mode="overwrite"
-        )
-
     def save_model(
         self,
         model_config: dict,
@@ -391,23 +333,9 @@ class Classifier:
         session = model_config.get("session")
         model_saver.save(session, model_path + model_name)
 
-    def load_model(self, model_name: str, model_path: str) -> tf.compat.v1.Session:
-        """This will load the model from saved model meta file
-
-        :return: tensorflow session with restored model"""
-        session = tf.compat.v1.Session()
-        init = tf.compat.v1.global_variables_initializer()
-        session.run(init)
-        saver = tf.compat.v1.train.import_meta_graph(model_path + model_name)
-        saver.restore(
-            session,
-            tf.train.latest_checkpoint(model_path),
-        )
-        return session
-
 
 if __name__ == "__main__":
     # data = pd.read_csv('/home/navazdeens/data-harmonization/data_harmonization/main/data/benchmark.csv')
 
-    Classifier().train(table_name="benchmark")
+    Classifier().train()
     # Classifier().predict()
