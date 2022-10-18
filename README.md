@@ -7,6 +7,80 @@ Command to generate custom class from config:
 
 `datamodel-codegen --input data_harmonization/main/resources/api.yaml --output data_harmonization/main/code/tiger/model/datamodel.py`
 
+## Steps to run this project
+
+### Install conda environment
+`conda env create -f environment.yml`
+
+### Activate conda environment
+`conda activate data-harmonization`
+
+### Run scripts
+
+1. Ingester Module
+
+   `python data_harmonization/main/code/tiger/Ingester.py`
+2. Blocking Module
+
+   `python data_harmonization/main/code/tiger/clustering/Blocking.py`
+3. Deduplication
+
+   `cd data_harmonization/main/code/tiger/benchmark/`
+
+   Create conda environment for deduplication if not created already
+
+   `conda create --name data-harmonization-benchmark --file environment-b.yml`
+
+   Activate conda environment
+
+   `conda activate data-harmonization-benchmark`
+
+   Run the script
+
+   `python deduplication.py`
+
+3. Classification
+
+   `python data_harmonization/main/code/tiger/Classifier.py`
+
+4. Synthesis
+
+   `python data_harmonization/main/code/tiger/Synthesis.py`
+
+5. Mapping
+
+   `python data_harmonization/main/code/tiger/Mapping.py`
+
+6. Merger
+
+   `python data_harmonization/main/code/tiger/Merger.py`
+
+## Table names that will be produced in eache step
+
+1. Ingester
+
+   `rawentity`
+
+2. Blocking
+
+   `semi_merged`
+
+3. Deduplication
+
+   `benchmark`
+
+4. Synthesis
+
+   `merged`
+
+5. Mapping
+
+   `connectedprofiles`
+
+6. Merger
+
+   `result`
+
 ## Overview
 
 This project uses the following tools/libraries/frameworks for running, building,
@@ -18,7 +92,7 @@ libraries or dependencies that the actual code in this project uses):
 3. [`tox`](https://github.com/tox-dev/tox)
     * [`tox-pyenv`](https://github.com/tox-dev/tox-pyenv)
 4. [`pre-commit`](https://github.com/pre-commit/pre-commit)
-5. [`black`](https://github.com/psf/black) 
+5. [`black`](https://github.com/psf/black)
 6. [`flake8`](https://github.com/PyCQA/flake8)
 7. [`isort`](https://github.com/PyCQA/isort)
 8. [`pylint`](https://github.com/PyCQA/pylint)
@@ -60,7 +134,7 @@ Note that this setup is for Mac.
 
 #### `pyenv` Setup
 
-I highly recommend using [`pyenv`](https://github.com/pyenv/pyenv) for managing 
+I highly recommend using [`pyenv`](https://github.com/pyenv/pyenv) for managing
 python versions for local development.
 
 ```shell
@@ -95,7 +169,7 @@ pyenv install ${LATEST_38}
 # See https://github.com/pyenv/pyenv/issues/1669#issuecomment-729980692
 
 # In this directory, set the python version
-# This creates a (git-ignored) .python-version file 
+# This creates a (git-ignored) .python-version file
 pyenv local ${LATEST_38}
 ```
 
@@ -110,10 +184,10 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-#### `pre-commit` Setup 
+#### `pre-commit` Setup
 
 This [`pre-commit`](https://github.com/pre-commit/pre-commit) step is optional
-but recommended, since it will catch PEP8 errors before you commit locally, 
+but recommended, since it will catch PEP8 errors before you commit locally,
 versus catching them in the CI/CD pipeline.
 
 ```shell
@@ -123,7 +197,7 @@ source venv/bin/activate
 pre-commit install
 ```
 
-Now when you go to commit, it will run [`black`](https://github.com/psf/black) 
+Now when you go to commit, it will run [`black`](https://github.com/psf/black)
 and [`flake8`](https://github.com/PyCQA/flake8) against the python code in
 order to format and enforce PEP8 compliance, respectively,
 [`isort`](https://github.com/PyCQA/isort) to sort imports,
@@ -148,7 +222,7 @@ manage and pin our dependencies.
 
 Note that `pip-tools` will be installed in this project's virtual environment when
 running the [Virtual Environment Setup](#virtual-environment-setup) step (it's
-specified within `requirements.in` / 
+specified within `requirements.in` /
 `requirements.txt`).
 
 1. Define your direct development dependencies in `requirements.in`,
@@ -177,7 +251,7 @@ specified within `requirements.in` /
    pip-compile requirements-dev.in
    # Check in the requirements.in and requirements.txt changes
    ```
-   
+
 3. Define your direct application dependencies in `requirements.in`,
    using specific versions wherever possible:
 
@@ -206,7 +280,7 @@ around updating dependencies.
    format.
 
 3. Wherever it's necessary and makes sense, you are welcome to disable certain `pylint`
-   rules in the code. But please only disable things that aren't real problems and 
+   rules in the code. But please only disable things that aren't real problems and
    shouldn't be fixed. Use your judgement.
 
    Example:
@@ -252,11 +326,11 @@ around updating dependencies.
    with the first one being preferred:
 
    1. Import `from __future__ import annotations` as the first line in your module/script
-      and use `list`, `dict`, etc. for as type as specified by 
+      and use `list`, `dict`, etc. for as type as specified by
       [PEP 585](https://peps.python.org/pep-0585/) rather than using the types in the
       `typing` module. This is now supported in PyCharm `2021.2.3` and up, and it's also
       supported in `mypy`.
-   
+
    2. Use [typing compatible with 3.7](https://docs.python.org/3.7/library/typing.html).
       To do this, import `typing.List`, `typing.Dict`, etc. and use them as the type
       annotations.
