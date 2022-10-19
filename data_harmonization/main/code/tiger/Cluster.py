@@ -8,18 +8,9 @@ from typing import Any, Optional
 
 import numpy as np
 import pandas as pd
-
-from data_harmonization.main.code.tiger.model.datamodel import *
-from data_harmonization.main.code.tiger.model.GeocodedAddress import \
-    GeocodedAddress
-from data_harmonization.main.code.tiger.model.PostalAddress import \
-    PostalAddress
 from data_harmonization.main.code.tiger.model.SemiMergedProfile import \
     SemiMergedProfile
 from data_harmonization.main.code.tiger.Sanitizer import Sanitizer
-from data_harmonization.main.code.tiger.transformer import (
-    CityTransformer, NameTransformer, PostalAddressTransformer,
-    StateTransformer)
 from data_harmonization.main.code.tiger.transformer.utils import StringSupport
 
 
@@ -294,3 +285,6 @@ if __name__ == "__main__":
         print("Test Passed: All similar pairs found.")
     else:
         print("Test Failed.")
+
+    ## Pyspark Code
+

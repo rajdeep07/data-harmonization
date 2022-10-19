@@ -1,8 +1,5 @@
 import random
-import re
 import time
-from shutil import ignore_patterns
-from typing import Tuple
 
 import numpy as np
 import pandas as pd
@@ -12,7 +9,6 @@ from sklearn.model_selection import StratifiedShuffleSplit
 
 from data_harmonization.main.code.tiger.Features import Features
 from data_harmonization.main.code.tiger.features.Distance import Distance
-from data_harmonization.main.code.tiger.model.datamodel import RawEntity
 
 tf.compat.v1.disable_v2_behavior()
 

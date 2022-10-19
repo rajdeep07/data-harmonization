@@ -9,6 +9,9 @@ dependencies:
   - numpy
   - pandas
   - xlrd
+  - pyspark
+  - netifaces==0.11.0
+  - findspark==2.0.1
   - pip:
       - dedupe
       - pandas-dedupe

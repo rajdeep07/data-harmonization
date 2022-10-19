@@ -1,12 +1,10 @@
 import re
-from curses.ascii import isdigit
-from turtle import shape
-from typing import Any, Tuple
-
 import numpy as np
 
 from data_harmonization.main.code.tiger.features.Distance import Distance
-from data_harmonization.main.code.tiger.model.datamodel import RawEntity
+from data_harmonization.main.code.tiger.model.ingester import Rawentity
+from typing import Any, Tuple
+import pandas as pd
 
 
 class Features:
@@ -46,17 +44,29 @@ class Features:
             ]
         elif isinstance(entity1, int) or isinstance(entity1, int):
             return np.array([1] * 4)
+        elif isinstance(entity1, float) or isinstance(entity2, float):
+            return np.array([1] * 4)
 
     # TODO: add capability to trim + lower case before applying these transformations
 
-    def get(self, pairs: Tuple[dict, dict]) -> np.array:
+    def get(self, data: pd.Series) -> list:
 
         # TODO: name Features
+        schema = Rawentity.get_schema().keys()
+        arr = []
+        for key in schema:
+            if key == "id":
+                continue
+            arr.extend(
+                self.engineerFeatures(data.get(key), data.get("canonical_" + key))
+            )
+        #         print(str(data[key])+":"+str(data["canonical_"+key]))
+        return arr
+
+    """def get(self, pairs : (Rawentity, Rawentity)) -> SparseVector:
         n_Features = []
-        for key, value in pairs[0].items():
-            n_Features.extend(self.engineerFeatures(pairs[0][key], pairs[1][key]))
-        # print(n_Features.shape)
-        return n_Features
+        for key in pairs[0].get_schema().keys():
+            n_Features.extend(self.engineerFeatures(getattr(pairs[0], key), getattr(pairs[1], key)))"""
 
 
 if __name__ == "__main__":
@@ -70,17 +80,15 @@ if __name__ == "__main__":
             "gender_field": None,
             "source": "flna",
             "age": None,
-        },
-        {
-            "cluster_id": 38369,
-            "Name": "riverview         sunoco (ib",
-            "City": "riverview",
-            "Zip": "335796702",
-            "Address": "12302     balmriverviewrd",
-            "gender_field": None,
-            "source": "flna",
-            "age": None,
+            "canonical_cluster_id": 38369,
+            "canonical_Name": "riverview         sunoco (ib",
+            "canonical_City": "riverview",
+            "canonical_Zip": "335796702",
+            "canonical_Address": "12302     balmriverviewrd",
+            "canonical_gender_field": None,
+            "canonical_source": "flna",
+            "canonical_age": None,
         },
     )
-    ft = Features().get(pairs=pairs)
+    ft = Features().get(data=pd.Series(pairs))
     print(ft)
