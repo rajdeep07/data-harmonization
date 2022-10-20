@@ -19,6 +19,11 @@ class Classifier:
     def __init__(self) -> None:
         self.spark = SparkClass()
         self.sparksession = self.spark.get_sparkSession()
+        self.rawentity_df = self.spark.read_from_database_to_dataframe(
+            "rawentity")
+        self.rawentity_df_can = self.rawentity_df.rdd.toDF(
+            ["canonical_" + col for col in self.rawentity_df.columns]
+        )
 
     def _feature_data(
         self, features: pd.DataFrame, target: Optional[pd.DataFrame] = pd.DataFrame([])
