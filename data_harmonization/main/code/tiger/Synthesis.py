@@ -2,6 +2,7 @@ from typing import Any, Optional
 import tensorflow as tf
 import numpy as np
 import pandas as pd
+import shap
 
 from data_harmonization.main.code.tiger.Features import Features
 from data_harmonization.main.code.tiger.spark import SparkClass
@@ -15,12 +16,36 @@ tf.compat.v1.disable_v2_behavior()
 tf.compat.v1.disable_eager_execution()
 
 
+class NetworkModel(tf.Module):
+    def __init__(self, name=None, vars={}) -> None:
+        super().__init__(name=name)
+        self.weight_1_node = vars.get("weight_1_node")
+        self.biases_1_node = vars.get("biases_1_node")
+        self.weight_2_node = vars.get("weight_2_node")
+        self.biases_2_node = vars.get("biases_2_node")
+        self.weight_3_node = vars.get("weight_3_node")
+        self.biases_3_node = vars.get("biases_3_node")
+
+    def __call__(self, x):
+        # Sigmoid fits modified data well
+        layer1 = tf.nn.sigmoid(tf.matmul(x, self.weight_1_node) + self.biases_1_node)
+        # Dropout prevents model from becoming lazy and over confident
+        layer2 = tf.nn.dropout(
+            tf.nn.sigmoid(tf.matmul(layer1, self.weight_2_node) + self.biases_2_node),
+            0.85,
+        )
+        # Softmax works very well with one hot encoding which is how results are outputted
+        layer3 = tf.nn.softmax(
+            tf.matmul(layer2, self.weight_3_node) + self.biases_3_node
+        )
+        return layer3
+
+
 class Classifier:
     def __init__(self) -> None:
         self.spark = SparkClass()
         self.sparksession = self.spark.get_sparkSession()
-        self.rawentity_df = self.spark.read_from_database_to_dataframe(
-            "rawentity")
+        self.rawentity_df = self.spark.read_from_database_to_dataframe("rawentity")
         self.rawentity_df_can = self.rawentity_df.rdd.toDF(
             ["canonical_" + col for col in self.rawentity_df.columns]
         )
@@ -29,8 +54,7 @@ class Classifier:
         self, features: pd.DataFrame, target: Optional[pd.DataFrame] = pd.DataFrame([])
     ) -> pd.DataFrame:
         feature_df = features.copy()
-        feature_df["features"] = feature_df.apply(
-            lambda x: Features().get(x), axis=1)
+        feature_df["features"] = feature_df.apply(lambda x: Features().get(x), axis=1)
         if target.empty:
             return feature_df
         target_df = pd.get_dummies(
@@ -41,8 +65,7 @@ class Classifier:
     def create_df_from_id_pairs(self, id_pair: DataFrame) -> pd.DataFrame:
         full_df = (
             id_pair.alias("a").join(
-                self.rawentity_df.alias("b"), (col(
-                    "a.id") == col("b.id")), "inner"
+                self.rawentity_df.alias("b"), (col("a.id") == col("b.id")), "inner"
             )
         ).drop(col("b.id"))
         full_df = (
@@ -68,8 +91,7 @@ class Classifier:
         )
         # Dropout prevents model from becoming lazy and over confident
         layer2 = tf.nn.dropout(
-            tf.nn.sigmoid(
-                tf.matmul(layer1, self.weight_2_node) + self.biases_2_node),
+            tf.nn.sigmoid(tf.matmul(layer1, self.weight_2_node) + self.biases_2_node),
             0.85,
         )
         # Softmax works very well with one hot encoding which is how results are outputted
@@ -95,8 +117,7 @@ class Classifier:
             model_name="classification_deep_learing_model.meta",
         )
 
-        semi_merged_data = self.spark.read_from_database_to_dataframe(
-            table=table_name)
+        semi_merged_data = self.spark.read_from_database_to_dataframe(table=table_name)
         data = self.create_df_from_id_pairs(id_pair=semi_merged_data)
         processed_data = self._feature_data(data)
 
@@ -127,6 +148,46 @@ class Classifier:
         prediction = self._network(predict_node)
 
         predicted = prediction.eval(session=session)
+
+        # my_model = NetworkModel(
+        #     name="my_model",
+        #     vars={
+        #         "weight_1_node": self.weight_1_node,
+        #         "biases_1_node": self.biases_1_node,
+        #         "weight_2_node": self.weight_2_node,
+        #         "biases_2_node": self.biases_2_node,
+        #         "weight_3_node": self.weight_3_node,
+        #         "biases_3_node": self.biases_3_node,
+        #     },
+        # )
+        # background = data_X[np.random.choice(data_X.shape[0], 100, replace=False)]
+        # deep_explainer = shap.DeepExplainer(model=my_model, data=background)
+        # shap_values = deep_explainer.shap_values(data_X)
+        # print(shap_values)
+
+        # deep_explainer = shap.DeepExplainer(
+        #     model=self._network(predict_node),  # (X_test_node, y_test_prediction),
+        #     data=predict_node,
+        #     session=session,
+        # )
+        # background = data_X[np.random.choice(data_X.shape[0], 100, replace=False)]
+        # background_node = tf.constant(background, name="background")
+
+        # background_prediction = self._network(background_node)
+        # deep_explainer = shap.DeepExplainer(
+        #     model=(background_node, background_prediction),
+        #     data=background,
+        # )
+
+        predicted_ = np.array(np.amax(predicted, axis=1))
+        predicted_node = tf.constant(predicted_, name="predicted_")
+        deep_explainer = shap.DeepExplainer(
+            model=(predict_node, predicted_node),  # (X_test_node, y_test_prediction),
+            data=data_X,
+        )
+        shap_values = deep_explainer.shap_values(data_X)
+        print(shap_values)
+
         session.close()
         predicted = np.argmax(predicted, axis=1).astype("int32")
         semi_merged_data_pd = semi_merged_data.toPandas()
@@ -137,8 +198,7 @@ class Classifier:
         semi_merged_data_pd = semi_merged_data_pd.rename(
             columns={"id": "leftId", "canonical_id": "rightId"}
         )
-        semi_merged_data = self.sparksession.createDataFrame(
-            semi_merged_data_pd)
+        semi_merged_data = self.sparksession.createDataFrame(semi_merged_data_pd)
         self.spark.write_to_database_from_df(
             config_.classification_table, df=semi_merged_data, mode="overwrite"
         )

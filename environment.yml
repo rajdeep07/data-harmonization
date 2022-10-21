@@ -25,6 +25,7 @@ dependencies:
   - MySQLdb
   - graphframes==0.6
   - findspark==2.0.1
+  - shap==0.41.0
   - pip:
     - sphinx-autodoc-annotation
     - datamodel-code-generator
