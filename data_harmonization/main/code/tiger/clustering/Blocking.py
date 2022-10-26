@@ -1,16 +1,15 @@
 import argparse
 import os
 import re
-from distutils.command.config import config
 from typing import Optional
 
-from pyspark import Row, SparkContext
+from data_harmonization.main.code.tiger.spark import SparkClass
+from data_harmonization.main.resources import config as config_
+from pyspark import Row
 from pyspark.ml.feature import (
-    IDF,
     BucketedRandomProjectionLSH,
     CountVectorizer,
     CountVectorizerModel,
-    HashingTF,
     MinHashLSH,
     RegexTokenizer,
     StopWordsRemover,
@@ -19,17 +18,11 @@ from pyspark.ml.feature import (
     Word2VecModel,
 )
 from pyspark.sql.functions import col, concat_ws
-from pyspark.sql.types import *
-
-from data_harmonization.main.code.tiger.model.ingester.Rawentity import Rawentity
-from data_harmonization.main.code.tiger.spark import SparkClass
-from data_harmonization.main.resources import config as config_
 
 
 def Blocking(is_train=True, if_word_2vec=False, if_min_lsh=True):
     # initializing spark
     spark = SparkClass()
-    sparksession = spark.get_sparkSession()
 
     # Read from MySQL + RawEntity
     df = spark.read_from_database_to_dataframe("rawentity")
@@ -42,14 +35,13 @@ def Blocking(is_train=True, if_word_2vec=False, if_min_lsh=True):
                 # range(0, len(i) - 5 + 1).map(lambda j: i.substring(j, j + 5))
                 return list(
                     map(
-                        lambda i: inp[i : i + shingle_size],
+                        lambda i: inp[i: i + shingle_size],
                         range(0, len(inp) - shingle_size + 1),
                     )
                 )
             else:
                 return inp
 
-        # input.map(lambda i: i.split("[-\\s,]").filter(lambda s: not s.isEmpty).flatMap(shingle).list())
         output = "".join(re.split("[-\\W,]", input))
         return shingle(output)
 
@@ -75,9 +67,7 @@ def Blocking(is_train=True, if_word_2vec=False, if_min_lsh=True):
         return Row(id=profile["id"], shingles=output)
 
     # cleanse the dataframe <id, features [shingles]>
-    cleansed_df = df.rdd.map(lambda r: createTokens(r.asDict())).toDF(
-        ["id", "shingles"]
-    )
+    cleansed_df = df.rdd.map(lambda r: createTokens(r.asDict())).toDF(["id", "shingles"])
     cleansed_df.show()
     # Space Tokenizer
     tokenizer = Tokenizer(inputCol="shingles", outputCol="tokens")
@@ -91,15 +81,11 @@ def Blocking(is_train=True, if_word_2vec=False, if_min_lsh=True):
         pattern="\\W",
         toLowercase=True,
     )
-    regexTokensDF = regexTokenizer.transform(tokensDF).select(
-        "id", "reg_tokens"
-    )
+    regexTokensDF = regexTokenizer.transform(tokensDF).select("id", "reg_tokens")
     regexTokensDF.show()
     # remove stop words
     remover = StopWordsRemover(inputCol="reg_tokens", outputCol="clean_tokens")
-    cleansedTokensDF = remover.transform(regexTokensDF).select(
-        "id", "clean_tokens"
-    )
+    cleansedTokensDF = remover.transform(regexTokensDF).select("id", "clean_tokens")
 
     cleansedTokensDF.show()
     if if_word_2vec:
@@ -112,19 +98,11 @@ def Blocking(is_train=True, if_word_2vec=False, if_min_lsh=True):
                 minCount=3,
             )
             model = w2v_model.fit(cleansedTokensDF)
-            model.write().overwrite().save(
-                "/data_harmonization/main/model/model.word2vec"
-            )
-            resultsDF = model.transform(cleansedTokensDF).select(
-                "id", "vector"
-            )
+            model.write().overwrite().save("/data_harmonization/main/model/model.word2vec")
+            resultsDF = model.transform(cleansedTokensDF).select("id", "vector")
         else:
-            model = Word2VecModel.load(
-                "/data_harmonization/main/model/model.word2vec"
-            )
-            resultsDF = model.transform(cleansedTokensDF).select(
-                "id", "vector"
-            )
+            model = Word2VecModel.load("/data_harmonization/main/model/model.word2vec")
+            resultsDF = model.transform(cleansedTokensDF).select("id", "vector")
     else:
         if is_train:
             cv = CountVectorizer(
@@ -138,23 +116,17 @@ def Blocking(is_train=True, if_word_2vec=False, if_min_lsh=True):
                 os.path.abspath(__file__)
                 + "/../../../../../../data_harmonization/main/model/model.countvec"
             )
-            resultsDF = cv_model.transform(cleansedTokensDF).select(
-                "id", "vector"
-            )
+            resultsDF = cv_model.transform(cleansedTokensDF).select("id", "vector")
         else:
             cv_model = CountVectorizerModel.load(
                 os.path.abspath(__file__)
                 + "/../../../../../../data_harmonization/main/model/model.countvec"
             )
-            resultsDF = cv_model.transform(cleansedTokensDF).select(
-                "id", "vector"
-            )
+            resultsDF = cv_model.transform(cleansedTokensDF).select("id", "vector")
 
     if if_min_lsh:
         # 1.MinHashLSH
-        brp = MinHashLSH(
-            inputCol="vector", outputCol="hashes", numHashTables=4.0
-        )
+        brp = MinHashLSH(inputCol="vector", outputCol="hashes", numHashTables=4.0)
         model = brp.fit(resultsDF)
     else:
         # 2.BucketedRandomProjectionLSH
@@ -170,9 +142,7 @@ def Blocking(is_train=True, if_word_2vec=False, if_min_lsh=True):
     threshold = 0.80
     model.transform(resultsDF).show()
     similarDF = (
-        model.approxSimilarityJoin(
-            resultsDF, resultsDF, threshold, distCol="JaccardDistance"
-        )
+        model.approxSimilarityJoin(resultsDF, resultsDF, threshold, distCol="JaccardDistance")
         .filter("JaccardDistance != 0")
         .select(
             col("datasetA.id").alias("id"),
@@ -182,21 +152,14 @@ def Blocking(is_train=True, if_word_2vec=False, if_min_lsh=True):
         .sort(col("JaccardDistance").desc())
     )
     similarDF.show(n=20)
-    # finalResultsDF = similarDF.withColumnRenamed(col("datasetA.id"), "id1")\
-    #     .withColumnRenamed(col("datasetB.id"), "id2").select("id1", "id2", "distcol").sort(col("distcol").desc())
-
-    spark.write_to_database_from_df(
-        table=config_.blocking_table, df=similarDF, mode="overwrite"
-    )
+    spark.write_to_database_from_df(table=config_.blocking_table, df=similarDF, mode="overwrite")
 
 
 if __name__ == "__main__":
     # word2vec + minLSH
     # CountVectorizer + minLSH
     # Blocking(is_train=True, if_word_2vec=False, if_min_lsh=True)
-    parser = argparse.ArgumentParser(
-        description="Blocking alogrithm creates a cluster pair"
-    )
+    parser = argparse.ArgumentParser(description="Blocking alogrithm creates a cluster pair")
     parser.add_argument(
         "-t",
         "--train",

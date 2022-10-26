@@ -37,9 +37,7 @@ class Sanitizer:
             print(obj.get_schema())
         return obj.get_schema()
 
-    def get_kwargs(
-        self, cls: dict, attr_lists: dict, gen_id=False, clean_data=False
-    ) -> dict:
+    def get_kwargs(self, cls: dict, attr_lists: dict, gen_id=False, clean_data=False) -> dict:
         """
         Create key arguments from the passed `cls` and `attr_list` and
         assigns unique id to each object
@@ -69,9 +67,7 @@ class Sanitizer:
                 raw_kw[attr] = uuid.uuid4().hex
             elif tpe in ("int", "str", "float", "int64", "float64", "object"):
                 raw_kw[attr] = (
-                    self._apply_transformer(cls.get(attr, ""))
-                    if clean_data
-                    else cls.get(attr, "")
+                    self._apply_transformer(cls.get(attr, "")) if clean_data else cls.get(attr, "")
                 )  # for dict conversion
             else:
                 raw_kw[attr] = ""
@@ -118,9 +114,7 @@ class Sanitizer:
             return raw_kw
         return raw_entity_object
 
-    def toEntity(
-        self, Ent_Obj: Any, data: dict, gen_id=True, return_dict: bool = True
-    ):
+    def toEntity(self, Ent_Obj: Any, data: dict, gen_id=True, return_dict: bool = True):
         """Converts passed dict into the type of `Ent_obj`
 
         Parameters
@@ -165,15 +159,11 @@ class Sanitizer:
         """
         transformed_ = ""
         if str(value).isdigit() or isinstance(value, int):
-            transformed_ = IntegerTypeTransformer.standardizeIntegerType(
-                str(value)
-            )
+            transformed_ = IntegerTypeTransformer.standardizeIntegerType(str(value))
         elif isinstance(value, str):
             transformed_ = StringTypeTransformer.standardizeStringType(value)
         elif isinstance(value, float):
-            transformed_ = FloatTypeTransformer.standardizeFloatType(
-                str(value)
-            )
+            transformed_ = FloatTypeTransformer.standardizeFloatType(str(value))
             # transformed_ = value if value is not None else ""
         return transformed_
 

@@ -34,9 +34,7 @@ class SparkClass:
             .getOrCreate()
         )
 
-    def read_from_database_to_dataframe(
-        self, table, columnTypes=None
-    ) -> DataFrame:
+    def read_from_database_to_dataframe(self, table, columnTypes=None) -> DataFrame:
         df = (
             self.spark.read.format("jdbc")
             .options(
@@ -61,9 +59,7 @@ class SparkClass:
     def read_from_csv_to_dataframe(
         self, csv_file_path, header=True, inferSchema=True
     ) -> DataFrame:
-        return self.spark.read.csv(
-            csv_file_path, header=header, inferSchema=inferSchema
-        )
+        return self.spark.read.csv(csv_file_path, header=header, inferSchema=inferSchema)
 
     def write_to_csv_from_df(self, local_path, df) -> None:
         return (

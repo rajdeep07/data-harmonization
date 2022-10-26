@@ -1,16 +1,15 @@
 import re
-from typing import Any, Tuple
+from typing import Any
 
 import numpy as np
 import pandas as pd
-
 from data_harmonization.main.code.tiger.features.Distance import Distance
 from data_harmonization.main.code.tiger.model.ingester import Rawentity
 
 
 class Features:
     def isEmpty(self, x: Any) -> bool:
-        if (x == None) or (x == ""):
+        if (x is None) or (x == ""):
             return True
         else:
             return False
@@ -62,18 +61,9 @@ class Features:
         for key in schema:
             if key == "id":
                 continue
-            arr.extend(
-                self.engineerFeatures(
-                    data.get(key), data.get("canonical_" + key)
-                )
-            )
+            arr.extend(self.engineerFeatures(data.get(key), data.get("canonical_" + key)))
         #         print(str(data[key])+":"+str(data["canonical_"+key]))
         return arr
-
-    """def get(self, pairs : (Rawentity, Rawentity)) -> SparseVector:
-        n_Features = []
-        for key in pairs[0].get_schema().keys():
-            n_Features.extend(self.engineerFeatures(getattr(pairs[0], key), getattr(pairs[1], key)))"""
 
 
 if __name__ == "__main__":

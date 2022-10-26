@@ -11,9 +11,7 @@ class Deduplication:
     def __init__(self):
         self.raw_entity_table_name = "rawentity"
 
-    def get_data(
-        self, table: str = "rawentity", max_length: int = 2000
-    ) -> pd.DataFrame:
+    def get_data(self, table: str = "rawentity", max_length: int = 2000) -> pd.DataFrame:
         spark = SparkClass()
         df = spark.read_from_database_to_dataframe(table)
         pandas_df = df.toPandas()
@@ -44,9 +42,7 @@ class Deduplication:
 
     # This method is used for model training.
     def _run_model(self, df: pd.DataFrame, col_names: list = []):
-        df_for_dedupe_model, col_names = self._clean_data(
-            df, col_names
-        )  # df.copy()
+        df_for_dedupe_model, col_names = self._clean_data(df, col_names)  # df.copy()
         print(col_names)
         final_model = pandas_dedupe.dedupe_dataframe(
             df_for_dedupe_model,
@@ -55,9 +51,7 @@ class Deduplication:
             canonicalize=True,
         )
 
-        final_model = final_model[
-            final_model["id"] != final_model["canonical_id"]
-        ]
+        final_model = final_model[final_model["id"] != final_model["canonical_id"]]
 
         # Cleansing
         final_model = final_model.rename(columns={"cluster id": "cluster_id"})
@@ -78,9 +72,7 @@ class Deduplication:
         spark_df = spark.get_sparkSession().createDataFrame(df)
         spark.write_to_database_from_df(table, spark_df, mode="overwrite")
 
-    def _get_statistics(
-        self, input_data: pd.DataFrame, model_output: pd.DataFrame
-    ):
+    def _get_statistics(self, input_data: pd.DataFrame, model_output: pd.DataFrame):
         total_records = len(input_data.index)
         duplicates = len(model_output)
         number_of_clusters = model_output["cluster_id"].nunique()
@@ -108,19 +100,10 @@ class Deduplication:
     def train(self, col_names: list = [], df=None):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         target_dir = os.path.sep.join(current_dir.split(os.path.sep)[:-2])
-        if os.path.isfile(
-            target_dir + "/tiger/benchmark/dedupe_dataframe_learned_settings"
-        ):
-            os.remove(
-                target_dir
-                + "/tiger/benchmark/dedupe_dataframe_learned_settings"
-            )
-        if os.path.isfile(
-            target_dir + "/tiger/benchmark/dedupe_dataframe_training.json"
-        ):
-            os.remove(
-                target_dir + "/tiger/benchmark/dedupe_dataframe_training.json"
-            )
+        if os.path.isfile(target_dir + "/tiger/benchmark/dedupe_dataframe_learned_settings"):
+            os.remove(target_dir + "/tiger/benchmark/dedupe_dataframe_learned_settings")
+        if os.path.isfile(target_dir + "/tiger/benchmark/dedupe_dataframe_training.json"):
+            os.remove(target_dir + "/tiger/benchmark/dedupe_dataframe_training.json")
         print("removed")
         if not df:
             df = self.get_data(self.raw_entity_table_name)
@@ -131,13 +114,9 @@ class Deduplication:
         target_dir = os.path.sep.join(current_dir.split(os.path.sep)[:-2])
         if not df:
             df = self.get_data(self.raw_entity_table_name)
-        if not os.path.isfile(
-            target_dir + "/tiger/benchmark/dedupe_dataframe_learned_settings"
-        ):
+        if not os.path.isfile(target_dir + "/tiger/benchmark/dedupe_dataframe_learned_settings"):
             print("Cannot find dedupe_dataframe_learned_settings file")
-        if not os.path.isfile(
-            target_dir + "/tiger/benchmark/dedupe_dataframe_training.json"
-        ):
+        if not os.path.isfile(target_dir + "/tiger/benchmark/dedupe_dataframe_training.json"):
             print("Cannot find dedupe_dataframe_training.json file")
         return self._run_model(df, col_names)
 

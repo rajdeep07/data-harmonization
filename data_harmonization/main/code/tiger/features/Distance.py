@@ -2,9 +2,7 @@ import math
 import re
 from collections import Counter
 
-import jaro
 import Levenshtein
-from metaphone import doublemetaphone
 
 
 class Distance:
@@ -12,7 +10,7 @@ class Distance:
         pass
 
     def isEmpty(self, x: str):
-        return x == None or len(x) == 0
+        return x is None or len(x) == 0
 
     def getLevenshteinDistance(self, value1: str, value2: str) -> float:
         if self.isEmpty(value1) or self.isEmpty(value2):

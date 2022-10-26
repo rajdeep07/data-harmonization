@@ -16,19 +16,13 @@ App_Name = "data_harmonization"
 
 
 def get_data_from_db(table_name):
-    mysql = MySQL(
-        config.mysqlLocalHost, App_Name, config.mysqlUser, config.mysqlPassword
-    )
+    mysql = MySQL(config.mysqlLocalHost, App_Name, config.mysqlUser, config.mysqlPassword)
     mysql.mycursor.execute(f"SELECT * FROM {table_name};")
     return mysql.fetchall()
 
 
 def write_csv_to_db(file_path, database_name, table_name):
     spark = SparkClass(App_Name)
-    spark.init_db(
-        config.mysqlUser, config.mysqlPassword, config.mysqlLocalHost
-    )
+    spark.init_db(config.mysqlUser, config.mysqlPassword, config.mysqlLocalHost)
     df = spark.readFromCSV(file_path)
-    spark.writeToDatabase(
-        db=database_name, table=table_name, df=df, mode="overwrite"
-    )
+    spark.writeToDatabase(db=database_name, table=table_name, df=df, mode="overwrite")

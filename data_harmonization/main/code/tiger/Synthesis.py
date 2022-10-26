@@ -18,9 +18,7 @@ class Synthesis:
     def __init__(self) -> None:
         self.spark = SparkClass()
         self.sparksession = self.spark.get_sparkSession()
-        self.rawentity_df = self.spark.read_from_database_to_dataframe(
-            "rawentity"
-        )
+        self.rawentity_df = self.spark.read_from_database_to_dataframe("rawentity")
         self.rawentity_df_can = self.rawentity_df.rdd.toDF(
             ["canonical_" + col for col in self.rawentity_df.columns]
         )
@@ -46,14 +44,10 @@ class Synthesis:
             Feature extracted dataframe
         """
         feature_df = features.copy()
-        feature_df["features"] = feature_df.apply(
-            lambda x: Features().get(x), axis=1
-        )
+        feature_df["features"] = feature_df.apply(lambda x: Features().get(x), axis=1)
         if target.empty:
             return feature_df
-        target_df = pd.get_dummies(
-            target, prefix="target", columns=["target"], drop_first=False
-        )
+        target_df = pd.get_dummies(target, prefix="target", columns=["target"], drop_first=False)
         return pd.concat([feature_df, target_df], axis=1)
 
     def create_df_from_id_pairs(self, id_pair: DataFrame) -> pd.DataFrame:
@@ -102,20 +96,14 @@ class Synthesis:
         tf.Tensor
             match or non match profile"""
         # Sigmoid fits modified data well
-        layer1 = tf.nn.sigmoid(
-            tf.matmul(input_tensor, self.weight_1_node) + self.biases_1_node
-        )
+        layer1 = tf.nn.sigmoid(tf.matmul(input_tensor, self.weight_1_node) + self.biases_1_node)
         # Dropout prevents model from becoming lazy and over confident
         layer2 = tf.nn.dropout(
-            tf.nn.sigmoid(
-                tf.matmul(layer1, self.weight_2_node) + self.biases_2_node
-            ),
+            tf.nn.sigmoid(tf.matmul(layer1, self.weight_2_node) + self.biases_2_node),
             0.85,
         )
         # Softmax works very well with one hot encoding which is how results are outputted
-        layer3 = tf.nn.softmax(
-            tf.matmul(layer2, self.weight_3_node) + self.biases_3_node
-        )
+        layer3 = tf.nn.softmax(tf.matmul(layer2, self.weight_3_node) + self.biases_3_node)
         return layer3
 
     def _calculate_accuracy(self, actual, predicted) -> list[tf.Tensor]:
@@ -153,9 +141,7 @@ class Synthesis:
             model_name="classification_deep_learing_model.meta",
         )
 
-        semi_merged_data = self.spark.read_from_database_to_dataframe(
-            table=table_name
-        )
+        semi_merged_data = self.spark.read_from_database_to_dataframe(table=table_name)
         data = self.create_df_from_id_pairs(id_pair=semi_merged_data)
         processed_data = self._feature_data(data)
 
@@ -185,22 +171,16 @@ class Synthesis:
         predicted = np.argmax(predicted, axis=1).astype("int32")
         semi_merged_data_pd = semi_merged_data.toPandas()
         semi_merged_data_pd["isMatch"] = predicted
-        semi_merged_data_pd = semi_merged_data_pd.drop(
-            columns="JaccardDistance", axis=1
-        )
+        semi_merged_data_pd = semi_merged_data_pd.drop(columns="JaccardDistance", axis=1)
         semi_merged_data_pd = semi_merged_data_pd.rename(
             columns={"id": "leftId", "canonical_id": "rightId"}
         )
-        semi_merged_data = self.sparksession.createDataFrame(
-            semi_merged_data_pd
-        )
+        semi_merged_data = self.sparksession.createDataFrame(semi_merged_data_pd)
         self.spark.write_to_database_from_df(
             config_.classification_table, df=semi_merged_data, mode="overwrite"
         )
 
-    def load_model(
-        self, model_name: str, model_path: str
-    ) -> tf.compat.v1.Session:
+    def load_model(self, model_name: str, model_path: str) -> tf.compat.v1.Session:
         """This will load the model from saved model meta file
 
         Parameters

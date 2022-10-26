@@ -1,7 +1,4 @@
-import os
 import random
-from os import listdir
-from typing import Any, Optional
 
 import pandas as pd
 from deep_blocker import DeepBlocker
@@ -89,29 +86,23 @@ class Deepblocker:
         print(pandas_left_df.head())
         print(pandas_right_df.head())
         db = DeepBlocker(tuple_embedding_model, vector_pairing_model)
-        candidate_set_df = db.block_datasets(
-            pandas_left_df, pandas_right_df, cols_to_block
-        )
+        candidate_set_df = db.block_datasets(pandas_left_df, pandas_right_df, cols_to_block)
         print(candidate_set_df.head())
         # print("Writing model output file")
         # candidate_set_df.to_csv(
         #     self.target_dir + "/deepblocker_matching.csv", mode="w+"
         # )
 
-        blocked_datasets = self.spark.get_sparkSession().createDataFrame(
-            candidate_set_df
-        )
+        blocked_datasets = self.spark.get_sparkSession().createDataFrame(candidate_set_df)
         # save in database
-        self.spark.write_to_database_from_df(
-            "deepblocker_matching", blocked_datasets, "overwrite"
-        )
+        self.spark.write_to_database_from_df("deepblocker_matching", blocked_datasets, "overwrite")
 
         result_ = blocked_datasets.join(
             other=left_df, on=blocked_datasets.ltable_id == left_df.id
         ).drop(left_df.id)
-        result = result_.join(
-            other=right_df, on=result_.rtable_id == right_df.id
-        ).drop(right_df.id)
+        result = result_.join(other=right_df, on=result_.rtable_id == right_df.id).drop(
+            right_df.id
+        )
         result.show()
 
         # ltable_ids = candidate_set_df["ltable_id"]
@@ -138,14 +129,10 @@ class Deepblocker:
         # )
         # result.to_csv(self.target_dir + "/deepblocker.csv", mode="w+")
         # result_df = self.spark.get_sparkSession().createDataFrame(result)
-        self.spark.write_to_database_from_df(
-            "deepblocker", result, "overwrite"
-        )
+        self.spark.write_to_database_from_df("deepblocker", result, "overwrite")
         return result
 
-    def compute_blocking_statistics(
-        self, candidate_set_df, golden_df, left_df, right_df
-    ):
+    def compute_blocking_statistics(self, candidate_set_df, golden_df, left_df, right_df):
         # Now we have two data frames with two columns ltable_id and rtable_id
         # If we do an equi-join of these two data frames, we will get the matches that were in the top-K
         # merged_df = pd.merge(candidate_set_df, golden_df, on=['ltable_id', 'rtable_id'])
@@ -166,8 +153,7 @@ class Deepblocker:
             "candidate_set": len(candidate_set_df),
             "recall": len(candidate_set_df) / len(golden_df),
             # "recall": len(merged_df) / len(golden_df),
-            "cssr": len(candidate_set_df)
-            / (left_num_tuples * right_num_tuples),
+            "cssr": len(candidate_set_df) / (left_num_tuples * right_num_tuples),
         }
 
         return statistics_dict

@@ -5,13 +5,12 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from pyspark.sql import DataFrame
-from pyspark.sql.functions import col
-from sklearn.model_selection import StratifiedShuffleSplit
-
 from data_harmonization.main.code.tiger.Features import Features
 from data_harmonization.main.code.tiger.spark import SparkClass
 from data_harmonization.main.resources import config as config_
+from pyspark.sql import DataFrame
+from pyspark.sql.functions import col
+from sklearn.model_selection import StratifiedShuffleSplit
 
 tf.compat.v1.disable_v2_behavior()
 tf.compat.v1.disable_eager_execution()
@@ -23,9 +22,7 @@ class Classifier:
     def __init__(self) -> None:
         self.spark = SparkClass()
         self.sparksession = self.spark.get_sparkSession()
-        self.rawentity_df = self.spark.read_from_database_to_dataframe(
-            "rawentity"
-        )
+        self.rawentity_df = self.spark.read_from_database_to_dataframe("rawentity")
         self.rawentity_df_can = self.rawentity_df.rdd.toDF(
             ["canonical_" + col for col in self.rawentity_df.columns]
         )
@@ -53,14 +50,10 @@ class Classifier:
             Feature extracted dataframe
         """
         feature_df = features.copy()
-        feature_df["features"] = feature_df.apply(
-            lambda x: Features().get(x), axis=1
-        )
+        feature_df["features"] = feature_df.apply(lambda x: Features().get(x), axis=1)
         if target.empty:
             return feature_df
-        target_df = pd.get_dummies(
-            target, prefix="target", columns=["target"], drop_first=False
-        )
+        target_df = pd.get_dummies(target, prefix="target", columns=["target"], drop_first=False)
         return pd.concat([feature_df, target_df], axis=1)
 
     def create_df_from_id_pairs(self, id_pair: DataFrame) -> pd.DataFrame:
@@ -93,9 +86,7 @@ class Classifier:
 
         return full_df.toPandas()
 
-    def _extract_postive_data(
-        self, data: DataFrame, threshold: float = 0.60
-    ) -> pd.DataFrame:
+    def _extract_postive_data(self, data: DataFrame, threshold: float = 0.60) -> pd.DataFrame:
         """
         Generates positive data for training the classification model
 
@@ -112,20 +103,14 @@ class Classifier:
         pd.DataFrame
             returns pandas dataframe"""
         data.show()
-        positive_df_id = data.filter(f"confidence > {threshold}").select(
-            "id", "canonical_id"
-        )
+        positive_df_id = data.filter(f"confidence > {threshold}").select("id", "canonical_id")
         positive_df_id.show()
         positive_df = self.create_df_from_id_pairs(id_pair=positive_df_id)
         print(positive_df.head())
-        positive_df["target"] = pd.Series(
-            np.ones(positive_df.shape[0])
-        ).astype("int")
+        positive_df["target"] = pd.Series(np.ones(positive_df.shape[0])).astype("int")
         return positive_df
 
-    def _extract_negative_data(
-        self, data: DataFrame, match_ratio: float = 0.8
-    ) -> pd.DataFrame:
+    def _extract_negative_data(self, data: DataFrame, match_ratio: float = 0.8) -> pd.DataFrame:
         """Generate negative data using rawentity table
 
         Parameters
@@ -140,19 +125,13 @@ class Classifier:
         pd.DataFrame
             return negative pair dataframe"""
         rawentity_df = self.rawentity_df.sample(match_ratio, seed=42)
-        all_id = (
-            rawentity_df.select(col("id")).rdd.flatMap(lambda x: x).collect()
-        )
+        all_id = rawentity_df.select(col("id")).rdd.flatMap(lambda x: x).collect()
         master_set = set()
         while len(master_set) < (data.count() * match_ratio):
             clus_ida, clus_idb = random.sample(all_id, 2)
             is_match = (
-                data.filter(
-                    (data.id == clus_ida) & (data.canonical_id == clus_idb)
-                ).collect()
-                and data.filter(
-                    (data.id == clus_idb) & (data.canonical_id == clus_ida)
-                ).collect()
+                data.filter((data.id == clus_ida) & (data.canonical_id == clus_idb)).collect()
+                and data.filter((data.id == clus_idb) & (data.canonical_id == clus_ida)).collect()
             )
             if is_match:
                 continue
@@ -163,9 +142,7 @@ class Classifier:
             list(master_set), ["id", "canonical_id"]
         )  # [(ida, idb), (idc, idd)]
         negative_df = self.create_df_from_id_pairs(id_pair=id_df)
-        negative_df["target"] = pd.Series(
-            np.zeros(negative_df.shape[0])
-        ).astype("int")
+        negative_df["target"] = pd.Series(np.zeros(negative_df.shape[0])).astype("int")
         return negative_df
 
     def _preprocess_data(self, data: DataFrame) -> pd.DataFrame:
@@ -190,9 +167,7 @@ class Classifier:
         print("Negative data shape:", negative_df.shape)
         print("done extracting data......")
         data = pd.concat([positive_df, negative_df])
-        print(
-            f"Extracting features from the data.......\nTotal Rows : {data.shape[0]}"
-        )
+        print(f"Extracting features from the data.......\nTotal Rows : {data.shape[0]}")
         data = self._feature_data(data.drop("target", axis=1), data["target"])
         print("Done preprocessing data......")
         return data
@@ -251,25 +226,17 @@ class Classifier:
         tf.Tensor
             match or non match profile"""
         # Sigmoid fits modified data well
-        layer1 = tf.nn.sigmoid(
-            tf.matmul(input_tensor, self.weight_1_node) + self.biases_1_node
-        )
+        layer1 = tf.nn.sigmoid(tf.matmul(input_tensor, self.weight_1_node) + self.biases_1_node)
         # Dropout prevents model from becoming lazy and over confident
         layer2 = tf.nn.dropout(
-            tf.nn.sigmoid(
-                tf.matmul(layer1, self.weight_2_node) + self.biases_2_node
-            ),
+            tf.nn.sigmoid(tf.matmul(layer1, self.weight_2_node) + self.biases_2_node),
             0.85,
         )
         # Softmax works very well with one hot encoding which is how results are outputted
-        layer3 = tf.nn.softmax(
-            tf.matmul(layer2, self.weight_3_node) + self.biases_3_node
-        )
+        layer3 = tf.nn.softmax(tf.matmul(layer2, self.weight_3_node) + self.biases_3_node)
         return layer3
 
-    def _calculate_accuracy(
-        self, actual: tf.Tensor, predicted: tf.Tensor
-    ) -> tuple[tf.Tensor]:
+    def _calculate_accuracy(self, actual: tf.Tensor, predicted: tf.Tensor) -> tuple[tf.Tensor]:
         """Calculate accuracy from actual and predicted tensor arrays
 
         Parameters
@@ -298,18 +265,14 @@ class Classifier:
         self.weight_1_node = tf.Variable(
             tf.zeros([self.input_dim, self.num_layer_1_cells]), name="weight_1"
         )
-        self.biases_1_node = tf.Variable(
-            tf.zeros([self.num_layer_1_cells]), name="biases_1"
-        )
+        self.biases_1_node = tf.Variable(tf.zeros([self.num_layer_1_cells]), name="biases_1")
 
         # Second layer takes in input from 1st layer and passes output to 3rd layer
         self.weight_2_node = tf.Variable(
             tf.zeros([self.num_layer_1_cells, self.num_layer_2_cells]),
             name="weight_2",
         )
-        self.biases_2_node = tf.Variable(
-            tf.zeros([self.num_layer_2_cells]), name="biases_2"
-        )
+        self.biases_2_node = tf.Variable(tf.zeros([self.num_layer_2_cells]), name="biases_2")
 
         # Third layer takes in input from 2nd layer and
         # outputs [1 0] or [0 1] depending on match vs non match
@@ -317,9 +280,7 @@ class Classifier:
             tf.zeros([self.num_layer_2_cells, self.output_dim]),
             name="weight_3",
         )
-        self.biases_3_node = tf.Variable(
-            tf.zeros([self.output_dim]), name="biases_3"
-        )
+        self.biases_3_node = tf.Variable(tf.zeros([self.output_dim]), name="biases_3")
 
     def train(self, table_name: str, num_epochs: int = 500) -> None:
         """Train the classification model
@@ -332,12 +293,7 @@ class Classifier:
             number of epochs to run to train the model"""
         data_df = self.spark.read_from_database_to_dataframe(table=table_name)
         final_df = self._preprocess_data(data_df)
-        (
-            raw_X_train,
-            raw_X_test,
-            raw_y_train,
-            raw_y_test,
-        ) = self._train_test_split(
+        (raw_X_train, raw_X_test, raw_y_train, raw_y_test,) = self._train_test_split(
             final_df["features"].values,
             final_df[["target_0", "target_1"]].values,
         )
@@ -392,16 +348,12 @@ class Classifier:
 
         # Cross entropy loss function measures
         # differences between actual output and predicted output
-        cross_entropy = tf.compat.v1.losses.softmax_cross_entropy(
-            y_train_node, y_train_prediction
-        )
+        cross_entropy = tf.compat.v1.losses.softmax_cross_entropy(y_train_node, y_train_prediction)
 
         # Adam optimizer function will try to minimize loss (cross_entropy)
         # but changing the 3 layers' variable values at a
         #   learning rate of 0.005
-        optimizer = tf.compat.v1.train.AdamOptimizer(0.005).minimize(
-            cross_entropy
-        )
+        optimizer = tf.compat.v1.train.AdamOptimizer(0.005).minimize(cross_entropy)
         saver = tf.compat.v1.train.Saver()
         init = tf.compat.v1.global_variables_initializer()
         with tf.compat.v1.Session() as session:
@@ -443,9 +395,7 @@ class Classifier:
 
             final_y_test = y_test_node.eval()
             final_y_test_prediction = y_test_prediction.eval()
-            precision, recall, f1 = self._calculate_accuracy(
-                final_y_test, final_y_test_prediction
-            )
+            precision, recall, f1 = self._calculate_accuracy(final_y_test, final_y_test_prediction)
             print(
                 "Precision: {}\nrecall: {}\nf1: {}".format(
                     precision.eval(session=session),
@@ -461,9 +411,7 @@ class Classifier:
             )
             # saver.save(session, "my_test_model")
         final_match_y_test = final_y_test[final_y_test[:, 1] == 1]
-        final_match_y_test_prediction = final_y_test_prediction[
-            final_y_test[:, 1] == 1
-        ]
+        final_match_y_test_prediction = final_y_test_prediction[final_y_test[:, 1] == 1]
         precision, recall, f1 = self._calculate_accuracy(
             final_match_y_test, final_match_y_test_prediction
         )

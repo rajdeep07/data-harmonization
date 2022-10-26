@@ -40,16 +40,11 @@ class Cluster:
         self.rawProfiles = data
         if not data:
             filenames = listdir(os.getcwd() + "/data_harmonization/main/data/")
-            csv_filenames = [
-                filename for filename in filenames if filename.endswith(".csv")
-            ]
+            csv_filenames = [filename for filename in filenames if filename.endswith(".csv")]
             rawProfiles = pd.DataFrame()  # correct data structure here ?
             for csv_file in csv_filenames:
                 self.rawProfiles = rawProfiles.append(
-                    pd.read_csv(
-                        os.getcwd()
-                        + f"/data_harmonization/main/data/{csv_file}"
-                    )
+                    pd.read_csv(os.getcwd() + f"/data_harmonization/main/data/{csv_file}")
                 )
 
         rawProfilesWithTokens = self.rawProfiles.apply(
@@ -75,9 +70,7 @@ class Cluster:
 
     def _flatten_list(self, l: list) -> list:
         return [
-            item if isinstance(sublist, list) else sublist
-            for sublist in l
-            for item in sublist
+            item if isinstance(sublist, list) else sublist for sublist in l for item in sublist
         ]
         # return [item for sublist in l if isinstance(sublist, list) for item in sublist else sublist]
 
@@ -104,13 +97,9 @@ class Cluster:
         return self.filter_flat_map(shingles, input)"""
 
     # Create Shingles
-    def createShingles(
-        self, input: Optional[str], shingle_size
-    ) -> Optional[list[str]]:
+    def createShingles(self, input: Optional[str], shingle_size) -> Optional[list[str]]:
         def shingles(x: str) -> list[str]:
-            i = (
-                x.lower()
-            )  # TODO: remove extra unnecessary characters when creating shingles
+            i = x.lower()  # TODO: remove extra unnecessary characters when creating shingles
             if len(i) > shingle_size:
                 return list(
                     map(
@@ -125,11 +114,7 @@ class Cluster:
             list(
                 map(
                     shingles,
-                    list(
-                        filter(
-                            self._isNotEmpty, re.split("[-\s\\\\,]s*", input)
-                        )
-                    ),
+                    list(filter(self._isNotEmpty, re.split("[-\s\\\\,]s*", input))),
                 )
             )
         )
@@ -198,9 +183,7 @@ class Cluster:
         for i in hash_bands:
             for hash_num in hash_bands[i]:
                 if len(hash_bands[i][hash_num]) > 1:
-                    for pair in itertools.combinations(
-                        hash_bands[i][hash_num], r=2
-                    ):
+                    for pair in itertools.combinations(hash_bands[i][hash_num], r=2):
                         # print(pair)
                         similar_docs.append(pair)
         return similar_docs
