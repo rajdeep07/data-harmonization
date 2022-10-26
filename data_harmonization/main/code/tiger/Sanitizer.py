@@ -1,17 +1,14 @@
 import uuid
 from typing import Any
 
-from data_harmonization.main.code.tiger.transformer.FloatTransformer import (
-    FloatTypeTransformer,
-)
-
-from data_harmonization.main.code.tiger.transformer.IntegerTypeTransformer import (
-    IntegerTypeTransformer,
-)
-from data_harmonization.main.code.tiger.transformer.StringTypeTransformer import (
-    StringTypeTransformer,
-)
 from pyspark.sql import SparkSession
+
+from data_harmonization.main.code.tiger.transformer.FloatTransformer import \
+    FloatTypeTransformer
+from data_harmonization.main.code.tiger.transformer.IntegerTypeTransformer import \
+    IntegerTypeTransformer
+from data_harmonization.main.code.tiger.transformer.StringTypeTransformer import \
+    StringTypeTransformer
 
 
 class Sanitizer:
@@ -37,7 +34,9 @@ class Sanitizer:
             print(obj.get_schema())
         return obj.get_schema()
 
-    def get_kwargs(self, cls: dict, attr_lists: dict, gen_id=False, clean_data=False) -> dict:
+    def get_kwargs(
+        self, cls: dict, attr_lists: dict, gen_id=False, clean_data=False
+    ) -> dict:
         """
         Create key arguments from the passed `cls` and `attr_list` and
         assigns unique id to each object
@@ -67,7 +66,9 @@ class Sanitizer:
                 raw_kw[attr] = uuid.uuid4().hex
             elif tpe in ("int", "str", "float", "int64", "float64", "object"):
                 raw_kw[attr] = (
-                    self._apply_transformer(cls.get(attr, "")) if clean_data else cls.get(attr, "")
+                    self._apply_transformer(cls.get(attr, ""))
+                    if clean_data
+                    else cls.get(attr, "")
                 )  # for dict conversion
             else:
                 raw_kw[attr] = ""

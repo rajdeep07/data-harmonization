@@ -6,12 +6,14 @@ from functools import reduce
 from os import listdir
 from pathlib import Path
 
+from pyspark.sql import DataFrame
+
 import data_harmonization.main.resources.config as config
 from data_harmonization.main.code.tiger.database import MySQL
-from data_harmonization.main.code.tiger.database.SchemaGenerator import SchemaGenerator
+from data_harmonization.main.code.tiger.database.SchemaGenerator import \
+    SchemaGenerator
 from data_harmonization.main.code.tiger.Sanitizer import Sanitizer
 from data_harmonization.main.code.tiger.spark import SparkClass
-from pyspark.sql import DataFrame
 
 
 class Ingester:
@@ -85,7 +87,9 @@ class Ingester:
         total_attributes = []
         attr_dict = dict()
         for _, cls in inspect.getmembers(
-            importlib.import_module("data_harmonization.main.code.tiger.model.ingester"),
+            importlib.import_module(
+                "data_harmonization.main.code.tiger.model.ingester"
+            ),
             inspect.isclass,
         ):
             total_attributes.extend(cls.get_schema().keys())
@@ -125,13 +129,17 @@ class Ingester:
         for csv_file in self.csv_files:
             # TODO: generalize csv reader to almost everything later.
             sanitiser = Sanitizer()
-            df = self.spark.read_from_csv_to_dataframe(str(self.target_dir + "/data/" + csv_file))
+            df = self.spark.read_from_csv_to_dataframe(
+                str(self.target_dir + "/data/" + csv_file)
+            )
             class_name = Path(csv_file).stem.capitalize()
 
             class_ = None
             # get all classes
             for name, cls in inspect.getmembers(
-                importlib.import_module("data_harmonization.main.code.tiger.model.ingester"),
+                importlib.import_module(
+                    "data_harmonization.main.code.tiger.model.ingester"
+                ),
                 inspect.isclass,
             ):
                 generated_classes[name] = cls
@@ -178,7 +186,9 @@ class Ingester:
         # ls = df_series.rdd.map(lambda row : Sanitizer().toRawEntity(row.asDict())).collect()
 
         df_series = df_series.rdd.map(
-            lambda r: Sanitizer().toRawEntity(data=r.asDict(), rawentity_obj=rawentity.Rawentity)
+            lambda r: Sanitizer().toRawEntity(
+                data=r.asDict(), rawentity_obj=rawentity.Rawentity
+            )
         ).toDF()
 
         if features_for_deduplication:

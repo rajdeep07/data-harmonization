@@ -8,6 +8,7 @@ from typing import Any, Optional
 
 import numpy as np
 import pandas as pd
+
 from data_harmonization.main.code.tiger.model.SemiMergedProfile import \
     SemiMergedProfile
 from data_harmonization.main.code.tiger.Sanitizer import Sanitizer
@@ -31,7 +32,7 @@ class Cluster:
     flattenRawprofile = {}
 
     # Flatten rawProfiles to fields which are only string / int / float
-    def Create_enity(self, data:pd.DataFrame): 
+    def Create_enity(self, data: pd.DataFrame):
         pass
 
     def createflattenRawprofile(
@@ -42,7 +43,7 @@ class Cluster:
             filenames = listdir(os.getcwd() + "/data_harmonization/main/data/")
             csv_filenames = [
                 filename for filename in filenames if filename.endswith(".csv")
-            ] 
+            ]
             rawProfiles = pd.DataFrame()  # correct data structure here ?
             for csv_file in csv_filenames:
                 self.rawProfiles = rawProfiles.append(
@@ -287,4 +288,3 @@ if __name__ == "__main__":
         print("Test Failed.")
 
     ## Pyspark Code
-

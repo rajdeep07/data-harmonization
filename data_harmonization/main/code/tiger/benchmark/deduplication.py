@@ -1,10 +1,10 @@
+import argparse
 import os
 from re import finditer
 
 import numpy as np
 import pandas as pd
 import pandas_dedupe
-import argparse
 
 from data_harmonization.main.code.tiger.spark import SparkClass
 

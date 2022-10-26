@@ -9,11 +9,6 @@ from typing import Any, Optional
 import numpy as np
 import pandas as pd
 
-from data_harmonization.main.code.tiger.model.datamodel import *
-from data_harmonization.main.code.tiger.model.GeocodedAddress import \
-    GeocodedAddress
-from data_harmonization.main.code.tiger.model.PostalAddress import \
-    PostalAddress
 from data_harmonization.main.code.tiger.model.SemiMergedProfile import \
     SemiMergedProfile
 from data_harmonization.main.code.tiger.Sanitizer import Sanitizer
@@ -292,23 +287,14 @@ if __name__ == "__main__":
         print("Test Failed.")
 
 
+# _pbna.csv ==> class _pbna ==> add UUID column ==> persist MySQL pbna (AS-IS)
+# _flna.csv == > class _flna == > add UUID column == > persist MySQL flna (AS-IS)
 
+# Assumption : Name correction [Either User do it or we have to do before leveraging this platform]
+# DropBox [Name, Address, ZipCode, ...]
 
-_pbna.csv ==> class _pbna ==> add UUID column ==> persist MySQL pbna (AS-IS)
-_flna.csv == > class _flna == > add UUID column == > persist MySQL flna (AS-IS)
+# ==> RawEntity (default : common attributes of all pbna & flna excluding UUID / user_select_deduplicated_column) == >
+# read appropriate columns from pbna & flna mysql tables
+# def toRawEntity(tables): RawEntity:
 
-Assumption : Name correction [Either User do it or we have to do before leveraging this platform]
-DropBox [Name, Address, ZipCode, ...]
-
-==> RawEntity (default : common attributes of all pbna & flna excluding UUID / user_select_deduplicated_column) == >
-read appropriate columns from pbna & flna mysql tables
-def toRawEntity(tables): RawEntity:
-
-cleansing(RawEntity) ==> persist MySQL ()
-
-
-
-
-
-
-
+# cleansing(RawEntity) ==> persist MySQL ()

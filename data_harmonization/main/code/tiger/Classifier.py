@@ -1,18 +1,17 @@
 import random
+import time
 from typing import Any, Optional
-import tensorflow as tf
+
 import numpy as np
 import pandas as pd
-import time
-
+import tensorflow as tf
+from pyspark.sql import DataFrame
+from pyspark.sql.functions import col, lit
 from sklearn.model_selection import StratifiedShuffleSplit
+
 from data_harmonization.main.code.tiger.Features import Features
 from data_harmonization.main.code.tiger.spark import SparkClass
-from pyspark.sql import DataFrame
-from pyspark.sql.functions import col
 from data_harmonization.main.resources import config
-from pyspark.sql.functions import lit
-
 
 tf.compat.v1.disable_v2_behavior()
 tf.compat.v1.disable_eager_execution()
@@ -368,9 +367,9 @@ class Classifier:
             columns="JaccardDistance", axis=1
         )
         semi_merged_data_pd = semi_merged_data_pd.rename(
-            columns={"id": "leftId", "canonical_id": "rightId"})
-        semi_merged_data = self.sparksession.createDataFrame(
-            semi_merged_data_pd)
+            columns={"id": "leftId", "canonical_id": "rightId"}
+        )
+        semi_merged_data = self.sparksession.createDataFrame(semi_merged_data_pd)
         self.spark.write_to_database_from_df(
             config.classification_table, df=semi_merged_data, mode="overwrite"
         )

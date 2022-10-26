@@ -1,10 +1,11 @@
 import re
+from typing import Any, Tuple
+
 import numpy as np
+import pandas as pd
 
 from data_harmonization.main.code.tiger.features.Distance import Distance
 from data_harmonization.main.code.tiger.model.ingester import Rawentity
-from typing import Any, Tuple
-import pandas as pd
 
 
 class Features:

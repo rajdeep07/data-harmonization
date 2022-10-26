@@ -1,9 +1,10 @@
 import os
 
-import data_harmonization.main.resources.config as config_
 import findspark
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql import functions as F
+
+import data_harmonization.main.resources.config as config_
 
 SPARK_HOME = os.environ.get("SPARK_HOME")
 PYTHON_PATH = os.environ.get("PYSPARK_PYTHON")
@@ -58,7 +59,9 @@ class SparkClass:
     def read_from_csv_to_dataframe(
         self, csv_file_path, header=True, inferSchema=True
     ) -> DataFrame:
-        return self.spark.read.csv(csv_file_path, header=header, inferSchema=inferSchema)
+        return self.spark.read.csv(
+            csv_file_path, header=header, inferSchema=inferSchema
+        )
 
     def write_to_csv_from_df(self, local_path, df) -> None:
         return (

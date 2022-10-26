@@ -1,15 +1,14 @@
 from typing import Any, Optional
-import tensorflow as tf
+
 import numpy as np
 import pandas as pd
+import tensorflow as tf
+from pyspark.sql import DataFrame
+from pyspark.sql.functions import col, lit
 
 from data_harmonization.main.code.tiger.Features import Features
 from data_harmonization.main.code.tiger.spark import SparkClass
-from pyspark.sql import DataFrame
-from pyspark.sql.functions import col
 from data_harmonization.main.resources import config as config_
-from pyspark.sql.functions import lit
-
 
 tf.compat.v1.disable_v2_behavior()
 tf.compat.v1.disable_eager_execution()
@@ -19,8 +18,7 @@ class Classifier:
     def __init__(self) -> None:
         self.spark = SparkClass()
         self.sparksession = self.spark.get_sparkSession()
-        self.rawentity_df = self.spark.read_from_database_to_dataframe(
-            "rawentity")
+        self.rawentity_df = self.spark.read_from_database_to_dataframe("rawentity")
         self.rawentity_df_can = self.rawentity_df.rdd.toDF(
             ["canonical_" + col for col in self.rawentity_df.columns]
         )
@@ -29,8 +27,7 @@ class Classifier:
         self, features: pd.DataFrame, target: Optional[pd.DataFrame] = pd.DataFrame([])
     ) -> pd.DataFrame:
         feature_df = features.copy()
-        feature_df["features"] = feature_df.apply(
-            lambda x: Features().get(x), axis=1)
+        feature_df["features"] = feature_df.apply(lambda x: Features().get(x), axis=1)
         if target.empty:
             return feature_df
         target_df = pd.get_dummies(
@@ -41,8 +38,7 @@ class Classifier:
     def create_df_from_id_pairs(self, id_pair: DataFrame) -> pd.DataFrame:
         full_df = (
             id_pair.alias("a").join(
-                self.rawentity_df.alias("b"), (col(
-                    "a.id") == col("b.id")), "inner"
+                self.rawentity_df.alias("b"), (col("a.id") == col("b.id")), "inner"
             )
         ).drop(col("b.id"))
         full_df = (
@@ -68,8 +64,7 @@ class Classifier:
         )
         # Dropout prevents model from becoming lazy and over confident
         layer2 = tf.nn.dropout(
-            tf.nn.sigmoid(
-                tf.matmul(layer1, self.weight_2_node) + self.biases_2_node),
+            tf.nn.sigmoid(tf.matmul(layer1, self.weight_2_node) + self.biases_2_node),
             0.85,
         )
         # Softmax works very well with one hot encoding which is how results are outputted
@@ -95,8 +90,7 @@ class Classifier:
             model_name="classification_deep_learing_model.meta",
         )
 
-        semi_merged_data = self.spark.read_from_database_to_dataframe(
-            table=table_name)
+        semi_merged_data = self.spark.read_from_database_to_dataframe(table=table_name)
         data = self.create_df_from_id_pairs(id_pair=semi_merged_data)
         processed_data = self._feature_data(data)
 
@@ -137,8 +131,7 @@ class Classifier:
         semi_merged_data_pd = semi_merged_data_pd.rename(
             columns={"id": "leftId", "canonical_id": "rightId"}
         )
-        semi_merged_data = self.sparksession.createDataFrame(
-            semi_merged_data_pd)
+        semi_merged_data = self.sparksession.createDataFrame(semi_merged_data_pd)
         self.spark.write_to_database_from_df(
             config_.classification_table, df=semi_merged_data, mode="overwrite"
         )

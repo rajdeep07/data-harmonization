@@ -7,7 +7,9 @@ import pandas as pd
 
 
 class SchemaGenerator:
-    bottom_code = "from sqlalchemy.orm import declarative_base\n\nBase = declarative_base()"
+    bottom_code = (
+        "from sqlalchemy.orm import declarative_base\n\nBase = declarative_base()"
+    )
 
     import_statement = """from sqlalchemy import BigInteger, Text, Float, Column
 from data_harmonization.main.code.tiger.model.ingester.Bottom import Base\n\n
@@ -60,9 +62,7 @@ from data_harmonization.main.code.tiger.model.ingester.Bottom import Base\n\n
 
     def _class_gen(self, table_name: str, attr_dict: dict):
         class_code = f"\nclass {table_name.capitalize()}(Base):\n".lstrip()
-        class_code += (
-            f"\t__tablename__ = '{table_name}'\n\n\tid=Column(BigInteger, primary_key=True)\n"
-        )
+        class_code += f"\t__tablename__ = '{table_name}'\n\n\tid=Column(BigInteger, primary_key=True)\n"
         for column_name, col_dtype in attr_dict.items():
             # print(str(col_dtype), col_dtype.name, col_dtype)
             if column_name == "Unnamed: 0" or column_name.lower() == "id":

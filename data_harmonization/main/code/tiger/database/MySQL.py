@@ -1,8 +1,9 @@
-import data_harmonization.main.resources.config as config
 import mysql.connector
 import sqlalchemy
-from sqlalchemy.orm import sessionmaker
 from sqlalchemy import text
+from sqlalchemy.orm import sessionmaker
+
+import data_harmonization.main.resources.config as config
 
 
 class MySQL:
@@ -24,7 +25,8 @@ class MySQL:
 
     def _init_conn(self):
         try:
-            from data_harmonization.main.code.tiger.model.ingester.Bottom import Base
+            from data_harmonization.main.code.tiger.model.ingester.Bottom import \
+                Base
 
             Base.metadata.create_all(self.engine)
         except ImportError:
@@ -36,7 +38,8 @@ class MySQL:
     @staticmethod
     def get_tables():
         try:
-            from data_harmonization.main.code.tiger.model.ingester.Bottom import Base
+            from data_harmonization.main.code.tiger.model.ingester.Bottom import \
+                Base
 
             return list(Base.metadata.tables.keys())
         except ImportError:

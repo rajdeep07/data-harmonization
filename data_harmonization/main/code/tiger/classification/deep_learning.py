@@ -3,7 +3,6 @@ import time
 
 import numpy as np
 import pandas as pd
-
 # import tensorflow as tf
 import tensorflow as tf
 from sklearn.model_selection import StratifiedShuffleSplit
@@ -349,6 +348,7 @@ class DeepLearning:
             tf.train.latest_checkpoint(self.model_path),
         )
         return session
+
 
 if __name__ == "__main__":
     cluster = Blocking()

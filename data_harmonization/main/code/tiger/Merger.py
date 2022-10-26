@@ -1,13 +1,14 @@
 from unicodedata import name
-from pyspark.sql import DataFrame
-from pyspark.sql.functions import collect_list, col, udf, concat_ws
-from pyspark.sql.types import StringType
 
-# import pyspark.sql.fu import
+from pyspark.sql import DataFrame
+from pyspark.sql.column import Column
+from pyspark.sql.functions import col, collect_list, concat_ws, udf
+from pyspark.sql.types import StringType
 
 import data_harmonization.main.resources.config as config_
 from data_harmonization.main.code.tiger.spark.SparkClass import SparkClass
-from pyspark.sql.column import Column
+
+# import pyspark.sql.fu import
 
 
 class Merger:
@@ -38,8 +39,7 @@ class Merger:
         # attributes.remove("id")
         exprs = [collect_list(x).alias(x) for x in attributes]
         # a.show()
-        collected_profiles = conneted_raw_entities.groupBy(
-            "cluster_id").agg(*exprs)
+        collected_profiles = conneted_raw_entities.groupBy("cluster_id").agg(*exprs)
         # collected_profiles.show()
         # print("collected_profiles : ", str(collected_profiles.count()))
 
@@ -94,8 +94,7 @@ class Merger:
         # writing merged data into database
         result_ = result.withColumn("id", concat_ws(",", result.id))
         result_.show()
-        self.spark.write_to_database_from_df(
-            config_.merged_table, result_, "overwrite")
+        self.spark.write_to_database_from_df(config_.merged_table, result_, "overwrite")
         return result
 
 
