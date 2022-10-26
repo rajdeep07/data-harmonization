@@ -13,6 +13,8 @@ tf.compat.v1.disable_v2_behavior()
 
 
 class Train:
+    """Train the model"""
+
     flatten_rawprofile = None
     cluster_pairs = None
     _positive_df = pd.DataFrame()
@@ -82,40 +84,6 @@ class Train:
                     [self._negative_df, row], axis=0, ignore_index=True
                 )
 
-        # duplicate_id = set()
-        # for pair1, pair2 in cluster_pairs:
-        #     duplicate_id.add(pair1["cluster_id"])
-        #     duplicate_id.add(pair2["cluster_id"])
-        # _number_of_negative_examples = 5*len(duplicate_id)
-
-        # id = 0
-        # unique_ids = set()
-        # for profile in self.flatten_rawprofile.values():
-        #     while id <= _number_of_negative_examples:
-        #         if profile["cluster_id"] not in duplicate_id:
-        #             unique_ids.add(profile["cluster_id"])
-        #         id += 1
-
-        # _negative_df = pd.DataFrame()
-        # feature_list = ["Name", "City", "Zip", "Address"]
-        # # TODO: Find a better way
-        # unique_ids = [j for j in
-        #               [i for i in self.flatten_rawprofile if self.flatten_rawprofile[i]["cluster_id"]
-        #               not in duplicate_id].values()]
-
-        # p_id = 0
-        # _negative_df = pd.DataFrame()
-        # for id1["cluster_id"] in unique_ids:
-        #     for id2["cluster_id"] in unique_ids:
-        #         if id1["cluster_id"] != id2["cluster_id"]:
-        #             while p_id <= _number_of_negative_examples:
-        #                 _negative = np.darray()
-        #                 for feature in feature_list:
-        #                     _negative += Features.engineerFeatures(id1["".format(feature)], id2["".format(feature)])
-        #                 _negative_df["target"] = 0
-        #                 _negative_df["features"] = _negative.flatten()
-        #                 p_id += 1
-
         return self._negative_df
 
     # TODO: Concat both with appropriate labels
@@ -124,8 +92,10 @@ class Train:
         _negative_df["feature"] = _negative_df["feature"].to_numpy().flatten()
         return pd.concat([_positive_df, _negative_df])
 
-    # Function to run an input tensor through the 3 layers and output a tensor that will give us a match/non match result
-    # Each layer uses a different function to fit lines through the data and predict whether a given input tensor will \
+    # Function to run an input tensor through the 3 layers and output a tensor
+    #  that will give us a match/non match result
+    # Each layer uses a different function to fit lines through the data and
+    # predict whether a given input tensor will \
     #   result in a match or non match profiles
     def network(self, input_tensor):
         # Sigmoid fits modified data well
@@ -158,18 +128,13 @@ if __name__ == "__main__":
     # print(_negative_df)
     data = train.concat_examples(_positive_df, _negative_df)
 
-    # Change Class column into target_0 ([1 0] for No Match data) and target_1 ([0 1] for Match data)
+    # Change Class column into target_0 ([1 0] for No Match data) and
+    # target_1 ([0 1] for Match data)
     one_hot_data = pd.get_dummies(data, prefix=["target"], columns=["target"])
 
     # split
     df_X = one_hot_data.drop(["target_0", "target_1", "rid", "lid"], axis=1)
     df_y = one_hot_data[["target_0", "target_1"]]
-    # print(df_X.shape)
-    # print(df_X["feature"].head())
-    # print(df_X["feature"].values[:5])
-    # print(df_X["feature"].values[:5].shape)
-    # print(df_X.values, df_X.values.shape)
-    # df_X["feature"] = df_X["feature"].apply(lambda x: np.asarray(x))
     print(np.stack(df_X["feature"].values).shape)
     # print(np.asarray(df_X["feature"].values))
 
@@ -208,7 +173,8 @@ if __name__ == "__main__":
     # 150 cells for the second layer
     num_layer_2_cells = 150
 
-    # We will use these as inputs to the model when it comes time to train it (assign values at run time)
+    # We will use these as inputs to the model when it comes time to train it
+    # (assign values at run time)
     X_train_node = tf.compat.v1.placeholder(
         tf.float32, [None, input_dimensions], name="X_train"
     )
@@ -232,7 +198,8 @@ if __name__ == "__main__":
     )
     biases_2_node = tf.Variable(tf.zeros([num_layer_2_cells]), name="biases_2")
 
-    # Third layer takes in input from 2nd layer and outputs [1 0] or [0 1] depending on match vs non match
+    # Third layer takes in input from 2nd layer and outputs [1 0] or [0 1]
+    #  depending on match vs non match
     weight_3_node = tf.Variable(
         tf.zeros([num_layer_2_cells, output_dimensions]), name="weight_3"
     )
@@ -250,7 +217,8 @@ if __name__ == "__main__":
         y_train_node, y_train_prediction
     )
 
-    # Adam optimizer function will try to minimize loss (cross_entropy) but changing the 3 layers' variable values at a
+    # Adam optimizer function will try to minimize loss (cross_entropy)
+    # but changing the 3 layers' variable values at a
     #   learning rate of 0.005
     optimizer = tf.compat.v1.train.AdamOptimizer(0.005).minimize(cross_entropy)
 
