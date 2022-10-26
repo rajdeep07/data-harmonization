@@ -3,6 +3,7 @@ import time
 
 import numpy as np
 import pandas as pd
+
 # import tensorflow as tf
 import tensorflow as tf
 from sklearn.model_selection import StratifiedShuffleSplit
@@ -22,7 +23,9 @@ class DeepLearning:
         self.cluster_pairs = None
         self._positive_df = pd.DataFrame()
         self._negative_df = pd.DataFrame()
-        self.model_path = "data_harmonization/main/code/tiger/classification/models/"
+        self.model_path = (
+            "data_harmonization/main/code/tiger/classification/models/"
+        )
         self.model_name = "classification_deep_learing_model"
 
     def _get_positive_examples(self):
@@ -100,7 +103,9 @@ class DeepLearning:
         )
         # Dropout prevents model from becoming lazy and over confident
         layer2 = tf.nn.dropout(
-            tf.nn.sigmoid(tf.matmul(layer1, self.weight_2_node) + self.biases_2_node),
+            tf.nn.sigmoid(
+                tf.matmul(layer1, self.weight_2_node) + self.biases_2_node
+            ),
             0.85,
         )
         # Softmax works very well with one hot encoding which is how results are outputted
@@ -129,10 +134,14 @@ class DeepLearning:
         data = self._concat_examples(_positive_df, _negative_df)
 
         # Change Class column into target_0 ([1 0] for No Match data) and target_1 ([0 1] for Match data)
-        one_hot_data = pd.get_dummies(data, prefix=["target"], columns=["target"])
+        one_hot_data = pd.get_dummies(
+            data, prefix=["target"], columns=["target"]
+        )
 
         # split
-        df_X = one_hot_data.drop(["target_0", "target_1", "rid", "lid"], axis=1)
+        df_X = one_hot_data.drop(
+            ["target_0", "target_1", "rid", "lid"], axis=1
+        )
         df_y = one_hot_data[["target_0", "target_1"]]
 
         print(np.stack(df_X["feature"].values).shape)
@@ -148,14 +157,18 @@ class DeepLearning:
         # (raw_X_train, raw_y_train) = (ar_X[:train_size], ar_y[:train_size])
         # (raw_X_test, raw_y_test) = (ar_X[train_size:], ar_y[train_size:])
         # ----------------------------------------------------------------------
-        split = StratifiedShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
+        split = StratifiedShuffleSplit(
+            n_splits=1, test_size=0.2, random_state=42
+        )
         for train_index, validation_index in split.split(ar_X, ar_y):
             raw_X_train, raw_X_test = ar_X[train_index], ar_X[validation_index]
             raw_y_train, raw_y_test = ar_y[train_index], ar_y[validation_index]
         # ------------------------------------------------------------------------
 
         # Gets a percent of match vs no match (6% of data are match?)
-        count_match, count_no_match = np.unique(data["target"], return_counts=True)[1]
+        count_match, count_no_match = np.unique(
+            data["target"], return_counts=True
+        )[1]
         match_ratio = float(count_match / (count_match + count_no_match))
         print("Percent of match ratios: ", match_ratio)
 
@@ -188,19 +201,25 @@ class DeepLearning:
         self.weight_1_node = tf.Variable(
             tf.zeros([input_dimensions, num_layer_1_cells]), name="weight_1"
         )
-        self.biases_1_node = tf.Variable(tf.zeros([num_layer_1_cells]), name="biases_1")
+        self.biases_1_node = tf.Variable(
+            tf.zeros([num_layer_1_cells]), name="biases_1"
+        )
 
         # Second layer takes in input from 1st layer and passes output to 3rd layer
         self.weight_2_node = tf.Variable(
             tf.zeros([num_layer_1_cells, num_layer_2_cells]), name="weight_2"
         )
-        self.biases_2_node = tf.Variable(tf.zeros([num_layer_2_cells]), name="biases_2")
+        self.biases_2_node = tf.Variable(
+            tf.zeros([num_layer_2_cells]), name="biases_2"
+        )
 
         # Third layer takes in input from 2nd layer and outputs [1 0] or [0 1] depending on match vs non match
         self.weight_3_node = tf.Variable(
             tf.zeros([num_layer_2_cells, output_dimensions]), name="weight_3"
         )
-        self.biases_3_node = tf.Variable(tf.zeros([output_dimensions]), name="biases_3")
+        self.biases_3_node = tf.Variable(
+            tf.zeros([output_dimensions]), name="biases_3"
+        )
 
         num_epochs = 100
 
@@ -217,7 +236,9 @@ class DeepLearning:
 
         # Adam optimizer function will try to minimize loss (cross_entropy) but changing the 3 layers' variable values at a
         #   learning rate of 0.005
-        optimizer = tf.compat.v1.train.AdamOptimizer(0.005).minimize(cross_entropy)
+        optimizer = tf.compat.v1.train.AdamOptimizer(0.005).minimize(
+            cross_entropy
+        )
         saver = tf.train.Saver()
         with tf.compat.v1.Session() as session:
             tf.compat.v1.global_variables_initializer().run()
@@ -228,7 +249,10 @@ class DeepLearning:
                 operation_ = [optimizer, cross_entropy]
                 _, cross_entropy_score = session.run(
                     operation_,
-                    feed_dict={X_train_node: raw_X_train, y_train_node: raw_y_train},
+                    feed_dict={
+                        X_train_node: raw_X_train,
+                        y_train_node: raw_y_train,
+                    },
                 )
 
                 if epoch % 10 == 0:
@@ -256,11 +280,17 @@ class DeepLearning:
             self.save_model({"saver": saver, "session": session})
             # saver.save(session, "my_test_model")
         final_match_y_test = final_y_test[final_y_test[:, 1] == 1]
-        final_match_y_test_prediction = final_y_test_prediction[final_y_test[:, 1] == 1]
+        final_match_y_test_prediction = final_y_test_prediction[
+            final_y_test[:, 1] == 1
+        ]
         final_match_accuracy = self._calculate_accuracy(
             final_match_y_test, final_match_y_test_prediction
         )
-        print("Final match specific accuracy: {0:.2f}%".format(final_match_accuracy))
+        print(
+            "Final match specific accuracy: {0:.2f}%".format(
+                final_match_accuracy
+            )
+        )
 
     def predict(self, flat_rawprofile, cluster_pairs):
         """Predict using the previously trained model"""
@@ -273,10 +303,14 @@ class DeepLearning:
         data = self._concat_examples(_positive_df, _negative_df)
 
         # Change Class column into target_0 ([1 0] for No Match data) and target_1 ([0 1] for Match data)
-        one_hot_data = pd.get_dummies(data, prefix=["target"], columns=["target"])
+        one_hot_data = pd.get_dummies(
+            data, prefix=["target"], columns=["target"]
+        )
 
         # split
-        df_X = one_hot_data.drop(["target_0", "target_1", "rid", "lid"], axis=1)
+        df_X = one_hot_data.drop(
+            ["target_0", "target_1", "rid", "lid"], axis=1
+        )
         df_y = one_hot_data[["target_0", "target_1"]]
 
         # print(np.stack(df_X["feature"].values).shape)
@@ -286,7 +320,9 @@ class DeepLearning:
         ar_X = np.stack(df_X["feature"].values).astype(dtype="float32")
 
         # Gets a percent of match vs no match (6% of data are match?)
-        count_match, count_no_match = np.unique(data["target"], return_counts=True)[1]
+        count_match, count_no_match = np.unique(
+            data["target"], return_counts=True
+        )[1]
         match_ratio = float(count_match / (count_match + count_no_match))
         print("Percent of match ratios: ", match_ratio)
 

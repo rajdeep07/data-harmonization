@@ -7,9 +7,7 @@ import pandas as pd
 
 
 class SchemaGenerator:
-    bottom_code = (
-        "from sqlalchemy.orm import declarative_base\n\nBase = declarative_base()"
-    )
+    bottom_code = "from sqlalchemy.orm import declarative_base\n\nBase = declarative_base()"
 
     import_statement = """from sqlalchemy import BigInteger, Text, Float, Column
 from data_harmonization.main.code.tiger.model.ingester.Bottom import Base\n\n
@@ -62,7 +60,9 @@ from data_harmonization.main.code.tiger.model.ingester.Bottom import Base\n\n
 
     def _class_gen(self, table_name: str, attr_dict: dict):
         class_code = f"\nclass {table_name.capitalize()}(Base):\n".lstrip()
-        class_code += f"\t__tablename__ = '{table_name}'\n\n\tid=Column(BigInteger, primary_key=True)\n"
+        class_code += (
+            f"\t__tablename__ = '{table_name}'\n\n\tid = Column(BigInteger, primary_key=True)\n"
+        )
         for column_name, col_dtype in attr_dict.items():
             # print(str(col_dtype), col_dtype.name, col_dtype)
             if column_name == "Unnamed: 0" or column_name.lower() == "id":
@@ -87,7 +87,7 @@ from data_harmonization.main.code.tiger.model.ingester.Bottom import Base\n\n
         with open(f"{self.output_path}/{filename}.py", "w") as file:
             file.write(self.code)
 
-    def _schema_method(self, table_name, dict_types):
+    def _schema_method(self, dict_types):
         dict_types["id"] = "int64"
         dict_types = {k: str(v) for k, v in dict_types.items() if k != "Unnamed: 0"}
         self.schema_code += f"\t\treturn {dict_types}\n"
@@ -101,14 +101,18 @@ from data_harmonization.main.code.tiger.model.ingester.Bottom import Base\n\n
 
         self._import_statement_gen()
         self._class_gen(table_name, attr_dict)
-        self._schema_method(table_name, attr_dict)
+        self._schema_method(attr_dict)
         self._repr_gen(table_name, attr_dict)
         self._make_file(table_name.capitalize())
         self._update_init(table_name.capitalize(), alias)
         self._bottom_gen()
 
     def generate_class_from_schema(
-        self, schema: dict, class_name: str, output_path: path or str, alias: str = ""
+        self,
+        schema: dict,
+        class_name: str,
+        output_path: path or str,
+        alias: str = "",
     ):
         self.output_path = output_path
 

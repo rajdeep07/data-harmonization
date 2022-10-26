@@ -5,16 +5,23 @@ from distutils.command.config import config
 from typing import Optional
 
 from pyspark import Row, SparkContext
-from pyspark.ml.feature import (IDF, BucketedRandomProjectionLSH,
-                                CountVectorizer, CountVectorizerModel,
-                                HashingTF, MinHashLSH, RegexTokenizer,
-                                StopWordsRemover, Tokenizer, Word2Vec,
-                                Word2VecModel)
+from pyspark.ml.feature import (
+    IDF,
+    BucketedRandomProjectionLSH,
+    CountVectorizer,
+    CountVectorizerModel,
+    HashingTF,
+    MinHashLSH,
+    RegexTokenizer,
+    StopWordsRemover,
+    Tokenizer,
+    Word2Vec,
+    Word2VecModel,
+)
 from pyspark.sql.functions import col, concat_ws
 from pyspark.sql.types import *
 
-from data_harmonization.main.code.tiger.model.ingester.Rawentity import \
-    Rawentity
+from data_harmonization.main.code.tiger.model.ingester.Rawentity import Rawentity
 from data_harmonization.main.code.tiger.spark import SparkClass
 from data_harmonization.main.resources import config as config_
 
@@ -60,7 +67,10 @@ def Blocking(is_train=True, if_word_2vec=False, if_min_lsh=True):
 
         # output.filter(lambda e: not e.isNull() and not e.isEmpty).mkString(" ")
         output = " ".join(
-            map(lambda x: x.strip(), filter(lambda e: e and not e.isspace(), output))
+            map(
+                lambda x: x.strip(),
+                filter(lambda e: e and not e.isspace(), output),
+            )
         )
         return Row(id=profile["id"], shingles=output)
 
@@ -76,29 +86,45 @@ def Blocking(is_train=True, if_word_2vec=False, if_min_lsh=True):
     tokensDF.show()
     # Regex Tokenizer
     regexTokenizer = RegexTokenizer(
-        inputCol="tokens", outputCol="reg_tokens", pattern="\\W", toLowercase=True
+        inputCol="tokens",
+        outputCol="reg_tokens",
+        pattern="\\W",
+        toLowercase=True,
     )
-    regexTokensDF = regexTokenizer.transform(tokensDF).select("id", "reg_tokens")
+    regexTokensDF = regexTokenizer.transform(tokensDF).select(
+        "id", "reg_tokens"
+    )
     regexTokensDF.show()
     # remove stop words
     remover = StopWordsRemover(inputCol="reg_tokens", outputCol="clean_tokens")
-    cleansedTokensDF = remover.transform(regexTokensDF).select("id", "clean_tokens")
+    cleansedTokensDF = remover.transform(regexTokensDF).select(
+        "id", "clean_tokens"
+    )
 
     cleansedTokensDF.show()
     if if_word_2vec:
         if is_train:
             # word2Vec
             w2v_model = Word2Vec(
-                vectorSize=1000, inputCol="clean_tokens", outputCol="vector", minCount=3
+                vectorSize=1000,
+                inputCol="clean_tokens",
+                outputCol="vector",
+                minCount=3,
             )
             model = w2v_model.fit(cleansedTokensDF)
             model.write().overwrite().save(
                 "/data_harmonization/main/model/model.word2vec"
             )
-            resultsDF = model.transform(cleansedTokensDF).select("id", "vector")
+            resultsDF = model.transform(cleansedTokensDF).select(
+                "id", "vector"
+            )
         else:
-            model = Word2VecModel.load("/data_harmonization/main/model/model.word2vec")
-            resultsDF = model.transform(cleansedTokensDF).select("id", "vector")
+            model = Word2VecModel.load(
+                "/data_harmonization/main/model/model.word2vec"
+            )
+            resultsDF = model.transform(cleansedTokensDF).select(
+                "id", "vector"
+            )
     else:
         if is_train:
             cv = CountVectorizer(
@@ -112,22 +138,31 @@ def Blocking(is_train=True, if_word_2vec=False, if_min_lsh=True):
                 os.path.abspath(__file__)
                 + "/../../../../../../data_harmonization/main/model/model.countvec"
             )
-            resultsDF = cv_model.transform(cleansedTokensDF).select("id", "vector")
+            resultsDF = cv_model.transform(cleansedTokensDF).select(
+                "id", "vector"
+            )
         else:
             cv_model = CountVectorizerModel.load(
                 os.path.abspath(__file__)
                 + "/../../../../../../data_harmonization/main/model/model.countvec"
             )
-            resultsDF = cv_model.transform(cleansedTokensDF).select("id", "vector")
+            resultsDF = cv_model.transform(cleansedTokensDF).select(
+                "id", "vector"
+            )
 
     if if_min_lsh:
         # 1.MinHashLSH
-        brp = MinHashLSH(inputCol="vector", outputCol="hashes", numHashTables=4.0)
+        brp = MinHashLSH(
+            inputCol="vector", outputCol="hashes", numHashTables=4.0
+        )
         model = brp.fit(resultsDF)
     else:
         # 2.BucketedRandomProjectionLSH
         brp = BucketedRandomProjectionLSH(
-            inputCol="vector", outputCol="hashes", numHashTables=4.0, bucketLength=10.0
+            inputCol="vector",
+            outputCol="hashes",
+            numHashTables=4.0,
+            bucketLength=10.0,
         )
         model = brp.fit(resultsDF)
 
@@ -163,7 +198,11 @@ if __name__ == "__main__":
         description="Blocking alogrithm creates a cluster pair"
     )
     parser.add_argument(
-        "-t", "--train", help="train the model", default=True, action="store_true"
+        "-t",
+        "--train",
+        help="train the model",
+        default=True,
+        action="store_true",
     )
     parser.add_argument(
         "-p",

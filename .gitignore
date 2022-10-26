@@ -3,6 +3,7 @@
 **/*.csv
 **ingester/
 **/*.json
+/data_harmonization/main/code/tiger/classification/models/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -34,7 +34,9 @@ class SparkClass:
             .getOrCreate()
         )
 
-    def read_from_database_to_dataframe(self, table, columnTypes=None) -> DataFrame:
+    def read_from_database_to_dataframe(
+        self, table, columnTypes=None
+    ) -> DataFrame:
         df = (
             self.spark.read.format("jdbc")
             .options(

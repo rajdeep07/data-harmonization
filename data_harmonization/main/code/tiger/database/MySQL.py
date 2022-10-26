@@ -1,9 +1,8 @@
+import data_harmonization.main.resources.config as config_
 import mysql.connector
 import sqlalchemy
 from sqlalchemy import text
 from sqlalchemy.orm import sessionmaker
-
-import data_harmonization.main.resources.config as config
 
 
 class MySQL:
@@ -18,15 +17,16 @@ class MySQL:
             password=self.password,
             database=self.database,
         )
-        self.url = f"mysql+mysqlconnector://{self.user}:{self.password}@{self.host}/{self.database}"
+        self.url = (
+            f"mysql+mysqlconnector://{self.user}:{self.password}@{self.host}/{self.database}"
+        )
         self.engine = sqlalchemy.create_engine(self.url, echo=False)
         self.mycursor = self.mydb.cursor()
         self._init_conn()
 
     def _init_conn(self):
         try:
-            from data_harmonization.main.code.tiger.model.ingester.Bottom import \
-                Base
+            from data_harmonization.main.code.tiger.model.ingester.Bottom import Base
 
             Base.metadata.create_all(self.engine)
         except ImportError:
@@ -38,8 +38,7 @@ class MySQL:
     @staticmethod
     def get_tables():
         try:
-            from data_harmonization.main.code.tiger.model.ingester.Bottom import \
-                Base
+            from data_harmonization.main.code.tiger.model.ingester.Bottom import Base
 
             return list(Base.metadata.tables.keys())
         except ImportError:
@@ -57,9 +56,8 @@ class MySQL:
         WHERE t.TABLE_SCHEMA = 'data_harmonization' GROUP BY c.COLUMN_NAME)
         tbl WHERE cnt >= 2;"""
         )
-        with self.SessionMaker() as session:
-            common_col = self.engine.execute(stmt)
-            print(common_col.all())
+        common_col = self.engine.execute(stmt)
+        print(common_col.all())
 
     def get_result(self, to_print=False, title=""):
         result = self.mycursor.fetchall()
@@ -80,9 +78,5 @@ class MySQL:
 
 
 if __name__ == "__main__":
-    msql = MySQL("localhost", "data_harmonization", "root", "Root#1234")
+    msql = MySQL(config_.mysqlLocalHost, config_.DB_NAME, config_.mysqlUser, config_.mysqlPassword)
     session = msql.SessionMaker()
-    # new = Flna(id=3, Name="new name2")
-    # session.add(new)
-    # session.commit()
-    # print(session.query(Pbna).all())

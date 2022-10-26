@@ -29,12 +29,18 @@ class StringSupport:
             re.sub(
                 "( \+ )|( \+)",
                 " ",
-                re.sub("[ \+]", "", self.normalizeTrimAndLowerCaseString(value)),
+                re.sub(
+                    "[ \+]", "", self.normalizeTrimAndLowerCaseString(value)
+                ),
             ),
         )
 
-    def normalizeTrimAndLowerCaseStringAndRemoveNumbers(self, value: str) -> str:
-        return self.normalizeTrimAndLowerCaseString(value).replace("[0123456789]", "")
+    def normalizeTrimAndLowerCaseStringAndRemoveNumbers(
+        self, value: str
+    ) -> str:
+        return self.normalizeTrimAndLowerCaseString(value).replace(
+            "[0123456789]", ""
+        )
 
     def consolidateWhiteSpacesAndNewLines(self, value: str) -> str:
         return value.strip().replace("[ \\r\\n]+", " ")

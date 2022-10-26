@@ -32,14 +32,18 @@ class Merger:
 
         # join classifier and raw profiles table
         conneted_raw_entities = conneted_profiles.join(
-            other=raw_entities, on=conneted_profiles.id == raw_entities.id, how="inner"
+            other=raw_entities,
+            on=conneted_profiles.id == raw_entities.id,
+            how="inner",
         ).drop(raw_entities.id)
         # conneted_raw_entities.show()
         attributes = raw_entities.columns
         # attributes.remove("id")
         exprs = [collect_list(x).alias(x) for x in attributes]
         # a.show()
-        collected_profiles = conneted_raw_entities.groupBy("cluster_id").agg(*exprs)
+        collected_profiles = conneted_raw_entities.groupBy("cluster_id").agg(
+            *exprs
+        )
         # collected_profiles.show()
         # print("collected_profiles : ", str(collected_profiles.count()))
 
@@ -86,7 +90,8 @@ class Merger:
 
         result = collected_profiles_1.join(
             other=collected_profiles_,
-            on=collected_profiles_1.cluster_id == collected_profiles_.cluster_id,
+            on=collected_profiles_1.cluster_id
+            == collected_profiles_.cluster_id,
             how="inner",
         ).drop(collected_profiles_1.cluster_id)
         result.show()
@@ -94,7 +99,9 @@ class Merger:
         # writing merged data into database
         result_ = result.withColumn("id", concat_ws(",", result.id))
         result_.show()
-        self.spark.write_to_database_from_df(config_.merged_table, result_, "overwrite")
+        self.spark.write_to_database_from_df(
+            config_.merged_table, result_, "overwrite"
+        )
         return result
 
 

@@ -25,6 +25,10 @@ def get_data_from_db(table_name):
 
 def write_csv_to_db(file_path, database_name, table_name):
     spark = SparkClass(App_Name)
-    spark.init_db(config.mysqlUser, config.mysqlPassword, config.mysqlLocalHost)
+    spark.init_db(
+        config.mysqlUser, config.mysqlPassword, config.mysqlLocalHost
+    )
     df = spark.readFromCSV(file_path)
-    spark.writeToDatabase(db=database_name, table=table_name, df=df, mode="overwrite")
+    spark.writeToDatabase(
+        db=database_name, table=table_name, df=df, mode="overwrite"
+    )

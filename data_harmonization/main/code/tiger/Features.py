@@ -31,16 +31,20 @@ class Features:
             distance_obj = Distance()
             return [
                 distance_obj.getLevenshteinDistance(
-                    self.removeWhiteSpaces(entity1), self.removeWhiteSpaces(entity2)
+                    self.removeWhiteSpaces(entity1),
+                    self.removeWhiteSpaces(entity2),
                 ),
                 distance_obj.getCosineDistance(
-                    self.removeWhiteSpaces(entity1), self.removeWhiteSpaces(entity2)
+                    self.removeWhiteSpaces(entity1),
+                    self.removeWhiteSpaces(entity2),
                 ),
                 distance_obj.getHammingDistance(
-                    self.removeWhiteSpaces(entity1), self.removeWhiteSpaces(entity2)
+                    self.removeWhiteSpaces(entity1),
+                    self.removeWhiteSpaces(entity2),
                 ),
                 distance_obj.getJaroWinklerDistance(
-                    self.removeWhiteSpaces(entity1), self.removeWhiteSpaces(entity2)
+                    self.removeWhiteSpaces(entity1),
+                    self.removeWhiteSpaces(entity2),
                 ),
             ]
         elif isinstance(entity1, int) or isinstance(entity1, int):
@@ -59,7 +63,9 @@ class Features:
             if key == "id":
                 continue
             arr.extend(
-                self.engineerFeatures(data.get(key), data.get("canonical_" + key))
+                self.engineerFeatures(
+                    data.get(key), data.get("canonical_" + key)
+                )
             )
         #         print(str(data[key])+":"+str(data["canonical_"+key]))
         return arr

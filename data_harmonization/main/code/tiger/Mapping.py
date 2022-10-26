@@ -30,7 +30,9 @@ class Mapping:
         :return: set of sums of ids of duplicate data
         """
         # https://mungingdata.com/pyspark/column-to-list-collect-tolocaliterator/
-        merges = df.select("leftId", "rightId", "isMatch").filter(df.isMatch == 1)
+        merges = df.select("leftId", "rightId", "isMatch").filter(
+            df.isMatch == 1
+        )
         list1 = merges.select("leftId").toPandas()["leftId"]
         list2 = merges.select("rightId").toPandas()["rightId"]
         # a = list1 + list2
@@ -46,7 +48,9 @@ class Mapping:
         # entities -> list of pyspark dataframes
         # for entity in entities:
         #     profile_ids.add(entity.select("id").toPandas()["id"])
-        profile_ids = set(entities.select("id").rdd.flatMap(lambda x: x).collect())
+        profile_ids = set(
+            entities.select("id").rdd.flatMap(lambda x: x).collect()
+        )
         return profile_ids
 
     # def _getLocalVertices(self, emptyRDD, entities: list):
@@ -89,7 +93,9 @@ class Mapping:
         df = self.spark.read_from_database_to_dataframe(table)
         return df
 
-    def graphObject(self, raw_profiles_df: Optional[DataFrame] = None) -> GraphFrame:
+    def graphObject(
+        self, raw_profiles_df: Optional[DataFrame] = None
+    ) -> GraphFrame:
         """Create GraphFrame object using vertices and edges.
         Vertices as raw profiles and edges from classification output
 
@@ -98,7 +104,9 @@ class Mapping:
 
         # if raw_profiles_df is not provided, fetch it from database
         if not raw_profiles_df:
-            raw_profiles_df = self.get_data_from_database(config_.raw_entity_table)
+            raw_profiles_df = self.get_data_from_database(
+                config_.raw_entity_table
+            )
         # entities = raw_profiles_df.select("id", "Name")
 
         # assign raw profiles as vertices
@@ -122,7 +130,9 @@ class Mapping:
             "data_harmonization/main/code/tiger/checkpoints"
         )
         df = g.connectedComponents()
-        df = df.select(["id", "component"]).withColumnRenamed("component", "cluster_id")
+        df = df.select(["id", "component"]).withColumnRenamed(
+            "component", "cluster_id"
+        )
         self.spark.write_to_database_from_df(
             config_.graph_connected_components_table, df, mode="overwrite"
         )

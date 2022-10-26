@@ -1,7 +1,8 @@
 from typing import Optional
 
-from data_harmonization.main.code.tiger.transformer.utils.FloatSupport import \
-    FloatSupport
+from data_harmonization.main.code.tiger.transformer.utils.FloatSupport import (
+    FloatSupport,
+)
 
 
 class FloatTypeTransformer(FloatSupport):

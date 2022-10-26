@@ -10,8 +10,7 @@ from pyspark.sql import DataFrame
 
 import data_harmonization.main.resources.config as config
 from data_harmonization.main.code.tiger.database import MySQL
-from data_harmonization.main.code.tiger.database.SchemaGenerator import \
-    SchemaGenerator
+from data_harmonization.main.code.tiger.database.SchemaGenerator import SchemaGenerator
 from data_harmonization.main.code.tiger.Sanitizer import Sanitizer
 from data_harmonization.main.code.tiger.spark import SparkClass
 
@@ -23,7 +22,9 @@ class Ingester:
     def __init__(self):
         self.spark = SparkClass()
         self.current_dir = os.path.dirname(os.path.realpath(__file__))
-        self.target_dir = os.path.sep.join(self.current_dir.split(os.path.sep)[:-2])
+        self.target_dir = os.path.sep.join(
+            self.current_dir.split(os.path.sep)[:-2]
+        )
         self.csv_files = self._get_csv_files()
         self.schema_dirs = self._get_schema_dirs()
 
@@ -40,7 +41,8 @@ class Ingester:
         return [
             filename
             for filename in filenames
-            if filename.endswith(".csv") and not filename.startswith("benchmark")
+            if filename.endswith(".csv")
+            and not filename.startswith("benchmark")
         ]
 
     def _get_schema_dirs(self) -> str:
@@ -77,8 +79,8 @@ class Ingester:
         Parameters
         -----------
         features_for_deduplication : list, optional, default=None
-                                     list of columns from the data source to be used
-                                     for deduplication
+                                     list of columns from the data source
+                                     to be used for deduplication
 
         Returns
         ---------
@@ -101,7 +103,8 @@ class Ingester:
         table_list = self._get_all_tables()
         if features_for_deduplication:
             total_attributes_count = {
-                key: total_attributes_count[key] for key in features_for_deduplication
+                key: total_attributes_count[key]
+                for key in features_for_deduplication
             }
 
         for key, value in total_attributes_count.items():
@@ -148,9 +151,9 @@ class Ingester:
                 if k.__eq__(class_name):
                     class_ = v
                     break
-            ls = df.rdd.map(lambda row: sanitiser.toEntity(class_, row.asDict())).toDF(
-                sampleRatio=0.01
-            )
+            ls = df.rdd.map(
+                lambda row: sanitiser.toEntity(class_, row.asDict())
+            ).toDF(sampleRatio=0.01)
             self.spark.write_to_database_from_df(
                 table=csv_file.split(".")[0], df=ls, mode="overwrite"
             )

@@ -10,8 +10,6 @@ class StringTypeTransformer(StringSupport):
     @staticmethod
     def standardizeStringType(value: str):
         # value.map(lambda x: x.normalizeTrimAndLowerCaseStringAndRemoveSpecialCharacters)
-        return (
-            StringSupport().normalizeTrimAndLowerCaseStringAndRemoveSpecialCharacters(
-                value
-            )
+        return StringSupport().normalizeTrimAndLowerCaseStringAndRemoveSpecialCharacters(
+            value
         )

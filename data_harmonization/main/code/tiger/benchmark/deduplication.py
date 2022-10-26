@@ -1,11 +1,9 @@
 import argparse
 import os
-from re import finditer
 
 import numpy as np
 import pandas as pd
 import pandas_dedupe
-
 from data_harmonization.main.code.tiger.spark import SparkClass
 
 
@@ -46,7 +44,9 @@ class Deduplication:
 
     # This method is used for model training.
     def _run_model(self, df: pd.DataFrame, col_names: list = []):
-        df_for_dedupe_model, col_names = self._clean_data(df, col_names)  # df.copy()
+        df_for_dedupe_model, col_names = self._clean_data(
+            df, col_names
+        )  # df.copy()
         print(col_names)
         final_model = pandas_dedupe.dedupe_dataframe(
             df_for_dedupe_model,
@@ -55,7 +55,9 @@ class Deduplication:
             canonicalize=True,
         )
 
-        final_model = final_model[final_model["id"] != final_model["canonical_id"]]
+        final_model = final_model[
+            final_model["id"] != final_model["canonical_id"]
+        ]
 
         # Cleansing
         final_model = final_model.rename(columns={"cluster id": "cluster_id"})
@@ -64,7 +66,8 @@ class Deduplication:
         # )
         # Persist this in MYSQL + benckmark
         self._save_data_in_db(
-            final_model[["id", "canonical_id", "cluster_id", "confidence"]], "benchmark"
+            final_model[["id", "canonical_id", "cluster_id", "confidence"]],
+            "benchmark",
         )
         print(self._get_statistics(df_for_dedupe_model, final_model))
 
@@ -75,7 +78,9 @@ class Deduplication:
         spark_df = spark.get_sparkSession().createDataFrame(df)
         spark.write_to_database_from_df(table, spark_df, mode="overwrite")
 
-    def _get_statistics(self, input_data: pd.DataFrame, model_output: pd.DataFrame):
+    def _get_statistics(
+        self, input_data: pd.DataFrame, model_output: pd.DataFrame
+    ):
         total_records = len(input_data.index)
         duplicates = len(model_output)
         number_of_clusters = model_output["cluster_id"].nunique()
@@ -106,11 +111,16 @@ class Deduplication:
         if os.path.isfile(
             target_dir + "/tiger/benchmark/dedupe_dataframe_learned_settings"
         ):
-            os.remove(target_dir + "/tiger/benchmark/dedupe_dataframe_learned_settings")
+            os.remove(
+                target_dir
+                + "/tiger/benchmark/dedupe_dataframe_learned_settings"
+            )
         if os.path.isfile(
             target_dir + "/tiger/benchmark/dedupe_dataframe_training.json"
         ):
-            os.remove(target_dir + "/tiger/benchmark/dedupe_dataframe_training.json")
+            os.remove(
+                target_dir + "/tiger/benchmark/dedupe_dataframe_training.json"
+            )
         print("removed")
         if not df:
             df = self.get_data(self.raw_entity_table_name)
@@ -138,7 +148,11 @@ if __name__ == "__main__":
         description="Depuplication algorithm for creating benchmark table"
     )
     parser.add_argument(
-        "-t", "--train", help="train the model", default=True, action="store_true"
+        "-t",
+        "--train",
+        help="train the model",
+        default=True,
+        action="store_true",
     )
     parser.add_argument(
         "-p",
@@ -151,7 +165,7 @@ if __name__ == "__main__":
     # print(arg)
     # For training
     if arg.predict:
-        print(f"Starting to predict....")
+        print("Starting to predict....")
         dedupe.predict()
         print("We are done with prediction.")
 

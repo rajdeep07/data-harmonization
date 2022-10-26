@@ -3,12 +3,15 @@ from typing import Any
 
 from pyspark.sql import SparkSession
 
-from data_harmonization.main.code.tiger.transformer.FloatTransformer import \
-    FloatTypeTransformer
-from data_harmonization.main.code.tiger.transformer.IntegerTypeTransformer import \
-    IntegerTypeTransformer
-from data_harmonization.main.code.tiger.transformer.StringTypeTransformer import \
-    StringTypeTransformer
+from data_harmonization.main.code.tiger.transformer.FloatTransformer import (
+    FloatTypeTransformer,
+)
+from data_harmonization.main.code.tiger.transformer.IntegerTypeTransformer import (
+    IntegerTypeTransformer,
+)
+from data_harmonization.main.code.tiger.transformer.StringTypeTransformer import (
+    StringTypeTransformer,
+)
 
 
 class Sanitizer:
@@ -105,14 +108,19 @@ class Sanitizer:
 
         raw_attribute_lists = self._get_attr_list(rawentity_obj)
         raw_kw = self.get_kwargs(
-            data, attr_lists=raw_attribute_lists, clean_data=clean_data, gen_id=False
+            data,
+            attr_lists=raw_attribute_lists,
+            clean_data=clean_data,
+            gen_id=False,
         )
         raw_entity_object = rawentity_obj(**raw_kw)
         if return_dict:
             return raw_kw
         return raw_entity_object
 
-    def toEntity(self, Ent_Obj: Any, data: dict, gen_id=True, return_dict: bool = True):
+    def toEntity(
+        self, Ent_Obj: Any, data: dict, gen_id=True, return_dict: bool = True
+    ):
         """Converts passed dict into the type of `Ent_obj`
 
         Parameters
@@ -157,11 +165,15 @@ class Sanitizer:
         """
         transformed_ = ""
         if str(value).isdigit() or isinstance(value, int):
-            transformed_ = IntegerTypeTransformer.standardizeIntegerType(str(value))
+            transformed_ = IntegerTypeTransformer.standardizeIntegerType(
+                str(value)
+            )
         elif isinstance(value, str):
             transformed_ = StringTypeTransformer.standardizeStringType(value)
         elif isinstance(value, float):
-            transformed_ = FloatTypeTransformer.standardizeFloatType(str(value))
+            transformed_ = FloatTypeTransformer.standardizeFloatType(
+                str(value)
+            )
             # transformed_ = value if value is not None else ""
         return transformed_
 

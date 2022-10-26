@@ -9,8 +9,7 @@ from typing import Any, Optional
 import numpy as np
 import pandas as pd
 
-from data_harmonization.main.code.tiger.model.SemiMergedProfile import \
-    SemiMergedProfile
+from data_harmonization.main.code.tiger.model.SemiMergedProfile import SemiMergedProfile
 from data_harmonization.main.code.tiger.Sanitizer import Sanitizer
 from data_harmonization.main.code.tiger.transformer.utils import StringSupport
 
@@ -48,12 +47,14 @@ class Cluster:
             for csv_file in csv_filenames:
                 self.rawProfiles = rawProfiles.append(
                     pd.read_csv(
-                        os.getcwd() + f"/data_harmonization/main/data/{csv_file}"
+                        os.getcwd()
+                        + f"/data_harmonization/main/data/{csv_file}"
                     )
                 )
 
         rawProfilesWithTokens = self.rawProfiles.apply(
-            lambda r: Sanitizer().toRawEntity(r, gen_id=True, clean_data=True), axis=1
+            lambda r: Sanitizer().toRawEntity(r, gen_id=True, clean_data=True),
+            axis=1,
         )  # .filter(lambda p: p.id._isNotEmpty)
         id = 0
         for raw_ent in rawProfilesWithTokens.sample(n_docs):
@@ -103,7 +104,9 @@ class Cluster:
         return self.filter_flat_map(shingles, input)"""
 
     # Create Shingles
-    def createShingles(self, input: Optional[str], shingle_size) -> Optional[list[str]]:
+    def createShingles(
+        self, input: Optional[str], shingle_size
+    ) -> Optional[list[str]]:
         def shingles(x: str) -> list[str]:
             i = (
                 x.lower()
@@ -122,7 +125,11 @@ class Cluster:
             list(
                 map(
                     shingles,
-                    list(filter(self._isNotEmpty, re.split("[-\s\\\\,]s*", input))),
+                    list(
+                        filter(
+                            self._isNotEmpty, re.split("[-\s\\\\,]s*", input)
+                        )
+                    ),
                 )
             )
         )
@@ -191,7 +198,9 @@ class Cluster:
         for i in hash_bands:
             for hash_num in hash_bands[i]:
                 if len(hash_bands[i][hash_num]) > 1:
-                    for pair in itertools.combinations(hash_bands[i][hash_num], r=2):
+                    for pair in itertools.combinations(
+                        hash_bands[i][hash_num], r=2
+                    ):
                         # print(pair)
                         similar_docs.append(pair)
         return similar_docs

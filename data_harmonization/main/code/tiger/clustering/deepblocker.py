@@ -9,8 +9,7 @@ from pyspark.sql import DataFrame
 from tuple_embedding_models import AutoEncoderTupleEmbedding
 from vector_pairing_models import ExactTopKVectorPairing
 
-from data_harmonization.main.code.tiger.model.ingester.Rawentity import \
-    Rawentity
+from data_harmonization.main.code.tiger.model.ingester.Rawentity import Rawentity
 from data_harmonization.main.code.tiger.Sanitizer import Sanitizer
 from data_harmonization.main.code.tiger.spark import SparkClass
 from data_harmonization.main.resources import config as config_
@@ -110,9 +109,9 @@ class Deepblocker:
         result_ = blocked_datasets.join(
             other=left_df, on=blocked_datasets.ltable_id == left_df.id
         ).drop(left_df.id)
-        result = result_.join(other=right_df, on=result_.rtable_id == right_df.id).drop(
-            right_df.id
-        )
+        result = result_.join(
+            other=right_df, on=result_.rtable_id == right_df.id
+        ).drop(right_df.id)
         result.show()
 
         # ltable_ids = candidate_set_df["ltable_id"]
@@ -139,7 +138,9 @@ class Deepblocker:
         # )
         # result.to_csv(self.target_dir + "/deepblocker.csv", mode="w+")
         # result_df = self.spark.get_sparkSession().createDataFrame(result)
-        self.spark.write_to_database_from_df("deepblocker", result, "overwrite")
+        self.spark.write_to_database_from_df(
+            "deepblocker", result, "overwrite"
+        )
         return result
 
     def compute_blocking_statistics(
@@ -165,7 +166,8 @@ class Deepblocker:
             "candidate_set": len(candidate_set_df),
             "recall": len(candidate_set_df) / len(golden_df),
             # "recall": len(merged_df) / len(golden_df),
-            "cssr": len(candidate_set_df) / (left_num_tuples * right_num_tuples),
+            "cssr": len(candidate_set_df)
+            / (left_num_tuples * right_num_tuples),
         }
 
         return statistics_dict
