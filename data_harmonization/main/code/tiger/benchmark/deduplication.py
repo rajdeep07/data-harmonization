@@ -4,45 +4,70 @@ import os
 import numpy as np
 import pandas as pd
 import pandas_dedupe
+
+import data_harmonization.main.resources.config as config_
 from data_harmonization.main.code.tiger.spark import SparkClass
 
 
 class Deduplication:
-    def __init__(self):
-        self.raw_entity_table_name = "rawentity"
+    """Run pandas deduplication model"""
 
-    def get_data(self, table: str = "rawentity", max_length: int = 2000) -> pd.DataFrame:
-        spark = SparkClass()
-        df = spark.read_from_database_to_dataframe(table)
+    def __init__(self) -> None:
+        """Setting up initial variables"""
+        self.raw_entity_table_name = "rawentity"
+        self.spark = SparkClass()
+
+    def get_data(
+        self, table: str = config_.raw_entity_table, max_length: int = 20000
+    ) -> pd.DataFrame:
+        """Fetch data from database table.
+        If there are more than max_length records,
+        take randomly sampled max_length records
+
+        :param table: table name in the database
+        :param max_length: maximum number of records
+        :return: fethed values from database
+        """
+        df = self.spark.read_from_database_to_dataframe(table)
         pandas_df = df.toPandas()
-        # if there are more than max_length records, take randomly sampled 20000 records
+        # if there are more than max_length records,
+        # take randomly sampled 20000 records
         if pandas_df.shape[0] > max_length:
             pandas_df = pandas_df.sample(n=max_length)
         return pandas_df
 
-    def _clean_data(self, df: pd.DataFrame, column_names: list = []):
+    def _clean_data(self, df: pd.DataFrame, column_names: list) -> tuple:
+        """Clean data from the dataframe to feed it in the deduplication model.
+        Also process the column names to consider those columns
+        only for deduplication
+
+        :param df: all data in the shape of pandas dataframe
+        :param column_names: list of columns those should be considered
+        for the deduplication
+        """
         if column_names and len(column_names) > 0:
             df = df[column_names]
         else:
             column_names = list(df.columns)
         if "cluster_id" in df.columns:
             df.drop(columns=["cluster_id"], inplace=True)
-            # df.rename(columns={"cluster_id": "provided_cluster_id"})
 
         if "id" in column_names:
             column_names.remove("id")
 
         df = df.replace(r"^\s*$", np.nan, regex=True)
-        # for col in columns:
-        #     if df[col].isna().sum() > 0:
-        #         columns.remove(col)
-        #         df.drop(columns=[col], inplace=True)
 
         return df, column_names
 
     # This method is used for model training.
-    def _run_model(self, df: pd.DataFrame, col_names: list = []):
-        df_for_dedupe_model, col_names = self._clean_data(df, col_names)  # df.copy()
+    def _run_model(self, df: pd.DataFrame, col_names: list) -> None:
+        """Run deduplication model
+
+        :param df: data on which deduplication will be run
+        :param col_names: list of columns those should be considered
+        for the deduplication
+        """
+        df_for_dedupe_model, col_names = self._clean_data(df, col_names)
         print(col_names)
         final_model = pandas_dedupe.dedupe_dataframe(
             df_for_dedupe_model,
@@ -51,28 +76,37 @@ class Deduplication:
             canonicalize=True,
         )
 
-        final_model = final_model[final_model["id"] != final_model["canonical_id"]]
+        final_model = final_model[final_model["id"] != final_model[
+            "canonical_id"]
+        ]
 
         # Cleansing
         final_model = final_model.rename(columns={"cluster id": "cluster_id"})
-        # final_model.sort_values(
-        #     by=["cluster_id", "confidence"], ascending=True, inplace=True
-        # )
-        # Persist this in MYSQL + benckmark
+
         self._save_data_in_db(
             final_model[["id", "canonical_id", "cluster_id", "confidence"]],
-            "benchmark",
+            config_.benchmark_table,
         )
         print(self._get_statistics(df_for_dedupe_model, final_model))
 
-        return
+    def _save_data_in_db(self, df: pd.DataFrame, table: str) -> None:
+        """Save data in the database
 
-    def _save_data_in_db(self, df: pd.DataFrame, table: str):
-        spark = SparkClass()
-        spark_df = spark.get_sparkSession().createDataFrame(df)
-        spark.write_to_database_from_df(table, spark_df, mode="overwrite")
+        :param df: data to be saved
+        :param table: table name where data will be saved
+        """
+        spark_df = self.spark.get_sparkSession().createDataFrame(df)
+        self.spark.write_to_database_from_df(table, spark_df, mode="overwrite")
 
-    def _get_statistics(self, input_data: pd.DataFrame, model_output: pd.DataFrame):
+    def _get_statistics(
+        self, input_data: pd.DataFrame, model_output: pd.DataFrame
+    ) -> dict:
+        """Calculate statistics from input data and deduplication model output
+
+        :param input_data: data that was fed to deduplication model
+        :param model_output: deduplication model output data
+        :return: calculated statistics
+        """
         total_records = len(input_data.index)
         duplicates = len(model_output)
         number_of_clusters = model_output["cluster_id"].nunique()
@@ -97,19 +131,45 @@ class Deduplication:
         }
         return result
 
-    def train(self, col_names: list = [], df=None):
+    def train(self, col_names=None, df=None) -> None:
+        """Train the deduplication model
+
+        :param col_names: list of columns those should be considered
+        for the deduplication
+        :param df: data on which deduplication will be run
+        """
+        if not col_names:
+            col_names = []
         current_dir = os.path.dirname(os.path.realpath(__file__))
         target_dir = os.path.sep.join(current_dir.split(os.path.sep)[:-2])
-        if os.path.isfile(target_dir + "/tiger/benchmark/dedupe_dataframe_learned_settings"):
-            os.remove(target_dir + "/tiger/benchmark/dedupe_dataframe_learned_settings")
-        if os.path.isfile(target_dir + "/tiger/benchmark/dedupe_dataframe_training.json"):
-            os.remove(target_dir + "/tiger/benchmark/dedupe_dataframe_training.json")
+        if os.path.isfile(
+            target_dir + "/tiger/benchmark/dedupe_dataframe_learned_settings"
+        ):
+            os.remove(
+                target_dir
+                + "/tiger/benchmark/dedupe_dataframe_learned_settings"
+            )
+        if os.path.isfile(
+            target_dir + "/tiger/benchmark/dedupe_dataframe_training.json"
+        ):
+            os.remove(
+                target_dir
+                + "/tiger/benchmark/dedupe_dataframe_training.json"
+            )
         print("removed")
         if not df:
             df = self.get_data(self.raw_entity_table_name)
-        return self._run_model(df, col_names)
+        self._run_model(df, col_names)
 
-    def predict(self, col_names: list = [], df=None):
+    def predict(self, col_names=None, df=None) -> None:
+        """Predict using the deduplication model
+
+        :param col_names: list of columns those should be considered
+        for the deduplication
+        :param df: data on which deduplication will be run
+        """
+        if not col_names:
+            col_names = []
         current_dir = os.path.dirname(os.path.realpath(__file__))
         target_dir = os.path.sep.join(current_dir.split(os.path.sep)[:-2])
         if not df:
@@ -118,7 +178,7 @@ class Deduplication:
             print("Cannot find dedupe_dataframe_learned_settings file")
         if not os.path.isfile(target_dir + "/tiger/benchmark/dedupe_dataframe_training.json"):
             print("Cannot find dedupe_dataframe_training.json file")
-        return self._run_model(df, col_names)
+        self._run_model(df, col_names)
 
 
 if __name__ == "__main__":
@@ -131,7 +191,7 @@ if __name__ == "__main__":
         "--train",
         help="train the model",
         default=True,
-        action="store_true",
+        action="store_true"
     )
     parser.add_argument(
         "-p",

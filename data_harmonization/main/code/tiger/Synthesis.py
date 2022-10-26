@@ -1,5 +1,3 @@
-from typing import Optional
-
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -15,18 +13,30 @@ tf.compat.v1.disable_eager_execution()
 
 
 class Synthesis:
+    """Classification using Deep Learning.
+    Determines whether 2 profile are match or not"""
+
     def __init__(self) -> None:
+        """Setting up initial variables"""
         self.spark = SparkClass()
         self.sparksession = self.spark.get_sparkSession()
-        self.rawentity_df = self.spark.read_from_database_to_dataframe("rawentity")
+        self.rawentity_df = self.spark.read_from_database_to_dataframe(
+            config_.raw_entity_table
+        )
         self.rawentity_df_can = self.rawentity_df.rdd.toDF(
             ["canonical_" + col for col in self.rawentity_df.columns]
         )
+        self.weight_1_node = None
+        self.biases_1_node = None
+        self.weight_2_node = None
+        self.biases_2_node = None
+        self.weight_3_node = None
+        self.biases_3_node = None
 
     def _feature_data(
         self,
         features: pd.DataFrame,
-        target: Optional[pd.DataFrame] = pd.DataFrame([]),
+        target: pd.DataFrame = pd.DataFrame([]),
     ) -> pd.DataFrame:
         """
         Feature extracts text data into numerical by using `Features` module
@@ -44,7 +54,9 @@ class Synthesis:
             Feature extracted dataframe
         """
         feature_df = features.copy()
-        feature_df["features"] = feature_df.apply(lambda x: Features().get(x), axis=1)
+        feature_df["features"] = feature_df.apply(
+            lambda x: Features().get(x), axis=1
+        )
         if target.empty:
             return feature_df
         target_df = pd.get_dummies(target, prefix="target", columns=["target"], drop_first=False)
@@ -81,10 +93,11 @@ class Synthesis:
         return full_df.toPandas()
 
     def _network(self, input_tensor) -> tf.Tensor:
-        """Function to run an input tensor through the 3 layers and output a tensor
-        that will give us a match/non match result.
+        """Function to run an input tensor through the 3 layers and output
+        a tensor that will give us a match/non match result.
         Each layer uses a different function to fit lines through the data and
-        predict whether a given input tensor will result in a match or non match profiles.
+        predict whether a given input tensor will result in a match
+        or non match profiles.
 
         Parameters
         ----------
@@ -99,49 +112,33 @@ class Synthesis:
         layer1 = tf.nn.sigmoid(tf.matmul(input_tensor, self.weight_1_node) + self.biases_1_node)
         # Dropout prevents model from becoming lazy and over confident
         layer2 = tf.nn.dropout(
-            tf.nn.sigmoid(tf.matmul(layer1, self.weight_2_node) + self.biases_2_node),
+            tf.nn.sigmoid(tf.matmul(
+                layer1, self.weight_2_node) + self.biases_2_node
+            ),
             0.85,
         )
-        # Softmax works very well with one hot encoding which is how results are outputted
-        layer3 = tf.nn.softmax(tf.matmul(layer2, self.weight_3_node) + self.biases_3_node)
+        # Softmax works very well with one hot encoding
+        # which is how results are outputted
+        layer3 = tf.nn.softmax(
+            tf.matmul(layer2, self.weight_3_node) + self.biases_3_node
+        )
         return layer3
 
-    def _calculate_accuracy(self, actual, predicted) -> list[tf.Tensor]:
-        """Calculate accuracy from actual and predicted tensor arrays
-
-        Parameters
-        ----------
-        actual: tf.Tensor
-            actual array of target
-        predicted: tf.Tensor
-            predicted array from model
-
-        Returns
-        --------
-        tuple
-            precision, recall and f1 score"""
-        TP = tf.math.count_nonzero(predicted * actual)
-        FP = tf.math.count_nonzero(predicted * (actual - 1))
-        FN = tf.math.count_nonzero((predicted - 1) * actual)
-        precision = TP / (TP + FP)
-        recall = TP / (TP + FN)
-        f1 = 2 * precision * recall / (precision + recall)
-        # print(classification_report(actual, predicted))
-        return precision, recall, f1
-
     def predict(self, table_name: str = config_.blocking_table) -> None:
-        """Predict from the table and persist the result into MySQL database
+        """Predict using the previously trained model.
 
-        Parameters
-        ----------
-        table_name: str
-            name of the to be predicted"""
+        :param table_name: blocking table name
+        """
+        # load the model
         session = self.load_model(
-            model_path="data_harmonization/main/code/tiger/classification/models/",
+            model_path="data_harmonization/main/code"
+            + "/tiger/classification/models/",
             model_name="classification_deep_learing_model.meta",
         )
 
-        semi_merged_data = self.spark.read_from_database_to_dataframe(table=table_name)
+        semi_merged_data = self.spark.read_from_database_to_dataframe(
+            table=table_name
+        )
         data = self.create_df_from_id_pairs(id_pair=semi_merged_data)
         processed_data = self._feature_data(data)
 
@@ -175,12 +172,16 @@ class Synthesis:
         semi_merged_data_pd = semi_merged_data_pd.rename(
             columns={"id": "leftId", "canonical_id": "rightId"}
         )
-        semi_merged_data = self.sparksession.createDataFrame(semi_merged_data_pd)
+        semi_merged_data = self.sparksession.createDataFrame(
+            semi_merged_data_pd
+        )
         self.spark.write_to_database_from_df(
             config_.classification_table, df=semi_merged_data, mode="overwrite"
         )
 
-    def load_model(self, model_name: str, model_path: str) -> tf.compat.v1.Session:
+    def load_model(
+        self, model_name: str, model_path: str
+    ) -> tf.compat.v1.Session:
         """This will load the model from saved model meta file
 
         Parameters
