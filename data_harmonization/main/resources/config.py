@@ -1,6 +1,3 @@
-from os import environ as env
-import netifaces
-
 # application configuration
 APP_NAME = "data_harmonization"
 DB_NAME = "data_harmonization"

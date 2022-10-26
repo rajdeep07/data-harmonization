@@ -4,11 +4,10 @@ import time
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from Cluster import Cluster
+from data_harmonization.main.code.tiger.Features import Features
 from sklearn.model_selection import StratifiedShuffleSplit
 
-from data_harmonization.main.code.tiger.Features import Features
-from data_harmonization.main.code.tiger.features.Distance import Distance
+from Cluster import Cluster
 
 tf.compat.v1.disable_v2_behavior()
 
@@ -44,9 +43,7 @@ class Train:
                 data=[[pairs[0]["id"], pairs[1]["id"], _positive, 1]],
                 columns=("rid", "lid", "feature", "target"),
             )
-            self._positive_df = pd.concat(
-                [self._positive_df, row], axis=0, ignore_index=True
-            )
+            self._positive_df = pd.concat([self._positive_df, row], axis=0, ignore_index=True)
         # print(_positive_df.head())
         return self._positive_df
 
@@ -79,9 +76,7 @@ class Train:
                     data=[[pair1["id"], pair2["id"], _negative, 0]],
                     columns=("rid", "lid", "feature", "target"),
                 )
-                self._negative_df = pd.concat(
-                    [self._negative_df, row], axis=0, ignore_index=True
-                )
+                self._negative_df = pd.concat([self._negative_df, row], axis=0, ignore_index=True)
 
         # duplicate_id = set()
         # for pair1, pair2 in cluster_pairs:
@@ -210,33 +205,23 @@ if __name__ == "__main__":
     num_layer_2_cells = 150
 
     # We will use these as inputs to the model when it comes time to train it (assign values at run time)
-    X_train_node = tf.compat.v1.placeholder(
-        tf.float32, [None, input_dimensions], name="X_train"
-    )
-    y_train_node = tf.compat.v1.placeholder(
-        tf.float32, [None, output_dimensions], name="y_train"
-    )
+    X_train_node = tf.compat.v1.placeholder(tf.float32, [None, input_dimensions], name="X_train")
+    y_train_node = tf.compat.v1.placeholder(tf.float32, [None, output_dimensions], name="y_train")
 
     # We will use these as inputs to the model once it comes time to test it
     X_test_node = tf.constant(raw_X_test, name="X_test")
     y_test_node = tf.constant(raw_y_test, name="y_test")
 
     # First layer takes in input and passes output to 2nd layer
-    weight_1_node = tf.Variable(
-        tf.zeros([input_dimensions, num_layer_1_cells]), name="weight_1"
-    )
+    weight_1_node = tf.Variable(tf.zeros([input_dimensions, num_layer_1_cells]), name="weight_1")
     biases_1_node = tf.Variable(tf.zeros([num_layer_1_cells]), name="biases_1")
 
     # Second layer takes in input from 1st layer and passes output to 3rd layer
-    weight_2_node = tf.Variable(
-        tf.zeros([num_layer_1_cells, num_layer_2_cells]), name="weight_2"
-    )
+    weight_2_node = tf.Variable(tf.zeros([num_layer_1_cells, num_layer_2_cells]), name="weight_2")
     biases_2_node = tf.Variable(tf.zeros([num_layer_2_cells]), name="biases_2")
 
     # Third layer takes in input from 2nd layer and outputs [1 0] or [0 1] depending on match vs non match
-    weight_3_node = tf.Variable(
-        tf.zeros([num_layer_2_cells, output_dimensions]), name="weight_3"
-    )
+    weight_3_node = tf.Variable(tf.zeros([num_layer_2_cells, output_dimensions]), name="weight_3")
     biases_3_node = tf.Variable(tf.zeros([output_dimensions]), name="biases_3")
 
     num_epochs = 100
@@ -247,9 +232,7 @@ if __name__ == "__main__":
     y_test_prediction = train.network(X_test_node)
 
     # Cross entropy loss function measures differences between actual output and predicted output
-    cross_entropy = tf.compat.v1.losses.softmax_cross_entropy(
-        y_train_node, y_train_prediction
-    )
+    cross_entropy = tf.compat.v1.losses.softmax_cross_entropy(y_train_node, y_train_prediction)
 
     # Adam optimizer function will try to minimize loss (cross_entropy) but changing the 3 layers' variable values at a
     #   learning rate of 0.005
@@ -277,9 +260,7 @@ if __name__ == "__main__":
 
                 final_y_test = y_test_node.eval()
                 final_y_test_prediction = y_test_prediction.eval()
-                final_accuracy = train.calculate_accuracy(
-                    final_y_test, final_y_test_prediction
-                )
+                final_accuracy = train.calculate_accuracy(final_y_test, final_y_test_prediction)
                 print("Current accuracy: {0:.2f}%".format(final_accuracy))
 
         final_y_test = y_test_node.eval()

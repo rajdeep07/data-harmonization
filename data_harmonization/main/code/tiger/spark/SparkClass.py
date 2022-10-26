@@ -5,8 +5,6 @@ import findspark
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql import functions as F
 
-# import MySQLdb
-
 SPARK_HOME = os.environ.get("SPARK_HOME")
 PYTHON_PATH = os.environ.get("PYSPARK_PYTHON")
 
@@ -35,7 +33,6 @@ class SparkClass:
             .getOrCreate()
         )
 
-    # Step 2: read_from_database_to_dataframe [MySQL]
     def read_from_database_to_dataframe(self, table, columnTypes=None) -> DataFrame:
         df = (
             self.spark.read.format("jdbc")
@@ -58,25 +55,18 @@ class SparkClass:
 
         return df
 
-    # Step 3: read_from_csv_to_dataframe
     def read_from_csv_to_dataframe(
         self, csv_file_path, header=True, inferSchema=True
     ) -> DataFrame:
         return self.spark.read.csv(csv_file_path, header=header, inferSchema=inferSchema)
 
-    # Step 4: write_to_csv_from_df
-    # data is distributed in 4 partitions: reduce or pandas
     def write_to_csv_from_df(self, local_path, df) -> None:
         return (
             df.repartition(1)
             .write.format("com.databricks.spark.csv")
             .save(local_path, header="true")
         )
-        # df.toPandas().to_csv(local_path)
 
-    # Step 5: write_to_database_from_df
-    # data is distributed in 4 partitions: reduce or pandas [MySQL]
-    # MySQL [RDBMS] ==> NoSQL or Document DB [Cassandra/ ES/ anything..]
     def write_to_database_from_df(self, table, df, mode="Error") -> None:
         df.write.format("jdbc").options(
             url=f"jdbc:mysql://{config_.mysqlLocalHost}/{config_.DB_NAME}",
