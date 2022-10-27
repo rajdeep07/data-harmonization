@@ -70,13 +70,15 @@ class Synthesis:
 
         Parameters
         ----------
-        id_pair: pd.DataFrame
-            DataFrame containing id pairs
+        id_pair
+            dataframe with id pairs. It should have id
+            and canonical_id columns
 
         Returns
-        --------
+        -------
         pd.DataFrame
-            returns dataframe containing all the rows and columns from left and right id pair
+            returns dataframe containing all the
+            rows and columns from left and right id pair
         """
         self.logger.log(
             level="INFO",
@@ -114,7 +116,8 @@ class Synthesis:
         Returns
         -------
         tf.Tensor
-            match or non match profile"""
+            match or non match profile. It is the output of the last layer
+        """
         self.logger.log(level="INFO", msg="Running all layers")
         # Sigmoid fits modified data well
         layer1 = tf.nn.sigmoid(tf.matmul(input_tensor, self.weight_1_node) + self.biases_1_node)
@@ -135,7 +138,10 @@ class Synthesis:
     def predict(self, table_name: str = config_.blocking_table) -> None:
         """Predict using the previously trained model.
 
-        :param table_name: blocking table name
+        Parameters
+        ----------
+        table_name
+            blocking table name
         """
         # load the model
         self.logger.log(
@@ -203,15 +209,16 @@ class Synthesis:
 
         Parameters
         ----------
-        model_name: str
-            name of the model to be loaded
-        model_path: str
-            absolute path of the model location
+        model_name
+            name of the saved model
+        model_path
+            relative path of the saved model
 
         Returns
-        --------
-        tf.Session
-            tensorflow session with restored model"""
+        -------
+        tf.compat.v1.Session
+            tensorflow session with restored model
+        """
         session = tf.compat.v1.Session()
         init = tf.compat.v1.global_variables_initializer()
         session.run(init)

@@ -26,9 +26,17 @@ class Deduplication:
         If there are more than max_length records,
         take randomly sampled max_length records
 
-        :param table: table name in the database
-        :param max_length: maximum number of records
-        :return: fethed values from database
+        Parameters
+        ----------
+        table
+            table name in the database
+        max_length
+            maximum number of records
+
+        Returns
+        -------
+        pd.DataFrame
+            fethed values from database
         """
         self.logger.log(level="INFO", msg="Fetching data from ")
         df = self.spark.read_from_database_to_dataframe(table)
@@ -44,9 +52,18 @@ class Deduplication:
         Also process the column names to consider those columns
         only for deduplication
 
-        :param df: all data in the shape of pandas dataframe
-        :param column_names: list of columns those should be considered
-        for the deduplication
+        Parameters
+        ----------
+        df
+            all data in the shape of pandas dataframe
+        column_names
+            list of columns those should be considered
+            for the deduplication
+
+        Returns
+        -------
+        tuple
+            dataframe, column_names
         """
         self.logger.log(level="INFO", msg="Cleaning data")
         if column_names and len(column_names) > 0:
@@ -67,9 +84,13 @@ class Deduplication:
     def _run_model(self, df: pd.DataFrame, col_names: list) -> None:
         """Run deduplication model
 
-        :param df: data on which deduplication will be run
-        :param col_names: list of columns those should be considered
-        for the deduplication
+        Parameters
+        ----------
+        df
+            data on which deduplication will be run
+        col_names
+            list of columns those should be considered
+            for the deduplication
         """
         df_for_dedupe_model, col_names = self._clean_data(df, col_names)
         print(col_names)
@@ -97,8 +118,12 @@ class Deduplication:
     def _save_data_in_db(self, df: pd.DataFrame, table: str) -> None:
         """Save data in the database
 
-        :param df: data to be saved
-        :param table: table name where data will be saved
+        Parameters
+        ----------
+        df
+            data to be saved
+        table
+            table name where data will be saved
         """
         self.logger.log(
             level="INFO",
@@ -113,9 +138,17 @@ class Deduplication:
     ) -> dict:
         """Calculate statistics from input data and deduplication model output
 
-        :param input_data: data that was fed to deduplication model
-        :param model_output: deduplication model output data
-        :return: calculated statistics
+        Parameters
+        ----------
+        input_data
+            data that was fed to deduplication model
+        model_output
+            deduplication model output data
+
+        Returns
+        -------
+        dict
+            calculated statistics
         """
         self.logger.log(level="INFO", msg="Calculating statistics")
         total_records = len(input_data.index)
@@ -145,9 +178,13 @@ class Deduplication:
     def train(self, col_names=None, df=None) -> None:
         """Train the deduplication model
 
-        :param col_names: list of columns those should be considered
-        for the deduplication
-        :param df: data on which deduplication will be run
+        Parameters
+        ----------
+        col_names
+            list of columns those should be considered
+            for the deduplication
+        df
+            data on which deduplication will be run
         """
         if not col_names:
             col_names = []
@@ -178,9 +215,13 @@ class Deduplication:
     def predict(self, col_names=None, df=None) -> None:
         """Predict using the deduplication model
 
-        :param col_names: list of columns those should be considered
-        for the deduplication
-        :param df: data on which deduplication will be run
+        Parameters
+        ----------
+        col_names
+            list of columns those should be considered
+            for the deduplication
+        df
+            data on which deduplication will be run
         """
         if not col_names:
             col_names = []

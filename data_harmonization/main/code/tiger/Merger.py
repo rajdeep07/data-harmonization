@@ -20,9 +20,16 @@ class Merger:
         """Fetch connected profile and raw entities.
         If connected profile is not provided fetch it from database.
 
-        :param conneted_profiles: spark dataframe of all conneted profiles
-        from graph object i.e from Mapping module output
-        :return: dataframes of connected profiles and raw entities
+        Parameters
+        ----------
+        conneted_profiles
+            spark dataframe of all conneted profiles
+            from graph object i.e from Mapping module output
+
+        Returns
+        -------
+        tuple
+            dataframes of connected profiles and raw entities
         """
         # if conneted_profiles not provided fetch it from database
         if not conneted_profiles:
@@ -50,10 +57,16 @@ class Merger:
     def do_merging(self, conneted_profiles=None) -> DataFrame:
         """fetch data from conneted_profiles if dataframe not provided
 
-        :param conneted_profiles: spark dataframe of all conneted profiles
-        from graph object i.e from Mapping module output
-        :return: merged dataframe of all the duplicate ids
-        with all other attribute values
+        Parameters
+        ----------
+        conneted_profiles
+            spark dataframe of all conneted profiles
+            from graph object i.e from Mapping module output
+        Returns
+        -------
+        DataFrame
+            merged dataframe of all the duplicate ids
+            with all other attribute values
         """
         # Fetch connected profiles and raw entities
         conneted_profiles, raw_entities = self._get_data(conneted_profiles)

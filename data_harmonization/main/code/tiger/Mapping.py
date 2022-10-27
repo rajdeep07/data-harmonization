@@ -20,8 +20,12 @@ class Mapping:
     def __init__(self, database_name, table_name) -> None:
         """Setting up initial variables
 
-        :param database_name: Name of the database that will be used
-        :param table_name: Name of the table where output
+        Parameters
+        ----------
+        database_name
+            Name of the database that will be used
+        table_name
+            Name of the table where output
             from classification model has been saved
         """
         self.database_name = database_name
@@ -32,12 +36,19 @@ class Mapping:
         self.spark = SparkClass()
         self.logger = Logger(name="mapping")
 
-    def _getAllDuplicate(self, df) -> set:
+    def _getAllDuplicate(self, df: DataFrame) -> set:
         """Get all duplicates from dataframe based on isMatch column
 
-        :param df: spark dataframe with all data.
+        Parameters
+        ----------
+        df
+            spark dataframe with all data.
             It should have leftId, rightId, isMatch columns.
-        :return: set of sums of ids of duplicate data
+
+        Returns
+        -------
+        set
+            set of sums of ids of duplicate data
         """
         self.logger.log(level="INFO", msg="Fetching all duplicates")
         merges = df.select("leftId", "rightId", "isMatch") \
@@ -49,9 +60,16 @@ class Mapping:
     def _getAllProfiles(self, entities: DataFrame) -> set:
         """Get all ids from dataframe id column
 
-        :param entities: spark dataframe that will be used here.
+        Parameters
+        ----------
+        entities
+            spark dataframe that will be used here.
             It should have id column
-        :return: set of all ids
+
+        Returns
+        -------
+        set
+            set of all ids
         """
         self.logger.log(level="INFO", msg="Fetching all ids from data")
         profile_ids = set(
@@ -62,8 +80,15 @@ class Mapping:
     def _getLocalEdges(self, df) -> DataFrame:
         """Get edges from dataframe
 
-        :param df: spark dataframe that will be used here
-        :return: edges as spark dataframe with columns
+        Parameters
+        ----------
+        df
+            spark dataframe that will be used here
+
+        Returns
+        -------
+        DataFrame
+            edges as spark dataframe with columns
             named src, dst and action
         """
         self.logger.log(level="INFO", msg="Creating edges")
@@ -79,8 +104,15 @@ class Mapping:
         """Create GraphFrame object using vertices and edges.
         Vertices as raw profiles and edges from classification output
 
-        :param raw_profiles_df: raw entities dataframe
-        :return: GraphFrame object
+        Parameters
+        ----------
+        raw_profiles_df
+            raw entities dataframe
+
+        Returns
+        -------
+        GraphFrame
+            GraphFrame object
         """
         # if raw_profiles_df is not provided, fetch it from database
         if not raw_profiles_df:
@@ -105,8 +137,15 @@ class Mapping:
         """Get connected components from graph object
         and save them in the database
 
-        :param g: graph object from where connected components will be fethced
-        :return: all connected components
+        Parameters
+        ----------
+        g
+            graph object from where connected components will be fethced
+
+        Returns
+        -------
+        DataFrame
+            all connected components
         """
         self.spark.get_sparkSession().sparkContext.setCheckpointDir(
             "data_harmonization/main/code/tiger/checkpoints"
@@ -125,10 +164,20 @@ class Mapping:
         )
         return df
 
-    def getScore(self, entities, df) -> float:
+    def getScore(self, entities: DataFrame, df: DataFrame) -> float:
         """Print few statistics and return percentage of duplicate data
 
-        :return: duplicate percentage
+        Parameters
+        ----------
+        entities
+            all raw entities
+        df
+            spark dataframe with leftId, rightId, isMatch columns
+
+        Returns
+        -------
+        float
+            duplicate percentage
         """
         self.logger.log(level="INFO", msg="Calculating statistics")
         total_profiles = len(self._getAllProfiles(entities))
