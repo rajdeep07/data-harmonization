@@ -6,13 +6,13 @@ from functools import reduce
 from os import listdir
 from pathlib import Path
 
-from pyspark.sql import DataFrame
-
 import data_harmonization.main.resources.config as config
 from data_harmonization.main.code.tiger.database import MySQL
 from data_harmonization.main.code.tiger.database.SchemaGenerator import SchemaGenerator
 from data_harmonization.main.code.tiger.Sanitizer import Sanitizer
 from data_harmonization.main.code.tiger.spark import SparkClass
+from data_harmonization.main.resources.log4j import Logger
+from pyspark.sql import DataFrame
 
 
 class Ingester:
@@ -20,6 +20,7 @@ class Ingester:
     to generate schemas also persist raw data and raw entity into MySQL database."""
 
     def __init__(self):
+        self.logger = Logger(name="ingester")
         self.spark = SparkClass()
         self.current_dir = os.path.dirname(os.path.realpath(__file__))
         self.target_dir = os.path.sep.join(self.current_dir.split(os.path.sep)[:-2])
@@ -36,6 +37,9 @@ class Ingester:
             csv file name from the target directory
         """
         filenames = listdir(self.target_dir + "/data/")
+        self.logger.log(
+            level="INFO", msg=f"Reading csv file names in {self.target_dir + '/data/'}"
+        )
         return [
             filename
             for filename in filenames
@@ -54,6 +58,7 @@ class Ingester:
 
     def _generate_schemas(self) -> None:
         """Generate schema's in the schema directory for all the csv filenames"""
+        self.logger.log(level="INFO", msg="Generating schemas from csv files")
         for csv_file in self.csv_files:
             SchemaGenerator(
                 str(self.target_dir + "/data/" + csv_file), self.schema_dirs
@@ -83,6 +88,7 @@ class Ingester:
         ---------
         None
         """
+        self.logger(level="INFO", msg="Generating RawEntity schema")
         total_attributes = []
         attr_dict = dict()
         for _, cls in inspect.getmembers(
@@ -97,6 +103,7 @@ class Ingester:
         raw_entity_attrs = dict()
         table_list = self._get_all_tables()
         if features_for_deduplication:
+            self.logger(level="INFO", msg="Using user provided features")
             total_attributes_count = {
                 key: total_attributes_count[key] for key in features_for_deduplication
             }
