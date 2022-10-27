@@ -45,14 +45,14 @@ class Synthesis:
 
         Parameters
         -----------
-        features: pd.DataFrame
+        features
                   DataFrame for which features to be extracted
-        target: Optional[pd.DataFrame]
+        target
                 target dataframe features to be extracted
 
         Returns
         -------
-        pd.DataFrame:
+        pd.DataFrame
             Feature extracted dataframe
         """
         self.logger.log(level="INFO", msg="Processing data")
@@ -101,7 +101,7 @@ class Synthesis:
 
         return full_df.toPandas()
 
-    def _network(self, input_tensor) -> tf.Tensor:
+    def _network(self, input_tensor: tf.Tensor) -> tf.Tensor:
         """Function to run an input tensor through the 3 layers and output
         a tensor that will give us a match/non match result.
         Each layer uses a different function to fit lines through the data and

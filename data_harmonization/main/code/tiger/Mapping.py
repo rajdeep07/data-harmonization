@@ -17,7 +17,7 @@ class Mapping:
     as vertices and classification output data as edges
     """
 
-    def __init__(self, database_name, table_name) -> None:
+    def __init__(self, database_name: str, table_name: str) -> None:
         """Setting up initial variables
 
         Parameters
@@ -77,7 +77,7 @@ class Mapping:
         )
         return profile_ids
 
-    def _getLocalEdges(self, df) -> DataFrame:
+    def _getLocalEdges(self, df: DataFrame) -> DataFrame:
         """Get edges from dataframe
 
         Parameters
@@ -106,7 +106,7 @@ class Mapping:
 
         Parameters
         ----------
-        raw_profiles_df
+        raw_profiles_df: DataFrame
             raw entities dataframe
 
         Returns

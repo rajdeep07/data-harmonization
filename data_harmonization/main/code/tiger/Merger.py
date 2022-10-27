@@ -22,7 +22,7 @@ class Merger:
 
         Parameters
         ----------
-        conneted_profiles
+        conneted_profiles: DataFrame
             spark dataframe of all conneted profiles
             from graph object i.e from Mapping module output
 
@@ -59,7 +59,7 @@ class Merger:
 
         Parameters
         ----------
-        conneted_profiles
+        conneted_profiles: DataFrame
             spark dataframe of all conneted profiles
             from graph object i.e from Mapping module output
         Returns
