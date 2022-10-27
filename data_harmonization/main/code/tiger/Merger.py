@@ -4,6 +4,7 @@ from pyspark.sql.types import StringType
 
 import data_harmonization.main.resources.config as config_
 from data_harmonization.main.code.tiger.spark.SparkClass import SparkClass
+from data_harmonization.main.resources.log4j import Logger
 
 
 class Merger:
@@ -13,6 +14,7 @@ class Merger:
     def __init__(self) -> None:
         """Setting up initial variables"""
         self.spark = SparkClass()
+        self.logger = Logger(name="merger")
 
     def _get_data(self, conneted_profiles=None) -> tuple:
         """Fetch connected profile and raw entities.
@@ -24,11 +26,19 @@ class Merger:
         """
         # if conneted_profiles not provided fetch it from database
         if not conneted_profiles:
+            self.logger.log(
+                level="INFO",
+                msg="Fetching connected profiles from database"
+            )
             conneted_profiles = self.spark.read_from_database_to_dataframe(
                 config_.graph_connected_components_table
             )
 
         # fetch raw entity table data
+        self.logger.log(
+            level="INFO",
+            msg="Fetching raw entities from database"
+        )
         raw_entities = self.spark.read_from_database_to_dataframe(
             config_.raw_entity_table
         )
@@ -49,12 +59,20 @@ class Merger:
         conneted_profiles, raw_entities = self._get_data(conneted_profiles)
 
         # join classifier and raw profiles table
+        self.logger.log(
+            level="INFO",
+            msg="Merging connected profile with raw entities"
+        )
         conneted_raw_entities = conneted_profiles.join(
             other=raw_entities,
             on=conneted_profiles.id == raw_entities.id, how="inner"
         ).drop(raw_entities.id)
         attributes = raw_entities.columns
         exprs = [collect_list(x).alias(x) for x in attributes]
+        self.logger.log(
+            level="INFO",
+            msg="Collecting all profiles belong to same cluster id"
+        )
         collected_profiles = conneted_raw_entities.groupBy("cluster_id") \
             .agg(*exprs)
 
@@ -115,6 +133,11 @@ class Merger:
         # convert id column from list type to string type
         result_ = result.withColumn("id", concat_ws(",", result.id))
         # writing merged data into database
+        self.logger.log(
+            level="INFO",
+            msg=f"Writing all merged data in {config_.merged_table} "
+            + "table in database"
+        )
         self.spark.write_to_database_from_df(
             config_.merged_table, result_, "overwrite"
         )

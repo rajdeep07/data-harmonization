@@ -7,6 +7,7 @@ from pyspark.sql.functions import col
 from data_harmonization.main.code.tiger.Features import Features
 from data_harmonization.main.code.tiger.spark import SparkClass
 from data_harmonization.main.resources import config as config_
+from data_harmonization.main.resources.log4j import Logger
 
 tf.compat.v1.disable_v2_behavior()
 tf.compat.v1.disable_eager_execution()
@@ -32,6 +33,7 @@ class Synthesis:
         self.biases_2_node = None
         self.weight_3_node = None
         self.biases_3_node = None
+        self.logger = Logger(name="synthesis")
 
     def _feature_data(
         self,
@@ -53,6 +55,7 @@ class Synthesis:
         pd.DataFrame:
             Feature extracted dataframe
         """
+        self.logger.log(level="INFO", msg="Processing data")
         feature_df = features.copy()
         feature_df["features"] = feature_df.apply(
             lambda x: Features().get(x), axis=1
@@ -75,6 +78,10 @@ class Synthesis:
         pd.DataFrame
             returns dataframe containing all the rows and columns from left and right id pair
         """
+        self.logger.log(
+            level="INFO",
+            msg="Fetching all atributes from raw entites matching with ids"
+        )
         full_df = (
             id_pair.alias("a").join(
                 self.rawentity_df.alias("b"),
@@ -108,6 +115,7 @@ class Synthesis:
         -------
         tf.Tensor
             match or non match profile"""
+        self.logger.log(level="INFO", msg="Running all layers")
         # Sigmoid fits modified data well
         layer1 = tf.nn.sigmoid(tf.matmul(input_tensor, self.weight_1_node) + self.biases_1_node)
         # Dropout prevents model from becoming lazy and over confident
@@ -130,6 +138,10 @@ class Synthesis:
         :param table_name: blocking table name
         """
         # load the model
+        self.logger.log(
+            level="INFO",
+            msg="Loading the previously trained model"
+        )
         session = self.load_model(
             model_path="data_harmonization/main/code"
             + "/tiger/classification/models/",
@@ -174,6 +186,11 @@ class Synthesis:
         )
         semi_merged_data = self.sparksession.createDataFrame(
             semi_merged_data_pd
+        )
+        self.logger.log(
+            level="INFO",
+            msg=f"Writing all merged data in {config_.classification_table} "
+            + "table in database"
         )
         self.spark.write_to_database_from_df(
             config_.classification_table, df=semi_merged_data, mode="overwrite"

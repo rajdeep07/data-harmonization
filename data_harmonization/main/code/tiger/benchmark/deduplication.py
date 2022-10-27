@@ -7,6 +7,7 @@ import pandas_dedupe
 
 import data_harmonization.main.resources.config as config_
 from data_harmonization.main.code.tiger.spark import SparkClass
+from data_harmonization.main.resources.log4j import Logger
 
 
 class Deduplication:
@@ -16,6 +17,7 @@ class Deduplication:
         """Setting up initial variables"""
         self.raw_entity_table_name = "rawentity"
         self.spark = SparkClass()
+        self.logger = Logger(name="deduplication")
 
     def get_data(
         self, table: str = config_.raw_entity_table, max_length: int = 20000
@@ -28,6 +30,7 @@ class Deduplication:
         :param max_length: maximum number of records
         :return: fethed values from database
         """
+        self.logger.log(level="INFO", msg="Fetching data from ")
         df = self.spark.read_from_database_to_dataframe(table)
         pandas_df = df.toPandas()
         # if there are more than max_length records,
@@ -45,6 +48,7 @@ class Deduplication:
         :param column_names: list of columns those should be considered
         for the deduplication
         """
+        self.logger.log(level="INFO", msg="Cleaning data")
         if column_names and len(column_names) > 0:
             df = df[column_names]
         else:
@@ -69,6 +73,7 @@ class Deduplication:
         """
         df_for_dedupe_model, col_names = self._clean_data(df, col_names)
         print(col_names)
+        self.logger.log(level="INFO", msg="Running the deduplication model")
         final_model = pandas_dedupe.dedupe_dataframe(
             df_for_dedupe_model,
             col_names,
@@ -95,6 +100,11 @@ class Deduplication:
         :param df: data to be saved
         :param table: table name where data will be saved
         """
+        self.logger.log(
+            level="INFO",
+            msg="Writing connected compenents in "
+            + f"{table} table in database"
+        )
         spark_df = self.spark.get_sparkSession().createDataFrame(df)
         self.spark.write_to_database_from_df(table, spark_df, mode="overwrite")
 
@@ -107,6 +117,7 @@ class Deduplication:
         :param model_output: deduplication model output data
         :return: calculated statistics
         """
+        self.logger.log(level="INFO", msg="Calculating statistics")
         total_records = len(input_data.index)
         duplicates = len(model_output)
         number_of_clusters = model_output["cluster_id"].nunique()
@@ -156,7 +167,10 @@ class Deduplication:
                 target_dir
                 + "/tiger/benchmark/dedupe_dataframe_training.json"
             )
-        print("removed")
+        self.logger.log(
+            level="INFO",
+            msg="Removed trained model files if they were present"
+        )
         if not df:
             df = self.get_data(self.raw_entity_table_name)
         self._run_model(df, col_names)

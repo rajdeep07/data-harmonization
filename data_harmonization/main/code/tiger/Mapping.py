@@ -6,6 +6,7 @@ from pyspark.sql import DataFrame
 
 import data_harmonization.main.resources.config as config_
 from data_harmonization.main.code.tiger.spark.SparkClass import SparkClass
+from data_harmonization.main.resources.log4j import Logger
 
 # TODO: While running also pass package parameter to get appropriate packges.
 # ./bin/pyspark --packages graphframes:graphframes:0.6.0-spark2.3-s_2.11
@@ -29,6 +30,7 @@ class Mapping:
         os.environ["PYSPARK_PYTHON"] = sys.executable
         os.environ["PYSPARK_DRIVER_PYTHON"] = sys.executable
         self.spark = SparkClass()
+        self.logger = Logger(name="mapping")
 
     def _getAllDuplicate(self, df) -> set:
         """Get all duplicates from dataframe based on isMatch column
@@ -37,7 +39,7 @@ class Mapping:
             It should have leftId, rightId, isMatch columns.
         :return: set of sums of ids of duplicate data
         """
-        # https://mungingdata.com/pyspark/column-to-list-collect-tolocaliterator/
+        self.logger.log(level="INFO", msg="Fetching all duplicates")
         merges = df.select("leftId", "rightId", "isMatch") \
             .filter(df.isMatch == 1)
         list1 = merges.select("leftId").toPandas()["leftId"]
@@ -51,6 +53,7 @@ class Mapping:
             It should have id column
         :return: set of all ids
         """
+        self.logger.log(level="INFO", msg="Fetching all ids from data")
         profile_ids = set(
             entities.select("id").rdd.flatMap(lambda x: x).collect()
         )
@@ -63,6 +66,7 @@ class Mapping:
         :return: edges as spark dataframe with columns
             named src, dst and action
         """
+        self.logger.log(level="INFO", msg="Creating edges")
         edgesDF = (
             df.select("leftId", "rightId", "isMatch")
             .withColumnRenamed("leftId", "src")
@@ -92,6 +96,7 @@ class Mapping:
         e = self._getLocalEdges(mergesDF)
 
         # Create a graph
+        self.logger.log(level="INFO", msg="Creating graph object")
         g = GraphFrame(v, e)  # Graphframes(v, e)
 
         return g
@@ -110,6 +115,11 @@ class Mapping:
         df = df.select(["id", "component"]).withColumnRenamed(
             "component", "cluster_id"
         )
+        self.logger.log(
+            level="INFO",
+            msg="Writing connected compenents in "
+            + f"{config_.graph_connected_components_table} table in database"
+        )
         self.spark.write_to_database_from_df(
             config_.graph_connected_components_table, df, mode="overwrite"
         )
@@ -120,6 +130,7 @@ class Mapping:
 
         :return: duplicate percentage
         """
+        self.logger.log(level="INFO", msg="Calculating statistics")
         total_profiles = len(self._getAllProfiles(entities))
         duplicated_profiles = len(self._getAllDuplicate(df))
         duplicates_percentages = duplicated_profiles / total_profiles
