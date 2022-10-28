@@ -8,6 +8,7 @@ import tensorflow as tf
 from data_harmonization.main.code.tiger.Features import Features
 from data_harmonization.main.code.tiger.spark import SparkClass
 from data_harmonization.main.resources import config as config_
+from data_harmonization.main.resources.log4j import Logger
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import col
 from sklearn.model_selection import StratifiedShuffleSplit
@@ -20,6 +21,7 @@ class Classifier:
     """Train the classification model from benchmark data"""
 
     def __init__(self) -> None:
+        self.logger = Logger("Classifier")
         self.spark = SparkClass()
         self.sparksession = self.spark.get_sparkSession()
         self.rawentity_df = self.spark.read_from_database_to_dataframe("rawentity")
@@ -102,11 +104,8 @@ class Classifier:
         --------
         pd.DataFrame
             returns pandas dataframe"""
-        data.show()
         positive_df_id = data.filter(f"confidence > {threshold}").select("id", "canonical_id")
-        positive_df_id.show()
         positive_df = self.create_df_from_id_pairs(id_pair=positive_df_id)
-        print(positive_df.head())
         positive_df["target"] = pd.Series(np.ones(positive_df.shape[0])).astype("int")
         return positive_df
 
@@ -158,18 +157,18 @@ class Classifier:
         --------
         pd.DataFrame
             returns preprocessed dataframe"""
-        print("Started preprocessing data......")
-        print("extracting positive data......")
+        self.logger.log("INFO", "Started preprocessing data")
+        self.logger.log("INFO", "extracting positive data")
         positive_df = self._extract_postive_data(data)
-        print("Positive data shape:", positive_df.shape)
-        print("extracting negative data......")
+        self.logger.log("INFO", f"Positive data shape:{positive_df.shape}")
+        self.logger.log("INFO", "extracting negative data")
         negative_df = self._extract_negative_data(data)
-        print("Negative data shape:", negative_df.shape)
-        print("done extracting data......")
+        self.logger.log("INFO", f"Negative data shape:{negative_df.shape}")
+        self.logger.log("INFO", "done extracting data")
         data = pd.concat([positive_df, negative_df])
-        print(f"Extracting features from the data.......\nTotal Rows : {data.shape[0]}")
+        self.logger.log("INFO", f"Extracting features from the data::Total Rows : {data.shape[0]}")
         data = self._feature_data(data.drop("target", axis=1), data["target"])
-        print("Done preprocessing data......")
+        self.logger.log("INFO", "Done preprocessing data")
         return data
 
     def _train_test_split(
@@ -282,7 +281,7 @@ class Classifier:
         )
         self.biases_3_node = tf.Variable(tf.zeros([self.output_dim]), name="biases_3")
 
-    def train(self, table_name: str, num_epochs: int = 500) -> None:
+    def train(self, table_name: str, num_epochs: int = 1000) -> None:
         """Train the classification model
 
         Parameters
@@ -293,7 +292,7 @@ class Classifier:
             number of epochs to run to train the model"""
         data_df = self.spark.read_from_database_to_dataframe(table=table_name)
         final_df = self._preprocess_data(data_df)
-        (raw_X_train, raw_X_test, raw_y_train, raw_y_test,) = self._train_test_split(
+        (raw_X_train, raw_X_test, raw_y_train, raw_y_test) = self._train_test_split(
             final_df["features"].values,
             final_df[["target_0", "target_1"]].values,
         )
@@ -301,17 +300,14 @@ class Classifier:
         # stacking data
         raw_X_train = np.stack(raw_X_train, axis=0).astype(dtype="float32")
         raw_X_test = np.stack(raw_X_test, axis=0).astype(dtype="float32")
-        print(
-            "Input shape:",
-            raw_X_train.shape,
-            "Output shape",
-            raw_y_train.shape,
+        self.logger.log(
+            "INFO", f"Input shape:{raw_X_train.shape} Output shape:{raw_y_train.shape}"
         )
 
         # Gets a percent of match vs no match (6% of data are match?)
         count_match, count_no_match = final_df[["target_1"]].value_counts()
         match_ratio = float(count_match / (count_match + count_no_match))
-        print("Percent of match ratios: ", match_ratio)
+        self.logger.log("INFO", f"Percent of match ratios:{match_ratio}")
 
         # Applies a logit weighting to match profiles to cause model to pay more attention to them
         weighting = 1 / match_ratio
@@ -375,9 +371,9 @@ class Classifier:
                     timer = time.time() - start_time
 
                     print(
-                        "Epoch: {}".format(epoch),
-                        "Current loss: {0:.4f}".format(cross_entropy_score),
-                        "Elapsed time: {0:.2f} seconds".format(timer),
+                        "Epoch:{} Current_loss:{:.4f} Elapsed_time:{:.2f}seconds".format(
+                            epoch, cross_entropy_score, timer
+                        ),
                     )
 
                     final_y_test = y_test_node.eval()
@@ -386,22 +382,24 @@ class Classifier:
                         final_y_test, final_y_test_prediction
                     )
                     print(
-                        "Precision: {}\nrecall: {}\nf1: {}".format(
+                        "Precision:{} recall:{} f1:{}".format(
                             precision.eval(session=session),
                             recall.eval(session=session),
                             f1.eval(session=session),
-                        )
+                        ),
                     )
+                    print("-" * 100)
 
             final_y_test = y_test_node.eval()
             final_y_test_prediction = y_test_prediction.eval()
             precision, recall, f1 = self._calculate_accuracy(final_y_test, final_y_test_prediction)
-            print(
-                "Precision: {}\nrecall: {}\nf1: {}".format(
+            self.logger.log(
+                "INFO",
+                "Precision:{} recall:{} f1:{}".format(
                     precision.eval(session=session),
                     recall.eval(session=session),
                     f1.eval(session=session),
-                )
+                ),
             )
             self.save_model(
                 model_config={
@@ -409,12 +407,6 @@ class Classifier:
                     "session": session,
                 }
             )
-            # saver.save(session, "my_test_model")
-        final_match_y_test = final_y_test[final_y_test[:, 1] == 1]
-        final_match_y_test_prediction = final_y_test_prediction[final_y_test[:, 1] == 1]
-        precision, recall, f1 = self._calculate_accuracy(
-            final_match_y_test, final_match_y_test_prediction
-        )
 
     def save_model(
         self,
@@ -437,6 +429,7 @@ class Classifier:
         model_name: str
             name of model
         """
+        self.logger.log("INFO", f"Saving model to {model_path}")
         model_saver = model_config.get("saver")
         session = model_config.get("session")
         model_saver.save(session, model_path + model_name)

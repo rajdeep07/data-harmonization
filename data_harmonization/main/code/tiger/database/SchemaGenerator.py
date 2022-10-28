@@ -118,7 +118,7 @@ from data_harmonization.main.code.tiger.model.ingester.Bottom import Base\n\n
 
         self._import_statement_gen()
         self._class_gen(table_name=class_name, attr_dict=schema)
-        self._schema_method(table_name=class_name, dict_types=schema)
+        self._schema_method(dict_types=schema)
         self._repr_gen(table_name=class_name, attr_dict=schema)
         self._make_file(class_name.capitalize())
         self._update_init(class_name.capitalize(), alias)

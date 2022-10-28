@@ -38,7 +38,7 @@ class Ingester:
         """
         filenames = listdir(self.target_dir + "/data/")
         self.logger.log(
-            level="INFO", msg=f"Reading csv file names in {self.target_dir + '/data/'}"
+            level="INFO", msg=f"Reading csv file names from {self.target_dir + '/data/'}"
         )
         return [
             filename
@@ -58,7 +58,9 @@ class Ingester:
 
     def _generate_schemas(self) -> None:
         """Generate schema's in the schema directory for all the csv filenames"""
-        self.logger.log(level="INFO", msg="Generating schemas from csv files")
+        self.logger.log(
+            level="INFO", msg=f"Generating schemas from csv files into {self.target_dir+'/data'}"
+        )
         for csv_file in self.csv_files:
             SchemaGenerator(
                 str(self.target_dir + "/data/" + csv_file), self.schema_dirs
@@ -88,7 +90,7 @@ class Ingester:
         ---------
         None
         """
-        self.logger(level="INFO", msg="Generating RawEntity schema")
+        self.logger.log(level="INFO", msg="Generating RawEntity schema")
         total_attributes = []
         attr_dict = dict()
         for _, cls in inspect.getmembers(
@@ -103,7 +105,7 @@ class Ingester:
         raw_entity_attrs = dict()
         table_list = self._get_all_tables()
         if features_for_deduplication:
-            self.logger(level="INFO", msg="Using user provided features")
+            self.logger.log(level="INFO", msg="Using user provided features")
             total_attributes_count = {
                 key: total_attributes_count[key] for key in features_for_deduplication
             }
@@ -129,6 +131,7 @@ class Ingester:
         ---------
         None
         """
+        self.logger.log("INFO", "Persisting csv data to MySQL")
         generated_classes = {}
         for csv_file in self.csv_files:
             # TODO: generalize csv reader to almost everything later.
@@ -154,6 +157,7 @@ class Ingester:
             self.spark.write_to_database_from_df(
                 table=csv_file.split(".")[0], df=ls, mode="overwrite"
             )
+        self.logger.log("INFO", "Persisting data to MySQL completed")
 
     def _persist_raw_entity(self, features_for_deduplication=None) -> None:
         """
@@ -167,7 +171,7 @@ class Ingester:
         None
         """
 
-        # cursor = self.spark.get_mysql_cursor()
+        self.logger.log("INFO", "Persist Rawentities to MySQL")
         importlib.invalidate_caches()
         rawentity = importlib.import_module(
             "data_harmonization.main.code.tiger.model.ingester.Rawentity"
@@ -195,7 +199,7 @@ class Ingester:
         self.spark.write_to_database_from_df(
             table=config.raw_entity_table, df=df_series, mode="overwrite"
         )
-
+        self.logger.log("INFO", "Persisting Rawentity to MySQL completed")
         return
 
 
