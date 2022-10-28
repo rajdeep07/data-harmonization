@@ -72,6 +72,7 @@ class Deduplication:
             column_names = list(df.columns)
         if "cluster_id" in df.columns:
             df.drop(columns=["cluster_id"], inplace=True)
+            column_names.remove("cluster_id")
 
         if "id" in column_names:
             column_names.remove("id")
