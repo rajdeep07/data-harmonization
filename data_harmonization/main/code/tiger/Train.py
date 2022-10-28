@@ -88,7 +88,11 @@ class Classifier:
 
         return full_df.toPandas()
 
-    def _extract_postive_data(self, data: DataFrame, threshold: float = 0.60) -> pd.DataFrame:
+    def _extract_postive_data(
+        self,
+        data: DataFrame,
+        threshold: float = config_.benchmark_confidence
+    ) -> pd.DataFrame:
         """
         Generates positive data for training the classification model
 
@@ -109,7 +113,11 @@ class Classifier:
         positive_df["target"] = pd.Series(np.ones(positive_df.shape[0])).astype("int")
         return positive_df
 
-    def _extract_negative_data(self, data: DataFrame, match_ratio: float = 0.8) -> pd.DataFrame:
+    def _extract_negative_data(
+        self,
+        data: DataFrame,
+        match_ratio: float = config_.benchmark_confidence
+    ) -> pd.DataFrame:
         """Generate negative data using rawentity table
 
         Parameters

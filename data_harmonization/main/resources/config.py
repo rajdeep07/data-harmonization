@@ -39,7 +39,7 @@ merged_table = "result"
 
 # Threshold
 jaccard_distance = 0.8
-benchmark_confidence = 0.8
+benchmark_confidence = 0.6
 classifier_confidence = 0.8
 match_ratio = 0.5
 
