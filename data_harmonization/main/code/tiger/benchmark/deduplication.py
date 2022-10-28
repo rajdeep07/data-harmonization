@@ -15,7 +15,7 @@ class Deduplication:
 
     def __init__(self) -> None:
         """Setting up initial variables"""
-        self.raw_entity_table_name = "rawentity"
+        self.raw_entity_table_name = config_.raw_entity_table
         self.spark = SparkClass()
         self.logger = Logger(name="deduplication")
 
@@ -98,7 +98,7 @@ class Deduplication:
         final_model = pandas_dedupe.dedupe_dataframe(
             df_for_dedupe_model,
             col_names,
-            threshold=0.7,
+            threshold=config_.benchmark_confidence,
             canonicalize=True,
         )
 
@@ -155,13 +155,17 @@ class Deduplication:
         duplicates = len(model_output)
         number_of_clusters = model_output["cluster_id"].nunique()
         duplicates = (
-            model_output.loc[model_output["confidence"] > 0.7]
+            model_output.loc[
+                model_output["confidence"] > config_.benchmark_confidence
+            ]
             .groupby(by="cluster_id")["confidence"]
             .count()
             .sum()
         )
         cluster_with_max_duplicates = (
-            model_output.loc[model_output["confidence"] > 0.7]
+            model_output.loc[
+                model_output["confidence"] > config_.benchmark_confidence
+            ]
             .groupby(by="cluster_id")["confidence"]
             .count()
             .idxmax()
@@ -186,6 +190,10 @@ class Deduplication:
         df
             data on which deduplication will be run
         """
+        self.logger.log(
+            level="INFO",
+            msg="Begin Active Learning. Training the model"
+        )
         if not col_names:
             col_names = []
         current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -211,6 +219,7 @@ class Deduplication:
         if not df:
             df = self.get_data(self.raw_entity_table_name)
         self._run_model(df, col_names)
+        self.logger.log(level="INFO", msg="We are done with training.")
 
     def predict(self, col_names=None, df=None) -> None:
         """Predict using the deduplication model
@@ -223,6 +232,7 @@ class Deduplication:
         df
             data on which deduplication will be run
         """
+        self.logger.log(level="INFO", msg="Starting to predict")
         if not col_names:
             col_names = []
         current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -234,6 +244,7 @@ class Deduplication:
         if not os.path.isfile(target_dir + "/tiger/benchmark/dedupe_dataframe_training.json"):
             print("Cannot find dedupe_dataframe_training.json file")
         self._run_model(df, col_names)
+        self.logger.log(level="INFO", msg="We are done with prediction.")
 
 
 if __name__ == "__main__":
@@ -256,16 +267,11 @@ if __name__ == "__main__":
         action="store_true",
     )
     arg = parser.parse_args()
-    # print(arg)
+
     # For training
     if arg.predict:
-        print("Starting to predict....")
         dedupe.predict()
-        print("We are done with prediction.")
 
     # For Prediction
     elif arg.train:
-        print("Begin Active Learning.\nTraining the model")
-        # df = dedupe.get_data("rawentity")
         dedupe.train()
-        print("We are done with training.")
