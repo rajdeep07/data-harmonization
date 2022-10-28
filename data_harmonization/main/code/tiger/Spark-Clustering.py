@@ -6,34 +6,12 @@ import sys
 from os import listdir
 from typing import Any, Optional
 
-import numpy as np
 import pandas as pd
-
-from data_harmonization.main.code.tiger.model.datamodel import *
-from data_harmonization.main.code.tiger.model.GeocodedAddress import \
-    GeocodedAddress
-from data_harmonization.main.code.tiger.model.PostalAddress import \
-    PostalAddress
-from data_harmonization.main.code.tiger.model.SemiMergedProfile import \
-    SemiMergedProfile
 from data_harmonization.main.code.tiger.Sanitizer import Sanitizer
-from data_harmonization.main.code.tiger.transformer import (
-    CityTransformer, NameTransformer, PostalAddressTransformer,
-    StateTransformer)
-from data_harmonization.main.code.tiger.transformer.utils import StringSupport
 
 
 class Cluster:
     """create cluster pairs using minLSH alogorithm"""
-
-    # TODO: create wrapper for reading datasets
-    # filenames = listdir(os.getcwd() + "/data_harmonization/main/data/")
-    # csv_filenames = [filename for filename in filenames if filename.endswith(".csv")]
-    # rawProfiles = pd.DataFrame() # correct data structure here ?
-    # for csv_file in csv_filenames:
-    #     rawProfiles = rawProfiles.append(pd.read_csv(os.getcwd() + f"/data_harmonization/main/data/{csv_file}"))
-    # print(rawProfiles.head())
-    # Flatten rawProfiles to fields which are only string / int
 
     # Cleansing of the data set
     flattenRawprofile = {}
@@ -45,15 +23,11 @@ class Cluster:
         self.rawProfiles = data
         if not data:
             filenames = listdir(os.getcwd() + "/data_harmonization/main/data/")
-            csv_filenames = [
-                filename for filename in filenames if filename.endswith(".csv")
-            ]
+            csv_filenames = [filename for filename in filenames if filename.endswith(".csv")]
             rawProfiles = pd.DataFrame()  # correct data structure here ?
             for csv_file in csv_filenames:
                 self.rawProfiles = rawProfiles.append(
-                    pd.read_csv(
-                        os.getcwd() + f"/data_harmonization/main/data/{csv_file}"
-                    )
+                    pd.read_csv(os.getcwd() + f"/data_harmonization/main/data/{csv_file}")
                 )
 
         rawProfilesWithTokens = self.rawProfiles.apply(
@@ -71,18 +45,14 @@ class Cluster:
                         semiflattenRawprofile[k1] = v1
                 else:
                     semiflattenRawprofile[k] = v
-            # flattenRawprofile[raw_ent["cluster_id"]] = {k1:v1 for k, v in semiflattenRawprofile.items() if not isinstance(v, (int, str, float) and v) for k1, v1 in v.__dict__.items()}
             self.flattenRawprofile[str(id)] = semiflattenRawprofile
             id = id + 1
         return self.flattenRawprofile
 
-    def _flatten_list(self, l: list) -> list:
+    def _flatten_list(self, lst: list) -> list:
         return [
-            item if isinstance(sublist, list) else sublist
-            for sublist in l
-            for item in sublist
+            item if isinstance(sublist, list) else sublist for sublist in lst for item in sublist
         ]
-        # return [item for sublist in l if isinstance(sublist, list) for item in sublist else sublist]
 
     def _isNotEmpty(self, input: Optional[Any] = None) -> bool:
         if input is None:
@@ -109,13 +79,11 @@ class Cluster:
     # Create Shingles
     def createShingles(self, input: Optional[str], shingle_size) -> Optional[list[str]]:
         def shingles(x: str) -> list[str]:
-            i = (
-                x.lower()
-            )  # TODO: remove extra unnecessary characters when creating shingles
+            i = x.lower()  # TODO: remove extra unnecessary characters when creating shingles
             if len(i) > shingle_size:
                 return list(
                     map(
-                        lambda j: i[j : j + shingle_size],
+                        lambda j: i[j: j + shingle_size],
                         range(0, len(i) - shingle_size + 1),
                     )
                 )
@@ -133,7 +101,6 @@ class Cluster:
 
     # Step 2: Tokenization
     def createTokens(self, profile: dict, shingle_size: int) -> str:
-        # output = self.createShingles(profile.get('Name', "")) + self.createShingles(profile.get('City'," ")) + self.createShingles(profile.get('Address', " ")) #+ self.createShingles(profile.get('source'," "))
         output = []
         for v in profile.values():
             if isinstance(v, str):
@@ -156,6 +123,7 @@ class Cluster:
     # LSH ==> MinLSH [More reading]
     def get_band_hashes(self, minhash_row, band_size) -> list:
         band_hashes = []
+        band_hash = 0
         for i in range(len(minhash_row)):
             if i % band_size == 0:
                 if i > 0:
@@ -292,23 +260,15 @@ if __name__ == "__main__":
         print("Test Failed.")
 
 
+# _pbna.csv ==> class _pbna ==> add UUID column ==> persist MySQL pbna (AS-IS)
+# _flna.csv == > class _flna == > add UUID column == > persist MySQL flna (AS-IS)
 
+# Assumption : Name correction [Either User do it or we have to do before leveraging this platform]
+# DropBox [Name, Address, ZipCode, ...]
 
-_pbna.csv ==> class _pbna ==> add UUID column ==> persist MySQL pbna (AS-IS)
-_flna.csv == > class _flna == > add UUID column == > persist MySQL flna (AS-IS)
+# ==> RawEntity (default :
+# common attributes of all pbna & flna excluding UUID / user_select_deduplicated_column) == >
+# read appropriate columns from pbna & flna mysql tables
+# def toRawEntity(tables): RawEntity:
 
-Assumption : Name correction [Either User do it or we have to do before leveraging this platform]
-DropBox [Name, Address, ZipCode, ...]
-
-==> RawEntity (default : common attributes of all pbna & flna excluding UUID / user_select_deduplicated_column) == >
-read appropriate columns from pbna & flna mysql tables
-def toRawEntity(tables): RawEntity:
-
-cleansing(RawEntity) ==> persist MySQL ()
-
-
-
-
-
-
-
+# cleansing(RawEntity) ==> persist MySQL ()

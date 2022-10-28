@@ -6,9 +6,10 @@ import pandas as pd
 
 # import tensorflow as tf
 import tensorflow as tf
-from sklearn.model_selection import StratifiedShuffleSplit
-
+from data_harmonization.main.code.tiger.clustering import Blocking
 from data_harmonization.main.code.tiger.Features import Features
+from data_harmonization.main.resources import config as config_
+from sklearn.model_selection import StratifiedShuffleSplit
 
 # tf.compat.v1.disable_v2_behavior()
 tf = tf.compat.v1
@@ -37,9 +38,7 @@ class DeepLearning:
                 data=[[pairs[0]["id"], pairs[1]["id"], _positive, 1]],
                 columns=("rid", "lid", "feature", "target"),
             )
-            self._positive_df = pd.concat(
-                [self._positive_df, row], axis=0, ignore_index=True
-            )
+            self._positive_df = pd.concat([self._positive_df, row], axis=0, ignore_index=True)
         return self._positive_df
 
     def _get_negative_examples(self):
@@ -74,9 +73,7 @@ class DeepLearning:
                     data=[[pair1["id"], pair2["id"], _negative, 0]],
                     columns=("rid", "lid", "feature", "target"),
                 )
-                self._negative_df = pd.concat(
-                    [self._negative_df, row], axis=0, ignore_index=True
-                )
+                self._negative_df = pd.concat([self._negative_df, row], axis=0, ignore_index=True)
         return self._negative_df
 
     def _concat_examples(self, _positive_df, _negative_df):
@@ -96,18 +93,14 @@ class DeepLearning:
 
         :return: match or non match profile"""
         # Sigmoid fits modified data well
-        layer1 = tf.nn.sigmoid(
-            tf.matmul(input_tensor, self.weight_1_node) + self.biases_1_node
-        )
+        layer1 = tf.nn.sigmoid(tf.matmul(input_tensor, self.weight_1_node) + self.biases_1_node)
         # Dropout prevents model from becoming lazy and over confident
         layer2 = tf.nn.dropout(
             tf.nn.sigmoid(tf.matmul(layer1, self.weight_2_node) + self.biases_2_node),
             0.85,
         )
         # Softmax works very well with one hot encoding which is how results are outputted
-        layer3 = tf.nn.softmax(
-            tf.matmul(layer2, self.weight_3_node) + self.biases_3_node
-        )
+        layer3 = tf.nn.softmax(tf.matmul(layer2, self.weight_3_node) + self.biases_3_node)
         return layer3
 
     def _calculate_accuracy(self, actual, predicted):
@@ -129,7 +122,8 @@ class DeepLearning:
         # print(_negative_df)
         data = self._concat_examples(_positive_df, _negative_df)
 
-        # Change Class column into target_0 ([1 0] for No Match data) and target_1 ([0 1] for Match data)
+        # Change Class column into target_0 ([1 0] for No Match data)
+        # and target_1 ([0 1] for Match data)
         one_hot_data = pd.get_dummies(data, prefix=["target"], columns=["target"])
 
         # split
@@ -173,7 +167,8 @@ class DeepLearning:
         # 150 cells for the second layer
         num_layer_2_cells = 150
 
-        # We will use these as inputs to the model when it comes time to train it (assign values at run time)
+        # We will use these as inputs to the model when it
+        # comes time to train it (assign values at run time)
         X_train_node = tf.compat.v1.placeholder(
             tf.float32, [None, input_dimensions], name="X_train"
         )
@@ -197,7 +192,8 @@ class DeepLearning:
         )
         self.biases_2_node = tf.Variable(tf.zeros([num_layer_2_cells]), name="biases_2")
 
-        # Third layer takes in input from 2nd layer and outputs [1 0] or [0 1] depending on match vs non match
+        # Third layer takes in input from 2nd layer and
+        # outputs [1 0] or [0 1] depending on match vs non match
         self.weight_3_node = tf.Variable(
             tf.zeros([num_layer_2_cells, output_dimensions]), name="weight_3"
         )
@@ -211,13 +207,13 @@ class DeepLearning:
         y_train_prediction = self._network(X_train_node)
         y_test_prediction = self._network(X_test_node)
 
-        # Cross entropy loss function measures differences between actual output and predicted output
-        cross_entropy = tf.compat.v1.losses.softmax_cross_entropy(
-            y_train_node, y_train_prediction
-        )
+        # Cross entropy loss function measures differences between
+        # actual output and predicted output
+        cross_entropy = tf.compat.v1.losses.softmax_cross_entropy(y_train_node, y_train_prediction)
 
-        # Adam optimizer function will try to minimize loss (cross_entropy) but changing the 3 layers' variable values at a
-        #   learning rate of 0.005
+        # Adam optimizer function will try to minimize loss (cross_entropy)
+        # but changing the 3 layers' variable values at a
+        # learning rate of 0.005
         optimizer = tf.compat.v1.train.AdamOptimizer(0.005).minimize(cross_entropy)
         saver = tf.train.Saver()
         with tf.compat.v1.Session() as session:
@@ -229,7 +225,10 @@ class DeepLearning:
                 operation_ = [optimizer, cross_entropy]
                 _, cross_entropy_score = session.run(
                     operation_,
-                    feed_dict={X_train_node: raw_X_train, y_train_node: raw_y_train},
+                    feed_dict={
+                        X_train_node: raw_X_train,
+                        y_train_node: raw_y_train,
+                    },
                 )
 
                 if epoch % 10 == 0:
@@ -250,9 +249,7 @@ class DeepLearning:
 
             final_y_test = y_test_node.eval()
             final_y_test_prediction = y_test_prediction.eval()
-            final_accuracy = self._calculate_accuracy(
-                final_y_test, final_y_test_prediction
-            )
+            final_accuracy = self._calculate_accuracy(final_y_test, final_y_test_prediction)
             print("Final accuracy: {0:.2f}%".format(final_accuracy))
             self.save_model({"saver": saver, "session": session})
             # saver.save(session, "my_test_model")
@@ -273,7 +270,8 @@ class DeepLearning:
         _negative_df = self._get_negative_examples()
         data = self._concat_examples(_positive_df, _negative_df)
 
-        # Change Class column into target_0 ([1 0] for No Match data) and target_1 ([0 1] for Match data)
+        # Change Class column into target_0 ([1 0] for No Match data)
+        # and target_1 ([0 1] for Match data)
         one_hot_data = pd.get_dummies(data, prefix=["target"], columns=["target"])
 
         # split
@@ -350,9 +348,10 @@ class DeepLearning:
         )
         return session
 
+
 if __name__ == "__main__":
     cluster = Blocking()
-    flat_rawprofile = cluster.prepare_data(n_docs=config.minlsh_n_docs)
+    flat_rawprofile = cluster.prepare_data(n_docs=config_.minlsh_n_docs)
     cluster_pairs = cluster.do_blocking(docs=flat_rawprofile)
     dl = DeepLearning()
     # fitted = dl.fit(train.flat_rawprofile, train.cluster_pairs)

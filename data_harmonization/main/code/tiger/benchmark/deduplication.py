@@ -1,11 +1,9 @@
+import argparse
 import os
-from re import finditer
 
 import numpy as np
 import pandas as pd
 import pandas_dedupe
-import argparse
-
 from data_harmonization.main.code.tiger.spark import SparkClass
 
 
@@ -13,9 +11,7 @@ class Deduplication:
     def __init__(self):
         self.raw_entity_table_name = "rawentity"
 
-    def get_data(
-        self, table: str = "rawentity", max_length: int = 2000
-    ) -> pd.DataFrame:
+    def get_data(self, table: str = "rawentity", max_length: int = 2000) -> pd.DataFrame:
         spark = SparkClass()
         df = spark.read_from_database_to_dataframe(table)
         pandas_df = df.toPandas()
@@ -64,7 +60,8 @@ class Deduplication:
         # )
         # Persist this in MYSQL + benckmark
         self._save_data_in_db(
-            final_model[["id", "canonical_id", "cluster_id", "confidence"]], "benchmark"
+            final_model[["id", "canonical_id", "cluster_id", "confidence"]],
+            "benchmark",
         )
         print(self._get_statistics(df_for_dedupe_model, final_model))
 
@@ -103,13 +100,9 @@ class Deduplication:
     def train(self, col_names: list = [], df=None):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         target_dir = os.path.sep.join(current_dir.split(os.path.sep)[:-2])
-        if os.path.isfile(
-            target_dir + "/tiger/benchmark/dedupe_dataframe_learned_settings"
-        ):
+        if os.path.isfile(target_dir + "/tiger/benchmark/dedupe_dataframe_learned_settings"):
             os.remove(target_dir + "/tiger/benchmark/dedupe_dataframe_learned_settings")
-        if os.path.isfile(
-            target_dir + "/tiger/benchmark/dedupe_dataframe_training.json"
-        ):
+        if os.path.isfile(target_dir + "/tiger/benchmark/dedupe_dataframe_training.json"):
             os.remove(target_dir + "/tiger/benchmark/dedupe_dataframe_training.json")
         print("removed")
         if not df:
@@ -121,13 +114,9 @@ class Deduplication:
         target_dir = os.path.sep.join(current_dir.split(os.path.sep)[:-2])
         if not df:
             df = self.get_data(self.raw_entity_table_name)
-        if not os.path.isfile(
-            target_dir + "/tiger/benchmark/dedupe_dataframe_learned_settings"
-        ):
+        if not os.path.isfile(target_dir + "/tiger/benchmark/dedupe_dataframe_learned_settings"):
             print("Cannot find dedupe_dataframe_learned_settings file")
-        if not os.path.isfile(
-            target_dir + "/tiger/benchmark/dedupe_dataframe_training.json"
-        ):
+        if not os.path.isfile(target_dir + "/tiger/benchmark/dedupe_dataframe_training.json"):
             print("Cannot find dedupe_dataframe_training.json file")
         return self._run_model(df, col_names)
 
@@ -138,7 +127,11 @@ if __name__ == "__main__":
         description="Depuplication algorithm for creating benchmark table"
     )
     parser.add_argument(
-        "-t", "--train", help="train the model", default=True, action="store_true"
+        "-t",
+        "--train",
+        help="train the model",
+        default=True,
+        action="store_true",
     )
     parser.add_argument(
         "-p",
@@ -151,7 +144,7 @@ if __name__ == "__main__":
     # print(arg)
     # For training
     if arg.predict:
-        print(f"Starting to predict....")
+        print("Starting to predict....")
         dedupe.predict()
         print("We are done with prediction.")
 

@@ -8,8 +8,8 @@ from typing import Any, Optional
 
 import numpy as np
 import pandas as pd
-from data_harmonization.main.code.tiger.model.SemiMergedProfile import \
-    SemiMergedProfile
+
+from data_harmonization.main.code.tiger.model.SemiMergedProfile import SemiMergedProfile
 from data_harmonization.main.code.tiger.Sanitizer import Sanitizer
 from data_harmonization.main.code.tiger.transformer.utils import StringSupport
 
@@ -31,7 +31,7 @@ class Cluster:
     flattenRawprofile = {}
 
     # Flatten rawProfiles to fields which are only string / int / float
-    def Create_enity(self, data:pd.DataFrame): 
+    def Create_enity(self, data: pd.DataFrame):
         pass
 
     def createflattenRawprofile(
@@ -40,19 +40,16 @@ class Cluster:
         self.rawProfiles = data
         if not data:
             filenames = listdir(os.getcwd() + "/data_harmonization/main/data/")
-            csv_filenames = [
-                filename for filename in filenames if filename.endswith(".csv")
-            ] 
+            csv_filenames = [filename for filename in filenames if filename.endswith(".csv")]
             rawProfiles = pd.DataFrame()  # correct data structure here ?
             for csv_file in csv_filenames:
                 self.rawProfiles = rawProfiles.append(
-                    pd.read_csv(
-                        os.getcwd() + f"/data_harmonization/main/data/{csv_file}"
-                    )
+                    pd.read_csv(os.getcwd() + f"/data_harmonization/main/data/{csv_file}")
                 )
 
         rawProfilesWithTokens = self.rawProfiles.apply(
-            lambda r: Sanitizer().toRawEntity(r, gen_id=True, clean_data=True), axis=1
+            lambda r: Sanitizer().toRawEntity(r, gen_id=True, clean_data=True),
+            axis=1,
         )  # .filter(lambda p: p.id._isNotEmpty)
         id = 0
         for raw_ent in rawProfilesWithTokens.sample(n_docs):
@@ -73,9 +70,7 @@ class Cluster:
 
     def _flatten_list(self, l: list) -> list:
         return [
-            item if isinstance(sublist, list) else sublist
-            for sublist in l
-            for item in sublist
+            item if isinstance(sublist, list) else sublist for sublist in l for item in sublist
         ]
         # return [item for sublist in l if isinstance(sublist, list) for item in sublist else sublist]
 
@@ -104,9 +99,7 @@ class Cluster:
     # Create Shingles
     def createShingles(self, input: Optional[str], shingle_size) -> Optional[list[str]]:
         def shingles(x: str) -> list[str]:
-            i = (
-                x.lower()
-            )  # TODO: remove extra unnecessary characters when creating shingles
+            i = x.lower()  # TODO: remove extra unnecessary characters when creating shingles
             if len(i) > shingle_size:
                 return list(
                     map(
@@ -287,4 +280,3 @@ if __name__ == "__main__":
         print("Test Failed.")
 
     ## Pyspark Code
-

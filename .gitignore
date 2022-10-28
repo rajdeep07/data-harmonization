@@ -1,9 +1,10 @@
 *egg*/**
 **__pycache__**
 **/*.csv
-data_harmonization/main/code/tiger/model/ingester/**
-data_harmonization/main/code/tiger/benchmark/dedupe_dataframe_learned_settings
-data_harmonization/main/code/tiger/benchmark/dedupe_dataframe_training.json
+**ingester/
+**/*.json
+/data_harmonization/main/code/tiger/classification/models/
+/data_harmonization/main/model
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -1,7 +1,8 @@
-from typing import Optional
 
-from data_harmonization.main.code.tiger.transformer.utils.IntegerSupport import \
-    IntegerSupport
+
+from data_harmonization.main.code.tiger.transformer.utils.IntegerSupport import (
+    IntegerSupport,
+)
 
 
 class IntegerTypeTransformer(IntegerSupport):

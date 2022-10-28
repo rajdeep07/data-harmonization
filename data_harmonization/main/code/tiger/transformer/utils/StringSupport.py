@@ -20,9 +20,7 @@ class StringSupport:
     def normalizeTrimAndLowerCaseString(self, value: str) -> str:
         return self.normalizeString(self.trimAndLowerCase(value))
 
-    def normalizeTrimAndLowerCaseStringAndRemoveSpecialCharacters(
-        self, value: str
-    ) -> str:
+    def normalizeTrimAndLowerCaseStringAndRemoveSpecialCharacters(self, value: str) -> str:
         return re.sub(
             "[\+]",
             "",

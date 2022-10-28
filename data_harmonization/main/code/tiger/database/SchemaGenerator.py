@@ -1,19 +1,15 @@
-from fileinput import filename
 import os
 import os.path as path
 from os import listdir
 from pathlib import Path
+
 import pandas as pd
 
 
 class SchemaGenerator:
-    bottom_code = (
-        "from sqlalchemy.orm import declarative_base\n\nBase = declarative_base()"
-    )
+    bottom_code = "from sqlalchemy.orm import declarative_base\n\nBase = declarative_base()"
 
     import_statement = """from sqlalchemy import BigInteger, Text, Float, Column
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, relationship
 from data_harmonization.main.code.tiger.model.ingester.Bottom import Base\n\n
 """
     attrtype_list = {
@@ -38,11 +34,16 @@ from data_harmonization.main.code.tiger.model.ingester.Bottom import Base\n\n
             with open(f"{self.output_path}/__init__.py", "r") as file:
                 lines = set(file.readlines())
                 # print(lines)
-                lines.add(f"from data_harmonization.main.code.tiger.model.ingester.{filename} import {filename}\n")
+                lines.add(
+                    f"from data_harmonization.main.code.tiger.model.ingester.{filename} \
+                        import {filename}\n"
+                )
         except FileNotFoundError:
-            print(
-                f"{str(FileNotFoundError.errno)} initializing ingester module")
-            lines.add(f"from data_harmonization.main.code.tiger.model.ingester.{filename} import {filename}\n")
+            print(f"{str(FileNotFoundError.errno)} initializing ingester module")
+            lines.add(
+                f"from data_harmonization.main.code.tiger.model.ingester.{filename} \
+                    import {filename}\n"
+            )
 
         with open(f"{self.output_path}/__init__.py", "w") as file:
             for line in lines:
@@ -59,13 +60,14 @@ from data_harmonization.main.code.tiger.model.ingester.Bottom import Base\n\n
 
     def _class_gen(self, table_name: str, attr_dict: dict):
         class_code = f"\nclass {table_name.capitalize()}(Base):\n".lstrip()
-        class_code += f"\t__tablename__ = '{table_name}'\n\n\tid=Column(BigInteger, primary_key=True)\n"
+        class_code += (
+            f"\t__tablename__ = '{table_name}'\n\n\tid = Column(BigInteger, primary_key=True)\n"
+        )
         for column_name, col_dtype in attr_dict.items():
             # print(str(col_dtype), col_dtype.name, col_dtype)
             if column_name == "Unnamed: 0" or column_name.lower() == "id":
                 continue
-            col_type = self.attrtype_list.get(
-                str(col_dtype), self.default_type)
+            col_type = self.attrtype_list.get(str(col_dtype), self.default_type)
             class_code += f"\t{column_name} = {col_type}"
         # self.code = self.code.rstrip()
         self.code += class_code
@@ -85,10 +87,9 @@ from data_harmonization.main.code.tiger.model.ingester.Bottom import Base\n\n
         with open(f"{self.output_path}/{filename}.py", "w") as file:
             file.write(self.code)
 
-    def _schema_method(self, table_name, dict_types):
+    def _schema_method(self, dict_types):
         dict_types["id"] = "int64"
-        dict_types = {k: str(v)
-                      for k, v in dict_types.items() if k != "Unnamed: 0"}
+        dict_types = {k: str(v) for k, v in dict_types.items() if k != "Unnamed: 0"}
         self.schema_code += f"\t\treturn {dict_types}\n"
         self.code += self.schema_code
 
@@ -100,20 +101,24 @@ from data_harmonization.main.code.tiger.model.ingester.Bottom import Base\n\n
 
         self._import_statement_gen()
         self._class_gen(table_name, attr_dict)
-        self._schema_method(table_name, attr_dict)
+        self._schema_method(attr_dict)
         self._repr_gen(table_name, attr_dict)
         self._make_file(table_name.capitalize())
         self._update_init(table_name.capitalize(), alias)
         self._bottom_gen()
 
     def generate_class_from_schema(
-        self, schema: dict, class_name: str, output_path: path or str, alias: str = ""
+        self,
+        schema: dict,
+        class_name: str,
+        output_path: path or str,
+        alias: str = "",
     ):
         self.output_path = output_path
 
         self._import_statement_gen()
         self._class_gen(table_name=class_name, attr_dict=schema)
-        self._schema_method(table_name=class_name, dict_types=schema)
+        self._schema_method(dict_types=schema)
         self._repr_gen(table_name=class_name, attr_dict=schema)
         self._make_file(class_name.capitalize())
         self._update_init(class_name.capitalize(), alias)
@@ -134,6 +139,5 @@ if __name__ == "__main__":
     schema_dir = str(target_dir + "/code/tiger/model/ingester/")
 
     for csv_file in csv_filenames:
-        schemaGen = SchemaGenerator(
-            str(target_dir + "/data/" + csv_file), schema_dir)
+        schemaGen = SchemaGenerator(str(target_dir + "/data/" + csv_file), schema_dir)
         schemaGen.generate_class()

@@ -1,13 +1,15 @@
 import os
 import sys
-from data_harmonization.main.code.tiger.spark.SparkClass import SparkClass
-from pyspark.sql import DataFrame
-from graphframes import *
+from typing import Optional
 
-# from graphframes.lib import Pegal
+from graphframes import *
+from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
-from pyspark.sql.types import StructType, StructField, StringType
+
 import data_harmonization.main.resources.config as config_
+from data_harmonization.main.code.tiger.spark.SparkClass import SparkClass
+
+# from pyspark.sql.types import StringType, StructField, StructType
 
 # TODO: While running also pass package parameter to get appropriate packges.
 # ./bin/pyspark --packages graphframes:graphframes:0.6.0-spark2.3-s_2.11
@@ -31,8 +33,8 @@ class Mapping:
         merges = df.select("leftId", "rightId", "isMatch").filter(df.isMatch == 1)
         list1 = merges.select("leftId").toPandas()["leftId"]
         list2 = merges.select("rightId").toPandas()["rightId"]
-        a = list1 + list2
-        b = set(list1 + list2)
+        # a = list1 + list2
+        # b = set(list1 + list2)
         return set(list1 + list2)
 
     def _getAllProfiles(self, entities: DataFrame):
@@ -49,12 +51,12 @@ class Mapping:
 
     # def _getLocalVertices(self, emptyRDD, entities: list):
     def _getLocalVertices(self, emptyRDD, entities: DataFrame):
-        schema = StructType(
-            [
-                StructField("id", StringType(), True),
-                StructField("Name", StringType(), True),
-            ]
-        )
+        # schema = StructType(
+        #     [
+        #         StructField("id", StringType(), True),
+        #         StructField("Name", StringType(), True),
+        #     ]
+        # )
         print("raw count: ", entities.count())
         # vertexDF = emptyRDD.toDF(schema)
         node_properties = []
@@ -66,7 +68,7 @@ class Mapping:
         print("vertex count : ", vertexDF.count())
         return vertexDF
 
-    def _getLocalEdges(self, df):
+    def _getLocalEdges(self, df: DataFrame):
         """Get edges from dataframe
 
         :return: edges as  spark dataframe with columns named src, dst and action
@@ -87,7 +89,7 @@ class Mapping:
         df = self.spark.read_from_database_to_dataframe(table)
         return df
 
-    def graphObject(self, raw_profiles_df=None) -> GraphFrame:
+    def graphObject(self, raw_profiles_df: Optional[DataFrame] = None) -> GraphFrame:
         """Create GraphFrame object using vertices and edges.
         Vertices as raw profiles and edges from classification output
 
@@ -135,12 +137,14 @@ class Mapping:
         duplicated_profiles = len(self._getAllDuplicate(df))
         duplicates_percentages = duplicated_profiles / total_profiles
         print(
-            f"Total duplicated identified are, {duplicated_profiles} among {total_profiles} total profiles, i.e. "
+            f"Total duplicated identified are, {duplicated_profiles} \
+                among {total_profiles} total profiles, i.e. "
             f"{duplicates_percentages}% duplicates."
         )
         return duplicates_percentages
 
-    # read potential matches from DB [Classifier Output] [leftId <-> rightId <-> 1/0] 1 means match, 0 means not a match
+    # read potential matches from DB [Classifier Output]
+    # [leftId <-> rightId <-> 1/0] 1 means match, 0 means not a match
     # Presume output from classifier as
     """
     *(1000378, 6521361, 0)

@@ -1,5 +1,4 @@
-from os import environ as env
-import netifaces
+import os
 
 # application configuration
 APP_NAME = "data_harmonization"
@@ -47,3 +46,8 @@ match_ratio = 0.5
 # model_parameters
 word_2_vec = 1  # 0 -> use count vectorizer, 1 -> word_2_vec
 feature_for_deduplication = []
+
+# logging directories
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+logging_dir = current_dir + "/logs/"

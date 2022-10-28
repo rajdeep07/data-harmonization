@@ -1,13 +1,8 @@
-from unicodedata import name
-from pyspark.sql import DataFrame
-from pyspark.sql.functions import collect_list, col, udf, concat_ws
-from pyspark.sql.types import StringType
-
-# import pyspark.sql.fu import
-
 import data_harmonization.main.resources.config as config_
 from data_harmonization.main.code.tiger.spark.SparkClass import SparkClass
-from pyspark.sql.column import Column
+from pyspark.sql import DataFrame
+from pyspark.sql.functions import col, collect_list, concat_ws, udf
+from pyspark.sql.types import StringType
 
 
 class Merger:
@@ -22,24 +17,23 @@ class Merger:
             )
         # conneted_profiles.show()
         # fetch raw entity table data
-        raw_entities = self.spark.read_from_database_to_dataframe(
-            config_.raw_entity_table
-        )
+        raw_entities = self.spark.read_from_database_to_dataframe(config_.raw_entity_table)
         # raw_entities.show()
         if "cluster_id" in raw_entities.columns:
             raw_entities = raw_entities.drop("cluster_id")
 
         # join classifier and raw profiles table
         conneted_raw_entities = conneted_profiles.join(
-            other=raw_entities, on=conneted_profiles.id == raw_entities.id, how="inner"
+            other=raw_entities,
+            on=conneted_profiles.id == raw_entities.id,
+            how="inner",
         ).drop(raw_entities.id)
         # conneted_raw_entities.show()
         attributes = raw_entities.columns
         # attributes.remove("id")
         exprs = [collect_list(x).alias(x) for x in attributes]
         # a.show()
-        collected_profiles = conneted_raw_entities.groupBy(
-            "cluster_id").agg(*exprs)
+        collected_profiles = conneted_raw_entities.groupBy("cluster_id").agg(*exprs)
         # collected_profiles.show()
         # print("collected_profiles : ", str(collected_profiles.count()))
 
@@ -68,7 +62,8 @@ class Merger:
         # Converting function to UDF
         return_max_length_val = udf(lambda z: _return_max_val(z), StringType())
 
-        # collect data from list based on maximum length if it is str type otherwise take maximum value
+        # collect data from list based on maximum length
+        # if it is str type otherwise take maximum value
         collected_profiles.show()
         collected_profiles_1 = collected_profiles.select(["id", "cluster_id"])
         # collected_profiles_1 = collected_profiles.groupBy("cluster_id").agg(D.coll)
@@ -79,10 +74,6 @@ class Merger:
                 if col_name != "id"
             ]
         )
-        # df
-        #     .groupby("id")
-        #     .agg(F.collect_set("code"),
-        #         F.collect_list("name"))
 
         result = collected_profiles_1.join(
             other=collected_profiles_,
@@ -94,8 +85,7 @@ class Merger:
         # writing merged data into database
         result_ = result.withColumn("id", concat_ws(",", result.id))
         result_.show()
-        self.spark.write_to_database_from_df(
-            config_.merged_table, result_, "overwrite")
+        self.spark.write_to_database_from_df(config_.merged_table, result_, "overwrite")
         return result
 
 
