@@ -46,9 +46,9 @@ class Synthesis:
         Parameters
         -----------
         features
-                  DataFrame for which features to be extracted
+            DataFrame for which features to be extracted
         target
-                target dataframe features to be extracted
+            target dataframe features to be extracted
 
         Returns
         -------
@@ -62,7 +62,9 @@ class Synthesis:
         )
         if target.empty:
             return feature_df
-        target_df = pd.get_dummies(target, prefix="target", columns=["target"], drop_first=False)
+        target_df = pd.get_dummies(
+            target, prefix="target", columns=["target"], drop_first=False
+        )
         return pd.concat([feature_df, target_df], axis=1)
 
     def create_df_from_id_pairs(self, id_pair: DataFrame) -> pd.DataFrame:
@@ -82,7 +84,7 @@ class Synthesis:
         """
         self.logger.log(
             level="INFO",
-            msg="Fetching all atributes from raw entites matching with ids"
+            msg="Fetching all atributes from raw entites matching with ids",
         )
         full_df = (
             id_pair.alias("a").join(
@@ -120,11 +122,13 @@ class Synthesis:
         """
         self.logger.log(level="INFO", msg="Running all layers")
         # Sigmoid fits modified data well
-        layer1 = tf.nn.sigmoid(tf.matmul(input_tensor, self.weight_1_node) + self.biases_1_node)
+        layer1 = tf.nn.sigmoid(
+            tf.matmul(input_tensor, self.weight_1_node) + self.biases_1_node
+        )
         # Dropout prevents model from becoming lazy and over confident
         layer2 = tf.nn.dropout(
-            tf.nn.sigmoid(tf.matmul(
-                layer1, self.weight_2_node) + self.biases_2_node
+            tf.nn.sigmoid(
+                tf.matmul(layer1, self.weight_2_node) + self.biases_2_node
             ),
             0.85,
         )
@@ -145,8 +149,7 @@ class Synthesis:
         """
         # load the model
         self.logger.log(
-            level="INFO",
-            msg="Loading the previously trained model"
+            level="INFO", msg="Loading the previously trained model"
         )
         session = self.load_model(
             model_path="data_harmonization/main/code"
@@ -186,7 +189,9 @@ class Synthesis:
         predicted = np.argmax(predicted, axis=1).astype("int32")
         semi_merged_data_pd = semi_merged_data.toPandas()
         semi_merged_data_pd["isMatch"] = predicted
-        semi_merged_data_pd = semi_merged_data_pd.drop(columns="JaccardDistance", axis=1)
+        semi_merged_data_pd = semi_merged_data_pd.drop(
+            columns="JaccardDistance", axis=1
+        )
         semi_merged_data_pd = semi_merged_data_pd.rename(
             columns={"id": "leftId", "canonical_id": "rightId"}
         )
@@ -196,7 +201,7 @@ class Synthesis:
         self.logger.log(
             level="INFO",
             msg=f"Writing all merged data in {config_.classification_table} "
-            + "table in database"
+            + "table in database",
         )
         self.spark.write_to_database_from_df(
             config_.classification_table, df=semi_merged_data, mode="overwrite"
