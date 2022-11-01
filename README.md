@@ -1,4 +1,5 @@
-# data-harmonization
+## data-harmonization
+
 This is the repo to run data harmonization on disparate data sources using entity deduplication
 
 ![Flow Diagram](https://github.com/rajdeep07/data-harmonization/blob/main/data_harmonization/main/data/Data_Harmonization.jpg)
@@ -221,7 +222,7 @@ We use `pip-compile` from [`pip-tools`](https://github.com/jazzband/pip-tools) t
 manage and pin our dependencies.
 
 Note that `pip-tools` will be installed in this project's virtual environment when
-running the [Virtual Environment Setup](#virtual-environment-setup) step (it's
+running the virtual-environment-setup step (it's
 specified within `requirements.in` /
 `requirements.txt`).
 
