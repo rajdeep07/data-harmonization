@@ -11,12 +11,23 @@ Sanitizer
 .. automodule:: tiger.Sanitizer
     :members:
 
+Benchmark
++++++++++
+
+.. automodule:: tiger.benchmark.deduplication
+    :members:
+
+Blocking
+++++++++
+
+.. automodule:: tiger.clustering.Blocking
+    :members:
+
 Train
 ++++++
 
 .. automodule:: tiger.Train
     :members:
-
 
 Classification
 ++++++++++++++
@@ -24,5 +35,14 @@ Classification
 .. automodule:: tiger.Synthesis
     :members:
 
-    
+Mapping
++++++++
 
+.. automodule:: tiger.Mapping
+    :members:
+
+Merger
+++++++
+
+.. automodule:: tiger.Merger
+    :members:

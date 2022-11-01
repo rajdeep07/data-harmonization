@@ -314,3 +314,6 @@ dependencies:
     - urllib3==1.26.12
     - zope-index==5.2.1
     - zope-interface==5.4.0
+    - sphinx-autobuild==2021.3.14
+    - myst-parser==0.18.1
+    - sphinx-rtd-theme==1.0.0
