@@ -1,12 +1,8 @@
-## data-harmonization
+# data-harmonization
 
 This is the repo to run data harmonization on disparate data sources using entity deduplication
 
 ![Flow Diagram](https://github.com/rajdeep07/data-harmonization/blob/main/data_harmonization/main/data/Data_Harmonization.jpg)
-
-Command to generate custom class from config:
-
-`datamodel-codegen --input data_harmonization/main/resources/api.yaml --output data_harmonization/main/code/tiger/model/datamodel.py`
 
 ## Steps to run this project
 
@@ -56,7 +52,7 @@ Command to generate custom class from config:
 
    `python data_harmonization/main/code/tiger/Merger.py`
 
-## Table names that will be produced in eache step
+## Table names that will be produced in each step
 
 1. Ingester
 
@@ -304,7 +300,9 @@ around updating dependencies.
            """
            The Snowflake username.
 
-           :return: the Snowflake username
+           Returns
+           --------
+            the Snowflake username
            """
            return self.secret.get("username")
 
@@ -313,7 +311,9 @@ around updating dependencies.
            """
            The Snowflake password.
 
-           :return: the Snowflake password
+           Returns
+           --------
+            the Snowflake password
            """
            return self.secret.get("password")
 
