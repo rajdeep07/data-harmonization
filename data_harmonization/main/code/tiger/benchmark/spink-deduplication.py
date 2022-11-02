@@ -120,9 +120,7 @@ class Deduplication:
         clusters = linker.cluster_pairwise_predictions_at_threshold(
             pairwise_predictions, threshold_match_probability=0.6
         )
-        print(df.count())
-        print(pairwise_predictions.__sizeof__())
-        print(clusters.__sizeof__())
+
         pairwise_predictions_size = pairwise_predictions.__sizeof__()
         pairwise_predictions_df = pairwise_predictions.as_pandas_dataframe(
             limit=pairwise_predictions_size
