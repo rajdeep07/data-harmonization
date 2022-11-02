@@ -2,8 +2,6 @@ from typing import Optional
 from splink.duckdb.duckdb_comparison_library import (
     exact_match,
     levenshtein_at_thresholds,
-    jaro_winkler_at_thresholds,
-    jaccard_at_thresholds,
 )
 
 from pyspark.sql import DataFrame
@@ -40,13 +38,18 @@ class Deduplication:
         comparison_rules_prepared = []
         if not comparison_rules or len(comparison_rules) == 0:
             comparison_rules_prepared = [
-                exact_match(col) for col in df.columns if col != "id"
+                exact_match(col)
+                for col in df.columns
+                if col != "id"
+                # levenshtein_at_thresholds(col, [1, 2])
+                # for col in df.columns
+                # if col != "id"
             ]
         else:
             for rule in comparison_rules:
                 # {
-                #     "col": "exact / levenshtein / jaro_winkler / jaccard",
-                #     "type":"",
+                #     "column": "",
+                #     "type": "exact / levenshtein",
                 #     "threshold": 0.1
                 # }
 
@@ -55,29 +58,19 @@ class Deduplication:
                 # jaro_winkler_at_thresholds,
                 # jaccard_at_thresholds,
 
-                if rule.get("col") == "exact":
+                if str(rule.get("type")).lower() == "exact":
                     comparison_rules_prepared.append(
-                        exact_match(rule.get("col"))
+                        exact_match(rule.get("column"))
                     )
-                elif rule.get("col") == "levenshtein":
+                elif str(rule.get("type")).lower() == "levenshtein":
                     comparison_rules_prepared.append(
                         levenshtein_at_thresholds(
-                            str(rule.get("col")), rule.get("threshold", [])
-                        )
-                    )
-                elif rule.get("col") == "jaro_winkler":
-                    comparison_rules_prepared.append(
-                        jaro_winkler_at_thresholds(
-                            str(rule.get("col")), rule.get("threshold", [])
-                        )
-                    )
-                elif rule.get("col") == "jaccard":
-                    comparison_rules_prepared.append(
-                        jaccard_at_thresholds(
-                            str(rule.get("col")), rule.get("threshold", [])
+                            str(rule.get("column")),
+                            rule.get("threshold", [1, 2]),
                         )
                     )
         settings = {
+            "unique_id_column_name": "id",
             "link_type": "dedupe_only",
             "blocking_rules_to_generate_predictions": blocking_rules,
             "comparisons": comparison_rules_prepared
@@ -90,7 +83,6 @@ class Deduplication:
             # ],
         }
 
-        df = df.withColumnRenamed("id", "unique_id")
         linker = SparkLinker(
             df,
             settings,
@@ -125,13 +117,45 @@ class Deduplication:
         # blocking_rules_to_generate_predictions are used by Splink when the
         # user called linker.predict().
         pairwise_predictions = linker.predict()
-        print(pairwise_predictions.as_pandas_dataframe(limit=5).head())
         clusters = linker.cluster_pairwise_predictions_at_threshold(
-            pairwise_predictions, threshold_match_probability=0.95
+            pairwise_predictions, threshold_match_probability=0.6
         )
-        a = clusters.as_record_dict(limit=5)
-        b = clusters.as_pandas_dataframe(limit=5)
+        print(df.count())
+        print(pairwise_predictions.__sizeof__())
+        print(clusters.__sizeof__())
+        pairwise_predictions_size = pairwise_predictions.__sizeof__()
+        pairwise_predictions_df = pairwise_predictions.as_pandas_dataframe(
+            limit=pairwise_predictions_size
+        )
+        pairwise_predictions_ = self.spark.get_sparkSession().createDataFrame(
+            pairwise_predictions_df
+        )
+        self.spark.write_to_database_from_df(
+            table="splink_pairs", df=pairwise_predictions_, mode="overwrite"
+        )
+
+        clusters_size = clusters.__sizeof__()
+        clusters_df = clusters.as_pandas_dataframe(limit=clusters_size)
+        clusters_df_ = self.spark.get_sparkSession().createDataFrame(
+            clusters_df
+        )
+        self.spark.write_to_database_from_df(
+            table="splink_clusters", df=clusters_df_, mode="overwrite"
+        )
 
 
 if __name__ == "__main__":
+    # comparisons = [
+    #     {"column": "title", "type": "exact"},
+    #     {"column": "manufacturer", "type": "levenshtein"},
+    #     {"column": "price", "type": "levenshtein", "threshold": 2},
+    # ]
+    # blocking_rules = [
+    #     "l.title = r.title or l.manufacturer = r.manufacturer",
+    #     "l.price = r.price",
+    # ]
+    # Deduplication().run(
+    #     blocking_rules=blocking_rules, comparison_rules=comparisons
+    # )
+
     Deduplication().run()
