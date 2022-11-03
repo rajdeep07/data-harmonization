@@ -36,3 +36,4 @@ dependencies:
     - clean-text[gpl]
     - jaro-winkler
     - mysql_connector_repackaged==0.3.1
+    - mysql-connector-python
