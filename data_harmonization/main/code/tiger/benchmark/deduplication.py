@@ -5,10 +5,9 @@ import numpy as np
 import pandas as pd
 import pandas_dedupe
 
-import data_harmonization.main.resources.config as config_
-from data_harmonization.main.code.tiger.spark import SparkClass
-from data_harmonization.main.resources.log4j import Logger
-
+import config as config_
+from SparkClass import SparkClass
+# from log4j import Logger
 
 class Deduplication:
     """Run pandas deduplication model"""
@@ -17,7 +16,7 @@ class Deduplication:
         """Setting up initial variables"""
         self.raw_entity_table_name = config_.raw_entity_table
         self.spark = SparkClass()
-        self.logger = Logger(name="deduplication")
+        # self.logger = Logger(name="deduplication")
 
     def get_data(
         self, table: str = config_.raw_entity_table, max_length: int = 20000
@@ -38,7 +37,7 @@ class Deduplication:
         pd.DataFrame
             fethed values from database
         """
-        self.logger.log(level="INFO", msg="Fetching data from ")
+        # self.logger.log(level="INFO", msg="Fetching data from ")
         df = self.spark.read_from_database_to_dataframe(table)
         pandas_df = df.toPandas()
         # if there are more than max_length records,
@@ -65,7 +64,7 @@ class Deduplication:
         tuple
             dataframe, column_names
         """
-        self.logger.log(level="INFO", msg="Cleaning data")
+        # self.logger.log(level="INFO", msg="Cleaning data")
         if column_names and len(column_names) > 0:
             df = df[column_names]
         else:
@@ -95,7 +94,7 @@ class Deduplication:
         """
         df_for_dedupe_model, col_names = self._clean_data(df, col_names)
         print(col_names)
-        self.logger.log(level="INFO", msg="Running the deduplication model")
+        #self.logger.log(level="INFO", msg="Running the deduplication model")
         final_model = pandas_dedupe.dedupe_dataframe(
             df_for_dedupe_model,
             col_names,
@@ -126,11 +125,13 @@ class Deduplication:
         table
             table name where data will be saved
         """
+        '''
         self.logger.log(
             level="INFO",
             msg="Writing connected compenents in "
             + f"{table} table in database"
         )
+        '''
         spark_df = self.spark.get_sparkSession().createDataFrame(df)
         self.spark.write_to_database_from_df(table, spark_df, mode="overwrite")
 
@@ -151,7 +152,7 @@ class Deduplication:
         dict
             calculated statistics
         """
-        self.logger.log(level="INFO", msg="Calculating statistics")
+        #self.logger.log(level="INFO", msg="Calculating statistics")
         total_records = len(input_data.index)
         duplicates = len(model_output)
         number_of_clusters = model_output["cluster_id"].nunique()
@@ -191,10 +192,12 @@ class Deduplication:
         df
             data on which deduplication will be run
         """
+        '''
         self.logger.log(
             level="INFO",
             msg="Begin Active Learning. Training the model"
         )
+        '''
         if not col_names:
             col_names = []
         current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -213,14 +216,16 @@ class Deduplication:
                 target_dir
                 + "/tiger/benchmark/dedupe_dataframe_training.json"
             )
+        '''
         self.logger.log(
             level="INFO",
             msg="Removed trained model files if they were present"
         )
+        '''
         if not df:
             df = self.get_data(self.raw_entity_table_name)
         self._run_model(df, col_names)
-        self.logger.log(level="INFO", msg="We are done with training.")
+        #self.logger.log(level="INFO", msg="We are done with training.")
 
     def predict(self, col_names=None, df=None) -> None:
         """Predict using the deduplication model
@@ -233,7 +238,7 @@ class Deduplication:
         df
             data on which deduplication will be run
         """
-        self.logger.log(level="INFO", msg="Starting to predict")
+        #self.logger.log(level="INFO", msg="Starting to predict")
         if not col_names:
             col_names = []
         current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -245,7 +250,7 @@ class Deduplication:
         if not os.path.isfile(target_dir + "/tiger/benchmark/dedupe_dataframe_training.json"):
             print("Cannot find dedupe_dataframe_training.json file")
         self._run_model(df, col_names)
-        self.logger.log(level="INFO", msg="We are done with prediction.")
+        #self.logger.log(level="INFO", msg="We are done with prediction.")
 
 
 if __name__ == "__main__":

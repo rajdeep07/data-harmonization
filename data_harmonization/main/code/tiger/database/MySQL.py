@@ -31,7 +31,7 @@ class MySQL:
             Base.metadata.create_all(self.engine)
         except ImportError:
             print(
-                "can't find ingester module, generate one using schemagenerator before importing"
+                "can't find ingester module, generate one using schema generator before importing"
             )
             raise ImportError
 
@@ -43,7 +43,7 @@ class MySQL:
             return list(Base.metadata.tables.keys())
         except ImportError:
             print(
-                "can't find ingester module, generate one using schemagenerator before importing"
+                "can't find ingester module, generate one using schema generator before importing"
             )
             raise ImportError
 

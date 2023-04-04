@@ -22,7 +22,7 @@ from pyspark.sql.functions import col, concat_ws
 
 
 class Blocking:
-    """create cluster pairs using minLSH alogorithm"""
+    """create cluster pairs using minLSH algorithm"""
 
     def __init__(self) -> None:
         """Setting up initial variables"""
@@ -45,7 +45,7 @@ class Blocking:
             Bucketed random projection LSH will be used
         """
 
-        def _createShingles(input: Optional[str]) -> list[str]:
+        def _createShingles(input: Optional[str]):
             """Return shingles from string
 
             Parameters
@@ -59,7 +59,7 @@ class Blocking:
                 list of shingles
             """
 
-            def shingle(x: str) -> list[str]:
+            def shingle(x: str):
                 """Create shingles from string
 
                 Parameters
@@ -105,7 +105,7 @@ class Blocking:
             Row
                 Spark dataframe row with id and shingles
             """
-            output: list[str] = []
+            output = []
             if features_to_deduplicate:
                 for feature in features_to_deduplicate:
                     output.extend(_createShingles(profile.get(feature)))
@@ -265,6 +265,9 @@ class Blocking:
             )
             .sort(col("JaccardDistance").desc())
         )
+        print("="*50)
+        print(similarDF.head())
+        print("=" * 50)
 
         self.logger.log(
             level="INFO",
