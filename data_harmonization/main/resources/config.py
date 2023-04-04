@@ -1,8 +1,8 @@
 import os
 
 # application configuration
-APP_NAME = "data_harmonization"
-DB_NAME = "data_harmonization"
+APP_NAME = "data_harmonization_db"
+DB_NAME = "data_harmonization_db"
 
 # cloud credentials
 awsAccessKey = "AWS_ACCESS_KEY_ID"
@@ -12,7 +12,7 @@ awsDefaultRegion = "AWS_DEFAULT_REGION"
 
 # database credentials
 mysqlUser = "root"
-mysqlPassword = "Root_123"  # "Root#1234"
+mysqlPassword = "1234"  # "Root#1234"
 mysqlLocalHost = "localhost"  # netifaces.gateways()['default'][2][0]
 mysqlDriver = "com.mysql.cj.jdbc.Driver"
 mysqlPort = "3306"

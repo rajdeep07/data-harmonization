@@ -243,7 +243,7 @@ class Classifier:
         layer3 = tf.nn.softmax(tf.matmul(layer2, self.weight_3_node) + self.biases_3_node)
         return layer3
 
-    def _calculate_accuracy(self, actual: tf.Tensor, predicted: tf.Tensor) -> tuple[tf.Tensor]:
+    def _calculate_accuracy(self, actual: tf.Tensor, predicted: tf.Tensor):
         """Calculate accuracy from actual and predicted tensor arrays
 
         Parameters
@@ -289,7 +289,7 @@ class Classifier:
         )
         self.biases_3_node = tf.Variable(tf.zeros([self.output_dim]), name="biases_3")
 
-    def train(self, table_name: str, num_epochs: int = 1000) -> None:
+    def train(self, table_name: str, num_epochs: int = 5000) -> None:
         """Train the classification model
 
         Parameters

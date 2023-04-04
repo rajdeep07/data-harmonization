@@ -28,7 +28,7 @@ class Ingester:
         self.schema_dirs = self._get_schema_dirs()
 
     # Step 0: Read individual uploaded CSVs and Infer Schema
-    def _get_csv_files(self) -> list[str]:
+    def _get_csv_files(self):
         """return all the csv file name from the target directory as a list
 
         Returns
@@ -66,7 +66,7 @@ class Ingester:
                 str(self.target_dir + "/data/" + csv_file), self.schema_dirs
             ).generate_class()
 
-    def _get_all_tables(self) -> list[str]:
+    def _get_all_tables(self):
         """return all the schema table names
 
         Returns
@@ -104,6 +104,7 @@ class Ingester:
 
         raw_entity_attrs = dict()
         table_list = self._get_all_tables()
+
         if features_for_deduplication:
             self.logger.log(level="INFO", msg="Using user provided features")
             total_attributes_count = {
@@ -113,6 +114,7 @@ class Ingester:
         for key, value in total_attributes_count.items():
             if value == len(table_list):
                 raw_entity_attrs[key] = attr_dict[key]
+
 
         raw_entity_attrs.pop("id")
         SchemaGenerator().generate_class_from_schema(
@@ -199,7 +201,8 @@ class Ingester:
         self.spark.write_to_database_from_df(
             table=config.raw_entity_table, df=df_series, mode="overwrite"
         )
-        self.logger.log("INFO", "Persisting Rawentity to MySQL completed")
+        self.logger.log("INFO", "Persisting Raw entity to MySQL completed")
+
         return
 
 

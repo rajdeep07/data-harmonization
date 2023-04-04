@@ -4,7 +4,7 @@ import findspark
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql import functions as F
 
-import data_harmonization.main.resources.config as config_
+import config as config_
 
 SPARK_HOME = os.environ.get("SPARK_HOME")
 PYTHON_PATH = os.environ.get("PYSPARK_PYTHON")
